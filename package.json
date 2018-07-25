@@ -1,18 +1,18 @@
 {
   "name": "objio-object",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "index.js",
   "repository": "git@github.com:xegax/objio-object.git",
   "scripts": {
-    "prepare": "tsc -p tsconfig.publish.json -outDir .",
+    "prepare": "npm run clean && tsc -p tsconfig.publish.json -outDir .",
     "postpublish": "npm run clean",
     "dist": "tsc",
     "dev": "npm run clean-build && tsc -p tsconfig.publish.json -outDir build && shx cp package.json build",
-    "clean": "npm run clean-index && npm run clean-src",
-    "clean-index": "shx rm -rf index.d.ts index.js index.js.map",
-    "clean-src": "shx rm -rf src/**/*.js src/**/*.js.map src/**/*.d.ts",
-    "clean-build": "shx rm -rf build/**/*"
+    "clean": "npm run clean-src && npm run clean-dirs",
+    "clean-src": "shx rm -rf src/**/*.js src/**/*.js.map src/**/*.d.ts *.d.ts *.js *.js.map",
+    "clean-build": "shx rm -rf build/**/*",
+    "clean-dirs": "shx rm -rf server"
   },
   "author": "xega",
   "license": "ISC",
@@ -20,6 +20,6 @@
     "@types/node": "^9.6.23"
   },
   "dependencies": {
-    "objio": "xegax/objio"
+    "objio": "^0.0.24"
   }
 }
