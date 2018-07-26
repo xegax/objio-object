@@ -95,8 +95,14 @@ export class TableHolder<T extends Table = Table> extends OBJIOItem {
     return this.table.getTable();
   }
 
-  getColumns(): Array<ColumnAttr> {
+  getAllColumns(): Array<ColumnAttr> {
     return this.table.getColumns();
+  }
+
+  getColumns(): Array<ColumnAttr> {
+    return this.table.getColumns().filter(col => {
+      return this.columns.length == 0 || this.columns.indexOf(col.name) != -1;
+    });
   }
 
   removeRows(args: RemoveRowsArgs): Promise<any> {
