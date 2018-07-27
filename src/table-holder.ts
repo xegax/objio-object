@@ -1,6 +1,6 @@
 import {
   Table,
-  TableArgs,
+  ExecuteArgs,
   Cells,
   Range,
   Row,
@@ -37,7 +37,7 @@ export class TableHolder<T extends Table = Table> extends OBJIOItem {
     this.table = new Table() as T;
   }
 
-  execute(args: TableArgs): Promise<any> {
+  execute(args: ExecuteArgs): Promise<any> {
     return this.table.execute(args);
   }
 
@@ -93,6 +93,14 @@ export class TableHolder<T extends Table = Table> extends OBJIOItem {
 
   getTable(): string {
     return this.table.getTable();
+  }
+
+  getLastExecuteTime(): number {
+    return this.table.getLastExecuteTime();
+  }
+
+  getFileObjId(): string {
+    return this.table.getFileObjId();
   }
 
   getAllColumns(): Array<ColumnAttr> {

@@ -30,10 +30,10 @@ export interface ColumnAttr {
   autoInc?: boolean;
 }
 
-export interface TableArgs {
+export interface ExecuteArgs {
   table: string;
   columns?: Array<ColumnAttr>;
-  srcId?: string;   // FileObject id
+  fileObjId?: string;           // if not defined will be created new table
   idColumn?: string;
   // idColumn defined, column is not found - create primary key column with name = idColumn
   // idColumn defined, column is found - this column will be primary key
@@ -52,6 +52,7 @@ export interface Range {
 }
 
 export interface PushRowArgs {
+  updRowCounter?: boolean;
   values: {[column: string]: Array<string>};
 }
 
@@ -81,6 +82,8 @@ export class Table extends OBJIOItem {
   protected columns: Columns = Array<ColumnAttr>();
   protected idColumn: string = 'row_uid';
   protected state = new StateObject();
+  protected lastExecuteTime: number = 0;
+  protected fileObjId: string;
 
   protected totalRowsNum: number = 0;
 
@@ -88,8 +91,16 @@ export class Table extends OBJIOItem {
     return this.state;
   }
 
-  execute(args: TableArgs): Promise<any> {
+  execute(args: ExecuteArgs): Promise<any> {
     return this.holder.invokeMethod('execute', args);
+  }
+
+  getLastExecuteTime(): number {
+    return this.lastExecuteTime;
+  }
+
+  getFileObjId(): string {
+    return this.fileObjId;
   }
 
   findColumn(name: string): ColumnAttr {
@@ -130,11 +141,12 @@ export class Table extends OBJIOItem {
 
   static TYPE_ID = 'Table';
   static SERIALIZE: SERIALIZER = () => ({
-    'state': { type: 'object' },
-    'table': { type: 'string' },
-    'columns': { type: 'json' },
-    'totalRowsNum': { type: 'integer' },
-    'idColumn': { type: 'integer' },
-    'srcId': {type: 'string'}
+    'state':            { type: 'object' },
+    'table':            { type: 'string' },
+    'columns':          { type: 'json' },
+    'totalRowsNum':     { type: 'integer' },
+    'idColumn':         { type: 'string' },
+    'lastExecuteTime':  { type: 'number' },
+    'fileObjId':        { type: 'string' }
   })
 }

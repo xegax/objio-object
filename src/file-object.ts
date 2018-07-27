@@ -11,6 +11,7 @@ export class FileObject extends OBJIOItem {
   protected originSize: number = 0;
   protected loadSize: number = 0;
   protected type: string = '';
+  protected progress: number = 0;
 
   constructor(args?: FileArgs) {
     super();
@@ -48,6 +49,7 @@ export class FileObject extends OBJIOItem {
     'originName': { type: 'string' },
     'originSize': { type: 'number' },
     'loadSize': { type: 'number' },
-    'type': { type: 'string' }
+    'type': { type: 'string' },
+    'progress': { type: 'number' }
   })
 }

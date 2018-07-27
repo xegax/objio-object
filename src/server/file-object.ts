@@ -8,11 +8,17 @@ export class FileObject extends FileObjectBase {
 
     this.holder.setMethodsToInvoke({
       'send-file': (args: {data: Buffer, offs: number}) => {
-        const fd = openSync(this.getPath(), 'a+');
-        writeSync(fd, args.data, 0, args.data.byteLength, args.offs);
-        closeSync(fd);
+        //const fd = openSync(this.getPath(), 'a+');
+        //writeSync(fd, args.data, 0, args.data.byteLength, args.offs);
+        //closeSync(fd);
         this.loadSize += args.data.byteLength;
-        this.holder.save();
+        let progress = this.loadSize / this.originSize;
+        progress = Math.round(progress * 100) / 100;
+        if (progress != this.progress) {
+          this.holder.save();
+          console.log(progress);
+        }
+        this.progress = progress;
         return Promise.resolve();
       }
     });
