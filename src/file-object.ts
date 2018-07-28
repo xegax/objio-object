@@ -44,6 +44,10 @@ export class FileObject extends OBJIOItem {
     return this.holder.invokeMethod('send-file', file);
   }
 
+  getProgress(): number {
+    return this.progress;
+  }
+
   static TYPE_ID: string = 'File';
   static SERIALIZE: SERIALIZER = () => ({
     'originName': { type: 'string' },
