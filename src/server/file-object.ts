@@ -2,7 +2,6 @@ import { FileObject as FileObjectBase, FileArgs } from '../file-object';
 import { SERIALIZER } from 'objio';
 import { createWriteStream } from 'fs';
 import * as http from 'http';
-import { resolve } from 'url';
 
 export class FileObject extends FileObjectBase {
   constructor(args?: FileArgs) {
