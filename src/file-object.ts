@@ -3,14 +3,14 @@ import { OBJIOItem, SERIALIZER } from 'objio';
 export interface FileArgs {
   originName: string;
   originSize: number;
-  type: string;
+  mime: string;
 }
 
 export class FileObject extends OBJIOItem {
   protected originName: string = '';
   protected originSize: number = 0;
   protected loadSize: number = 0;
-  protected type: string = '';
+  protected mime: string = '';
   protected progress: number = 0;
 
   constructor(args?: FileArgs) {
@@ -21,19 +21,31 @@ export class FileObject extends OBJIOItem {
 
     this.originName = args.originName;
     this.originSize = args.originSize;
-    this.type = args.type;
+    this.mime = args.mime;
   }
 
   getName(): string {
     return this.originName;
   }
 
+  getPath(): string {
+    return `file_${this.holder.getID()}${this.getExt()}`;
+  }
+
   getSize(): number {
     return this.originSize;
   }
 
-  getType(): string {
-    return this.type;
+  // .png
+  getExt(): string {
+    const i = this.originName.lastIndexOf('.');
+    if (i == -1)
+      return '';
+    return this.originName.substr(i);
+  }
+
+  getMime(): string {
+    return this.mime;
   }
 
   getLoadSize(): number {
@@ -53,7 +65,7 @@ export class FileObject extends OBJIOItem {
     'originName': { type: 'string' },
     'originSize': { type: 'number' },
     'loadSize': { type: 'number' },
-    'type': { type: 'string' },
+    'mime': { type: 'string' },
     'progress': { type: 'number' }
   })
 }

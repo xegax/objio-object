@@ -31,9 +31,7 @@ export class FileObject extends FileObjectBase {
   }
 
   getPath(): string {
-    const arr = this.type.split('/');
-    const t = arr.length > 1 ? arr[1] : arr[0];
-    return this.holder.getFilePath(`file_${this.holder.getID()}.${t}`);
+    return this.holder.getFilePath(super.getPath());
   }
 
   static SERIALIZE: SERIALIZER = () => ({
