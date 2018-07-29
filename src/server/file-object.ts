@@ -3,6 +3,10 @@ import { SERIALIZER } from 'objio';
 import { createWriteStream } from 'fs';
 import * as http from 'http';
 
+export interface ServerFileObjectImpl {
+  onFileUploaded?(): Promise<any>;
+}
+
 export class FileObject extends FileObjectBase {
   constructor(args?: FileArgs) {
     super(args);
@@ -17,13 +21,18 @@ export class FileObject extends FileObjectBase {
             else
               this.loadSize += chunk.byteLength;
 
-            let progress = this.loadSize / this.originSize;
+            let progress = this.loadSize / this.impl.getSize();
             progress = Math.round(progress * 100) / 100;
             if (progress != this.progress)
               this.holder.save();
             this.progress = progress;
           });
-          args.data.on('end', resolve);
+          args.data.on('end', () => {
+            if (this.getImpl<ServerFileObjectImpl>().onFileUploaded)
+              this.getImpl<ServerFileObjectImpl>().onFileUploaded().then(resolve);
+            else
+              resolve();
+          });
         });
       }
     });

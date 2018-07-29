@@ -1,4 +1,4 @@
-import { Table as TableBase, SubtableAttrs as SubtableAttrsBase, SubtableAttrs } from '../table';
+import { Table as TableBase, SubtableAttrs } from '../table';
 
 export interface CreateSubtableArgs {
   table: string;
