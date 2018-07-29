@@ -1,5 +1,5 @@
 import { FileObjImpl } from './file-obj-impl';
-import { SERIALIZER } from 'objio';
+import { SERIALIZER, isEquals } from 'objio';
 import { Columns, ColumnAttr } from './table';
 
 export class CSVFileObject extends FileObjImpl {
@@ -7,6 +7,19 @@ export class CSVFileObject extends FileObjImpl {
 
   getColumns(): Columns {
     return this.columns;
+  }
+
+  setColumn(attr: Partial<ColumnAttr>): void {
+    const i = this.columns.findIndex(col => col.name == attr.name);
+    if (i == -1)
+      return;
+
+    const prev = {...this.columns[i]};
+    this.columns[i] = {...this.columns[i], ...attr};
+    if (!isEquals(this.columns[i], prev)) {
+      this.holder.notify();
+      this.holder.save();
+    }
   }
 
   static TYPE_ID = 'CSVFile';

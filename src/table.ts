@@ -28,6 +28,7 @@ export interface ColumnAttr {
   unique?: boolean;
   primary?: boolean;
   autoInc?: boolean;
+  discard?: boolean;
 }
 
 export interface ExecuteArgs {
