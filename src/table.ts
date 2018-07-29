@@ -29,6 +29,7 @@ export interface ColumnAttr {
   primary?: boolean;
   autoInc?: boolean;
   discard?: boolean;
+  removeQuotes?: boolean; //  default true
 }
 
 export interface ExecuteArgs {
