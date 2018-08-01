@@ -4,6 +4,12 @@ import {
 } from 'objio';
 import { StateObject } from './state-object';
 
+export interface CreateSubtableResult {
+  subtable: string;
+  columns: Array<ColumnAttr>;
+  rowsNum: number;
+}
+
 export interface SortPair {
   column: string;
   dir: 'asc' | 'desc';
@@ -12,6 +18,7 @@ export interface SortPair {
 export interface ValueCond {
   column: string;
   value: string;
+  inverse?: boolean;
 }
 
 export interface CompoundCond {
@@ -42,9 +49,14 @@ export interface ExecuteArgs {
   // idColumn not defined - we will try to create and insert idColumn = 'row-uid' or 'row-uid-%%%%%'
 }
 
+export interface Distinct {
+  column: string;
+}
+
 export interface SubtableAttrs {
   sort: Array<SortPair>;
   cols: Array<string>;
+  distinct?: Distinct;
   filter?: Condition;
 }
 
@@ -135,6 +147,10 @@ export class Table extends OBJIOItem {
 
   removeRows(args: RemoveRowsArgs): Promise<any> {
     return this.holder.invokeMethod('removeRows', args);
+  }
+
+  createSubtable(args: Partial<SubtableAttrs>): Promise<CreateSubtableResult> {
+    return this.holder.invokeMethod('updateSubtable', args);
   }
 
   getIdColumn(): string {
