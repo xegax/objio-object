@@ -1,6 +1,6 @@
 import { FileObject as FileObjectBase, FileArgs } from '../file-object';
 import { SERIALIZER } from 'objio';
-import { createWriteStream } from 'fs';
+import { createWriteStream, unlinkSync, existsSync } from 'fs';
 import * as http from 'http';
 
 export interface ServerFileObjectImpl {
@@ -10,6 +10,20 @@ export interface ServerFileObjectImpl {
 export class FileObject extends FileObjectBase {
   constructor(args?: FileArgs) {
     super(args);
+
+    this.holder.addEventHandler({
+      onDelete: () => {
+        try {
+          const file = this.getPath();
+          console.log('removing content file', file);
+          if (existsSync(file))
+            unlinkSync(this.getPath());
+        } catch(e) {
+          console.log(e);
+        }
+        return Promise.resolve();
+      }
+    });
 
     this.holder.setMethodsToInvoke({
       'send-file': (args: {data: http.IncomingMessage}) => {

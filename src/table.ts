@@ -150,7 +150,7 @@ export class Table extends OBJIOItem {
   }
 
   createSubtable(args: Partial<SubtableAttrs>): Promise<CreateSubtableResult> {
-    return this.holder.invokeMethod('updateSubtable', args);
+    return this.holder.invokeMethod('createSubtable', args);
   }
 
   getIdColumn(): string {
