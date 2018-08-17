@@ -15,8 +15,6 @@ export interface SortPair {
   dir: 'asc' | 'desc';
 }
 
-// { filter: { column: '_kpId', value: { op: 'or', table: 'kpTable', values: [{column: '_kpGenre', value: ''}] } } }
-// where _kpId in (select ) 
 export interface ValueCond {
   column: string;
   value: string | CompoundCond;
@@ -84,6 +82,7 @@ export interface RemoveRowsArgs {
 
 export interface LoadCellsArgs extends Range {
   table?: string;
+  filter?: Condition;
 }
 
 export function inRange(idx: number, range: Range): boolean {
