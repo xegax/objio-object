@@ -15,15 +15,18 @@ export interface SortPair {
   dir: 'asc' | 'desc';
 }
 
+// { filter: { column: '_kpId', value: { op: 'or', table: 'kpTable', values: [{column: '_kpGenre', value: ''}] } } }
+// where _kpId in (select ) 
 export interface ValueCond {
   column: string;
-  value: string;
+  value: string | CompoundCond;
   inverse?: boolean;
 }
 
 export interface CompoundCond {
   values: Array<Condition>;
   op: 'or' | 'and';
+  table?: string;
 }
 
 export type Condition = ValueCond | CompoundCond;
@@ -57,7 +60,7 @@ export interface SubtableAttrs {
   sort: Array<SortPair>;
   cols: Array<string>;
   distinct?: Distinct;
-  filter?: Condition;
+  filter?: Condition | string;
 }
 
 export interface Range {
