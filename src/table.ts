@@ -4,6 +4,16 @@ import {
 } from 'objio';
 import { StateObject } from './state-object';
 
+export interface NumStats {
+  min: number;
+  max: number;
+}
+
+export interface NumStatsArgs {
+  column: string;
+  table?: string;
+}
+
 export interface CreateSubtableResult {
   subtable: string;
   columns: Array<ColumnAttr>;
@@ -17,7 +27,7 @@ export interface SortPair {
 
 export interface ValueCond {
   column: string;
-  value: string | CompoundCond;
+  value: string | Array<string | number> | CompoundCond;
   inverse?: boolean;
 }
 
@@ -153,6 +163,10 @@ export class Table extends OBJIOItem {
 
   createSubtable(args: Partial<SubtableAttrs>): Promise<CreateSubtableResult> {
     return this.holder.invokeMethod('createSubtable', args);
+  }
+
+  getNumStats(args: NumStatsArgs): Promise<NumStats> {
+    return this.holder.invokeMethod('getNumStats', args);
   }
 
   getIdColumn(): string {
