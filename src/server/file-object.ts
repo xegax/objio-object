@@ -22,6 +22,14 @@ export class FileObject extends FileObjectBase {
           console.log(e);
         }
         return Promise.resolve();
+      },
+      onLoad: () => {
+        this.onInit();
+        return Promise.resolve()
+      },
+      onCreate: () => {
+        this.onInit();
+        return Promise.resolve();
       }
     });
 
@@ -54,6 +62,13 @@ export class FileObject extends FileObjectBase {
 
   getPath(): string {
     return this.holder.getFilePath(super.getPath());
+  }
+
+  onInit() {
+    this.impl.holder.subscribe(() => {
+      this.progress = this.impl.getProgress();
+      this.holder.save();
+    }, 'progress');
   }
 
   static SERIALIZE: SERIALIZER = () => ({

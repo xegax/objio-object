@@ -1,6 +1,7 @@
 import { OBJIOItem, SERIALIZER } from 'objio';
 import { CSVFileObject } from './csv-file-object';
 import { FileObjImpl } from './file-obj-impl';
+import { VideoFileObject } from './video-file-object';
 
 export interface FileArgs {
   originName: string;
@@ -26,8 +27,11 @@ export class FileObject extends OBJIOItem {
     if (!args)
       return;
 
-    if (getExt(args.originName).toLowerCase() == '.csv')
+    const ext = getExt(args.originName).toLocaleLowerCase();
+    if (ext == '.csv')
       this.impl = new CSVFileObject(args);
+    else if (ext == '.mp4')
+      this.impl = new VideoFileObject(args);
     else
       this.impl = new FileObjImpl(args);
   }

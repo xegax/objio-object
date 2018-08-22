@@ -5,6 +5,7 @@ export class FileObjImpl extends OBJIOItem {
   protected originName: string = '';
   protected originSize: number = 0;
   protected mime: string = '';
+  protected progress: number = 0;
 
   constructor(args?: FileArgs) {
     super();
@@ -37,10 +38,15 @@ export class FileObjImpl extends OBJIOItem {
     return this.mime;
   }
 
+  getProgress(): number {
+    return this.progress;
+  }
+
   static TYPE_ID = 'FileObjectImplBase';
   static SERIALIZE: SERIALIZER = () => ({
     'originName': { type: 'string' },
     'originSize': { type: 'number' },
-    'mime':       { type: 'string' }
+    'mime':       { type: 'string' },
+    'progress':   { type: 'number' }
   })
 }
