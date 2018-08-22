@@ -1,17 +1,19 @@
-import {
-  VideoFileObject as VideoFileObjectBase
-} from '../video-file-object';
-import { ServerFileObjectImpl } from './file-object';
+import { FileObject as Base } from './file-object';
 import { parseFile, encodeFile } from '../task/ffmpeg';
 import { toString, Time } from '../task/time';
 import { FileObject } from '../file-object';
 import { lstatSync } from 'fs';
+import { VideoFileDetails } from '../video-file-object';
+import { SERIALIZER } from 'objio';
 
-export class VideoFileObject extends VideoFileObjectBase implements ServerFileObjectImpl {
+export class VideoFileObject extends Base {
+  protected details: Partial<VideoFileDetails> = {};
+
   constructor(args) {
     super(args);
 
     this.holder.setMethodsToInvoke({
+      ...this.holder.getMethodsToInvoke(),
       split: this.split
     });
   }
@@ -20,29 +22,27 @@ export class VideoFileObject extends VideoFileObjectBase implements ServerFileOb
     return (
       this.holder.getObject<FileObject>(args.parentId)
       .then(video => {
+        this.state.setStateType('in progress');
         encodeFile({
-          inFile: this.holder.getFilePath(video.getImpl().getPath()),
-          outFile: this.holder.getFilePath(this.getPath()),
+          inFile: video.getPath(),
+          outFile: this.getPath(),
           range: args,
           onProgress: (p: number) => {
-            console.log(p);
-            this.progress = p;
             try {
-              this.originSize = lstatSync(this.holder.getFilePath(this.getPath())).size;
-            } catch(e) {
+              this.size = this.loadSize = lstatSync(this.getPath()).size;
+            } catch (e) {
               console.log(e);
             }
-            this.holder.delayedNotify({type: 'progress'});
+            this.state.setProgress(p);
             this.holder.save();
           }
         }).then(() => {
-          this.progress = 1;
-          this.holder.delayedNotify({type: 'progress'});
-          this.originSize = lstatSync(this.holder.getFilePath(this.getPath())).size;
-          return parseFile(this.holder.getFilePath(this.getPath()))
+          this.size = this.loadSize = lstatSync(this.getPath()).size;
+          return parseFile(this.getPath());
         }).then(info => {
-          this.holder.delayedNotify({type: 'progress'});
-          this.duration = toString(info.duration);
+          this.state.setProgress(1);
+          this.state.setStateType('valid');
+          this.details.duration = toString(info.duration);
           this.holder.save();
         });
       })
@@ -52,13 +52,21 @@ export class VideoFileObject extends VideoFileObjectBase implements ServerFileOb
     );
   }
 
-  onFileUploaded(): Promise<any> {
+  onFileUploaded(): Promise<void> {
+    console.log('start parse');
     return (
-      parseFile(this.holder.getFilePath(this.getPath()))
+      parseFile(this.getPath())
       .then(info => {
-        this.duration = toString(info.duration);
+        console.log('parsed');
+        this.details.duration = toString(info.duration);
         this.holder.save();
       })
     );
   }
+
+  static TYPE_ID = 'VideoFileObject';
+  static SERIALIZE: SERIALIZER = () => ({
+    ...FileObject.SERIALIZE(),
+    details:    { type: 'json' }
+  })
 }

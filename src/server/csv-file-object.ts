@@ -1,9 +1,12 @@
-import { CSVFileObject as CSVFileObjectBase } from '../csv-file-object';
+import { FileObject } from './file-object';
 import { CSVReader, CSVBunch } from 'objio/server';
-import { ServerFileObjectImpl } from './file-object';
+import { SERIALIZER } from 'objio';
+import { ColumnAttr } from '../table';
 
-export class CSVFileObject extends CSVFileObjectBase implements ServerFileObjectImpl {
-  onFileUploaded(): Promise<any> {
+export class CSVFileObject extends FileObject {
+  protected columns = new Array<ColumnAttr>();
+
+  onFileUploaded(): Promise<void> {
     const onNextBunch = (bunch: CSVBunch) => {
       this.columns = bunch.rows[0].map(col => {
         return {
@@ -17,10 +20,16 @@ export class CSVFileObject extends CSVFileObjectBase implements ServerFileObject
 
     return CSVReader.read({
       linesPerBunch: 1,
-      file: this.holder.getFilePath(this.getPath()),
+      file: this.getPath(),
       onNextBunch
     }).then(() => {
       this.holder.save();
     });
   }
+
+  static TYPE_ID = 'CSVFileObject';
+  static SERIALIZE: SERIALIZER = () => ({
+    ...FileObject.SERIALIZE(),
+    columns:  { type: 'json' }
+  })
 }

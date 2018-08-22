@@ -1,17 +1,19 @@
-import { FileObjImpl } from './file-obj-impl';
 import { SERIALIZER } from 'objio';
-import { toSeconds, parseTime, toString, Time } from './task/time';
+import { toString, Time } from './task/time';
+import { FileObject } from './file-object';
 
-export class VideoFileObject extends FileObjImpl {
-  protected duration: string;
+export interface VideoFileDetails {
+  duration: string;
+}
 
-  getDurationSec(): number {
-    if (!this.duration)
-      return 0;
-    return toSeconds(parseTime(this.duration));
+export class VideoFileObject extends FileObject {
+  protected details: Partial<VideoFileDetails> = {};
+
+  getDetails(): Partial<VideoFileDetails> {
+    return this.details;
   }
 
-  split = (args: {from: Time, to: Time, parentId: string}): Promise<void> => {
+  split(args: {from: Time, to: Time, parentId: string}): Promise<void> {
     return this.holder.invokeMethod('split', args);
   }
 
@@ -23,13 +25,13 @@ export class VideoFileObject extends FileObjImpl {
     return t;
   }
 
-  static timeToStr(time: Time): string {
+  static toString(time: Time): string {
     return toString(time);
   }
 
-  static TYPE_ID = 'VideoFile';
+  static TYPE_ID = 'VideoFileObject';
   static SERIALIZE: SERIALIZER = () => ({
-    ...FileObjImpl.SERIALIZE(),
-    duration: { type: 'string' }
+    ...FileObject.SERIALIZE(),
+    details:    { type: 'json' }
   })
 }

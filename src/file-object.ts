@@ -1,11 +1,9 @@
 import { OBJIOItem, SERIALIZER } from 'objio';
-import { CSVFileObject } from './csv-file-object';
-import { FileObjImpl } from './file-obj-impl';
-import { VideoFileObject } from './video-file-object';
+import { StateObject } from './state-object';
 
 export interface FileArgs {
-  originName: string;
-  originSize: number;
+  name: string;
+  size: number;
   mime: string;
 }
 
@@ -17,48 +15,50 @@ export function getExt(fileName: string): string {
 }
 
 export class FileObject extends OBJIOItem {
-  protected impl: FileObjImpl;
-  protected progress: number = 0;
+  protected name: string = '';
+  protected size: number = 0;
+  protected mime: string = '';
   protected loadSize: number = 0;
+  protected state = new StateObject();
 
   constructor(args?: FileArgs) {
     super();
 
+    this.holder.addEventHandler({
+      onCreate: () => {
+        this.state.setStateType('not configured');
+        this.holder.save();
+        return Promise.resolve();
+      }
+    });
+
     if (!args)
       return;
 
-    const ext = getExt(args.originName).toLocaleLowerCase();
-    if (ext == '.csv')
-      this.impl = new CSVFileObject(args);
-    else if (ext == '.mp4')
-      this.impl = new VideoFileObject(args);
-    else
-      this.impl = new FileObjImpl(args);
-  }
-
-  getImpl<T = FileObjImpl>(): T {
-    return this.impl as any as T;
+    this.name = args.name;
+    this.size = args.size;
+    this.mime = args.mime;
   }
 
   getName(): string {
-    return this.impl.getName();
+    return this.name;
   }
 
   getPath(): string {
-    return this.impl.getPath();
+    return `file_${this.holder.getID()}${this.getExt()}`;
   }
 
   getSize(): number {
-    return this.impl.getSize();
+    return this.size;
   }
 
   // .png
   getExt(): string {
-    return this.impl.getExt();
+    return getExt(this.name);
   }
 
   getMIME(): string {
-    return this.impl.getMIME();
+    return this.mime;
   }
 
   getLoadSize(): number {
@@ -69,14 +69,16 @@ export class FileObject extends OBJIOItem {
     return this.holder.invokeMethod('send-file', file);
   }
 
-  getProgress(): number {
-    return this.progress;
+  getState(): StateObject {
+    return this.state;
   }
 
-  static TYPE_ID: string = 'File';
+  static TYPE_ID: string = 'FileObject';
   static SERIALIZE: SERIALIZER = () => ({
-    'impl':       { type: 'object' },
+    'name':       { type: 'string' },
+    'size':       { type: 'number' },
+    'mime':       { type: 'string' },
     'loadSize':   { type: 'number' },
-    'progress':   { type: 'number' }
+    'state':      { type: 'object' }
   })
 }
