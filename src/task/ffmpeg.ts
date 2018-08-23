@@ -49,7 +49,7 @@ function getFileInfo(input: InputInfo): FileInfo {
 export function parseFile(file: string): Promise<FileInfo> {
   let bufs = Array<Buffer>();
   return runTask({
-    cmd: 'ffmpeg.exe',
+    cmd: process.env['FFMPEG'] || 'ffmpeg.exe',
     args: ['-i', normalize(file)],
     handleOutput: args => {
       bufs.push(args.data);
