@@ -15,6 +15,7 @@ export function getExt(fileName: string): string {
 }
 
 export class FileObject extends OBJIOItem {
+  protected origName: string = '';
   protected name: string = '';
   protected size: number = 0;
   protected mime: string = '';
@@ -24,24 +25,30 @@ export class FileObject extends OBJIOItem {
   constructor(args?: FileArgs) {
     super();
 
-    this.holder.addEventHandler({
-      onCreate: () => {
-        this.state.setStateType('not configured');
-        this.holder.save();
-        return Promise.resolve();
-      }
-    });
-
     if (!args)
       return;
 
-    this.name = args.name;
+    this.origName = this.name = args.name;
     this.size = args.size;
     this.mime = args.mime;
+    this.state.setStateType('not configured');
   }
 
   getName(): string {
     return this.name;
+  }
+
+  getOriginName() {
+    return this.origName;
+  }
+
+  setName(name: string): void {
+    if (name == this.name)
+      return;
+
+    this.name = name;
+    this.holder.save();
+    this.holder.delayedNotify();
   }
 
   getPath(): string {
@@ -54,7 +61,7 @@ export class FileObject extends OBJIOItem {
 
   // .png
   getExt(): string {
-    return getExt(this.name);
+    return getExt(this.origName);
   }
 
   getMIME(): string {
@@ -76,6 +83,7 @@ export class FileObject extends OBJIOItem {
   static TYPE_ID: string = 'FileObject';
   static SERIALIZE: SERIALIZER = () => ({
     'name':       { type: 'string' },
+    'origName':   { type: 'string' },
     'size':       { type: 'number' },
     'mime':       { type: 'string' },
     'loadSize':   { type: 'number' },

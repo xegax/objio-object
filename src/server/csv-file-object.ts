@@ -23,7 +23,7 @@ export class CSVFileObject extends FileObject {
       file: this.getPath(),
       onNextBunch
     }).then(() => {
-      this.holder.save();
+      console.log('csv columns', JSON.stringify(this.columns, null, ' '));
     });
   }
 

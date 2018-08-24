@@ -26,9 +26,15 @@ export class FileObject extends Base {
     });
   }
 
-  sendFileImpl = (args: { data: http.IncomingMessage }): Promise<void> => {
+  sendFileImpl = (args: { name: string, size: number, mime: string, data: http.IncomingMessage }): Promise<void> => {
     this.state.setProgress(0);
     this.state.setStateType('in progress');
+
+    this.origName = args.name;
+    this.size = args.size;
+    this.mime = args.mime;
+    this.loadSize = 0;
+    this.holder.save();
 
     return new Promise(resolve => {
       args.data.pipe(createWriteStream(this.getPath()));
@@ -43,6 +49,7 @@ export class FileObject extends Base {
       });
       args.data.on('end', () => {
         this.onFileUploaded().then(() => {
+          console.log('send-file end');
           this.state.setStateType('valid');
           this.state.setProgress(1);
           this.state.save();
