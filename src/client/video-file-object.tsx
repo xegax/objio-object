@@ -1,7 +1,9 @@
+import * as React from 'react';
 import { SERIALIZER } from 'objio';
 import { toString, Time } from '../task/time';
 import { FileObject } from './file-object';
 import { ClientView } from './client-class';
+import { VideoFileView } from '../view/video-file-view';
 
 export interface VideoFileDetails {
   duration: string;
@@ -36,6 +38,10 @@ export class VideoFileObject extends FileObject {
     details:    { type: 'json' }
   })
   static getClientViews(): Array<ClientView> {
-    return [];
+    return [
+      {
+        view: (props: {model: VideoFileObject}) => <VideoFileView {...props}/> 
+      }
+    ];
   }
 }

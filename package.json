@@ -22,8 +22,9 @@
     "@types/react-dom": "^16.0.6"
   },
   "dependencies": {
-	"react": "^16.4.1",
-    "react-dom": "^16.4.1", 
-    "objio": "^0.0.28"
+    "objio": "^0.0.28",
+    "react": "^16.4.1",
+    "react-dom": "^16.4.1",
+    "ts-react-ui": "^0.1.8"
   }
 }
