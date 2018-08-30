@@ -1,9 +1,9 @@
 import { FileObject as Base } from './file-object';
 import { parseFile, encodeFile } from '../task/ffmpeg';
 import { toString, Time } from '../task/time';
-import { FileObject } from '../file-object';
+import { FileObject } from '../client/file-object';
 import { lstatSync } from 'fs';
-import { VideoFileDetails } from '../video-file-object';
+import { VideoFileDetails } from '../client/video-file-object';
 import { SERIALIZER } from 'objio';
 
 export class VideoFileObject extends Base {

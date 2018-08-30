@@ -1,5 +1,8 @@
+import * as React from 'react';
 import { OBJIOItem, SERIALIZER } from 'objio';
-import { StateObject } from './state-object';
+import { StateObject } from '../server/state-object';
+import { ClientView } from './client-class';
+import { FileObjectView } from '../view/file-object-view';
 
 export interface FileArgs {
   name: string;
@@ -52,7 +55,7 @@ export class FileObject extends OBJIOItem {
   }
 
   getPath(): string {
-    return `file_${this.holder.getID()}${this.getExt()}`;
+    return this.holder.getFilePath(`file_${this.holder.getID()}${this.getExt()}`);
   }
 
   getSize(): number {
@@ -89,4 +92,12 @@ export class FileObject extends OBJIOItem {
     'loadSize':   { type: 'number' },
     'state':      { type: 'object' }
   })
+
+  static getClientViews(): Array<ClientView> {
+    return [
+      {
+        view: (props: {model: FileObject} ) => <FileObjectView {...props} />
+      }
+    ];
+  }
 }

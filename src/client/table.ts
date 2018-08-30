@@ -2,7 +2,8 @@ import {
   OBJIOItem,
   SERIALIZER
 } from 'objio';
-import { StateObject } from './state-object';
+import { StateObject } from '../server/state-object';
+import { ClientView } from './client-class';
 
 export interface NumStats {
   min: number;
@@ -183,4 +184,8 @@ export class Table extends OBJIOItem {
     'lastExecuteTime':  { type: 'number' },
     'fileObjId':        { type: 'string' }
   })
+
+  static getClientViews(): Array<ClientView> {
+    return [];
+  }
 }

@@ -1,6 +1,7 @@
 import { SERIALIZER } from 'objio';
-import { toString, Time } from './task/time';
+import { toString, Time } from '../task/time';
 import { FileObject } from './file-object';
+import { ClientView } from './client-class';
 
 export interface VideoFileDetails {
   duration: string;
@@ -34,4 +35,7 @@ export class VideoFileObject extends FileObject {
     ...FileObject.SERIALIZE(),
     details:    { type: 'json' }
   })
+  static getClientViews(): Array<ClientView> {
+    return [];
+  }
 }

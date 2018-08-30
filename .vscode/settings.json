@@ -2,6 +2,9 @@
 {
 	"editor.tabSize": 2,
 	"files.exclude": {
+		"client": true,
+		"server": true,
+		"task": true,
 		"**/build": true,
 		"**/.git": true,
 		"**/.DS_Store": true,

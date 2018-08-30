@@ -1,7 +1,7 @@
 import { FileObject } from './file-object';
 import { CSVReader, CSVBunch } from 'objio/server';
 import { SERIALIZER } from 'objio';
-import { ColumnAttr } from '../table';
+import { ColumnAttr } from '../client/table';
 
 export class CSVFileObject extends FileObject {
   protected columns = new Array<ColumnAttr>();

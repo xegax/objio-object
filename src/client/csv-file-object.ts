@@ -1,6 +1,7 @@
 import { Columns, ColumnAttr } from './table';
 import { FileObject } from './file-object';
 import { SERIALIZER } from 'objio';
+import { ClientView } from './client-class';
 
 export class CSVFileObject extends FileObject {
   protected columns = Array<ColumnAttr>();
@@ -34,4 +35,8 @@ export class CSVFileObject extends FileObject {
     ...FileObject.SERIALIZE(),
     columns: { type: 'json' }
   })
+
+  static getClientViews(): Array<ClientView> {
+    return [];
+  }
 }

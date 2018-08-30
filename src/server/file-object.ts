@@ -1,4 +1,4 @@
-import { FileObject as Base, FileArgs } from '../file-object';
+import { FileObject as Base, FileArgs } from '../client/file-object';
 import { SERIALIZER } from 'objio';
 import { createWriteStream, unlinkSync, existsSync } from 'fs';
 import * as http from 'http';
