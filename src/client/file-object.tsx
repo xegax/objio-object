@@ -54,8 +54,12 @@ export class FileObject extends OBJIOItem {
     this.holder.delayedNotify();
   }
 
+  getFileName(): string {
+    return `file_${this.holder.getID()}${this.getExt()}`;
+  }
+
   getPath(): string {
-    return this.holder.getFilePath(`file_${this.holder.getID()}${this.getExt()}`);
+    return this.holder.getFilePath(this.getFileName());
   }
 
   getSize(): number {

@@ -65,7 +65,7 @@ export class FileObject extends Base {
   }
 
   getPath(): string {
-    return this.holder.getFilePath(super.getPath());
+    return this.holder.getFilePath(super.getFileName());
   }
 
   static SERIALIZE: SERIALIZER = () => ({
