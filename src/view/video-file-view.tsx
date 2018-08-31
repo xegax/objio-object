@@ -2,6 +2,8 @@ import * as React from 'react';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import { VideoFileObject } from '../client/video-file-object';
 
+export { VideoFileObject };
+
 export interface Props {
   onlyContent?: boolean;
   model: VideoFileObject;

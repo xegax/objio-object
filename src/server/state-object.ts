@@ -58,9 +58,9 @@ export class StateObject extends OBJIOItem {
 
   static TYPE_ID = 'StateObject';
   static SERIALIZE: SERIALIZER = () => ({
-    'progressMsg': { type: 'string' },
-    'progress': { type: 'number' },
-    'state': { type: 'string' },
-    'errors': { type: 'json' }
+    'progressMsg':  { type: 'string'  },
+    'progress':     { type: 'number'  },
+    'state':        { type: 'string'  },
+    'errors':       { type: 'json'    }
   })
 }

@@ -68,6 +68,7 @@ export class FileObject extends Base {
     return this.holder.getFilePath(super.getFileName());
   }
 
+  static TYPE_ID = 'FileObject';
   static SERIALIZE: SERIALIZER = () => ({
     ...Base.SERIALIZE()
   })

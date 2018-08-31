@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { CSVFileObject } from '../client/csv-file-object';
 
+export { CSVFileObject };
+
 export interface Props {
   onlyContent?: boolean;
   model: CSVFileObject;

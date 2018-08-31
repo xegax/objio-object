@@ -1,7 +1,6 @@
 import { FileObject as Base } from './file-object';
 import { parseFile, encodeFile } from '../task/ffmpeg';
 import { toString, Time } from '../task/time';
-import { FileObject } from '../client/file-object';
 import { lstatSync } from 'fs';
 import { VideoFileDetails } from '../client/video-file-object';
 import { SERIALIZER } from 'objio';
@@ -20,7 +19,7 @@ export class VideoFileObject extends Base {
 
   split = (args: {from: Time, to: Time, parentId: string}): Promise<void> => {
     return (
-      this.holder.getObject<FileObject>(args.parentId)
+      this.holder.getObject<Base>(args.parentId)
       .then(video => {
         this.state.setStateType('in progress');
         encodeFile({
@@ -66,7 +65,7 @@ export class VideoFileObject extends Base {
 
   static TYPE_ID = 'VideoFileObject';
   static SERIALIZE: SERIALIZER = () => ({
-    ...FileObject.SERIALIZE(),
+    ...Base.SERIALIZE(),
     details:    { type: 'json' }
   })
 }

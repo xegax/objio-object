@@ -129,9 +129,9 @@ object-assign@^4.1.0, object-assign@^4.1.1:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/object-assign/-/object-assign-4.1.1.tgz#2109adc7965887cfc05cbbd442cac8bfbb360863"
 
-objio@^0.0.28:
-  version "0.0.28"
-  resolved "https://registry.yarnpkg.com/objio/-/objio-0.0.28.tgz#991f8ded799783b8ad964176b07595bf5e1d7454"
+objio@^0.0.29:
+  version "0.0.29"
+  resolved "https://registry.yarnpkg.com/objio/-/objio-0.0.29.tgz#01e0edbf3acbaaefb4fc531a2c050f58a666e63c"
   dependencies:
     axios "^0.18.0"
     lodash "^4.17.4"
@@ -175,12 +175,12 @@ setimmediate@^1.0.5:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/setimmediate/-/setimmediate-1.0.5.tgz#290cbb232e306942d7d7ea9b83732ab7856f8285"
 
-ts-react-ui@^0.1.8:
-  version "0.1.8"
-  resolved "https://registry.yarnpkg.com/ts-react-ui/-/ts-react-ui-0.1.8.tgz#726d62ba193e9f402165955695dc3fcac7c10e14"
+ts-react-ui@^0.1.9:
+  version "0.1.9"
+  resolved "https://registry.yarnpkg.com/ts-react-ui/-/ts-react-ui-0.1.9.tgz#1853df6747b5ad69ed126305d5a23f8f8508e0a6"
   dependencies:
     font-awesome "^4.7.0"
-    objio "^0.0.28"
+    objio "^0.0.29"
     react "^16.4.1"
     react-dom "^16.4.1"
 

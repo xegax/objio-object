@@ -1,9 +1,6 @@
-import * as React from 'react';
 import { Columns, ColumnAttr } from './table';
 import { FileObject } from './file-object';
 import { SERIALIZER } from 'objio';
-import { ClientView } from './client-class';
-import { CSVFileView } from '../view/csv-file-view';
 
 export class CSVFileObject extends FileObject {
   protected columns = Array<ColumnAttr>();
@@ -37,12 +34,4 @@ export class CSVFileObject extends FileObject {
     ...FileObject.SERIALIZE(),
     columns: { type: 'json' }
   })
-
-  static getClientViews(): Array<ClientView> {
-    return [
-      {
-        view: (props: {model: CSVFileObject}) => <CSVFileView {...props}/>
-      }
-    ];
-  }
 }

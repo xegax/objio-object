@@ -1,6 +1,10 @@
 import * as React from 'react';
 import { FileObject } from '../client/file-object';
 
+export {
+  FileObject
+};
+
 export interface Props {
   onlyContent?: boolean;
   model: FileObject;
