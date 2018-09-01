@@ -7,6 +7,8 @@ import { RenderListModel, RenderArgs } from 'ts-react-ui/model/list';
 import { List } from 'ts-react-ui/list';
 import { CSVFileObject } from '../client/csv-file-object';
 import { ConfigBase } from './config';
+import { Database } from '../client/database';
+import { OBJIOItem } from 'objio';
 
 export { DocTable };
 
@@ -206,9 +208,36 @@ export class DocTableView extends React.Component<Props, State> {
   }
 }
 
-export class DocTableConfig extends ConfigBase<DocTableArgs> {
+export interface CfgState {
+  dbId: string;
+  csvId: string;
+  dbs: Array<Database>;
+  csvs: Array<CSVFileObject>;
+}
+
+export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
   componentDidMount() {
     this.config.tableName = 'table';
+    const dbs = this.props.objects().map(obj => {
+      if (obj instanceof Database)
+        return obj;
+
+      return null;
+    }).filter(obj => obj != null);
+
+    const csvs = this.props.objects().map(obj => {
+      if (obj instanceof CSVFileObject)
+        return obj;
+      return null;
+    }).filter(obj => obj != null);
+
+    this.config.dest = dbs[0];
+    this.config.source = csvs[0];
+    this.setState({
+      dbs,
+      csvs,
+      dbId: dbs[0].holder.getID()
+    });
   }
 
   render() {
@@ -222,6 +251,48 @@ export class DocTableConfig extends ConfigBase<DocTableArgs> {
               this.config.tableName = evt.currentTarget.value;
             }}
           />
+        </div>
+        <div>
+          db:
+          <select
+            value={this.state.dbId}
+            onChange={evt => {
+              const dbId = evt.currentTarget.value;
+              this.config.dest = this.state.dbs.find(db => db.holder.getID() == dbId);
+              this.setState({ dbId });
+            }}>
+            {(this.state.dbs || []).map((db, i) => {
+              return (
+                <option
+                  key={i}
+                  value={db.holder.getID()}
+                >
+                  {db.holder.getID()}, { OBJIOItem.getClass(db).TYPE_ID }
+                </option>
+              );
+            })}
+          </select>
+        </div>
+        <div>
+          csv:
+          <select
+            value={this.state.csvId}
+            onChange={evt => {
+              const csvId = evt.currentTarget.value;
+              this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId);
+              this.setState({ csvId });
+            }}>
+            {(this.state.csvs || []).map((csv, i) => {
+              return (
+                <option
+                  key={i}
+                  value={csv.holder.getID()}
+                >
+                  {csv.holder.getID()}, { OBJIOItem.getClass(csv).TYPE_ID }
+                </option>
+              );
+            })}
+          </select>
         </div>
       </div>
     );

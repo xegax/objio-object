@@ -3,6 +3,15 @@ import {
   SERIALIZER
 } from 'objio';
 import { StateObject } from '../client/state-object';
+import { Database } from './database';
+
+export interface TableNameArgs {
+  table: string;
+}
+export interface TableColsArgs {
+  table: string;
+  columns: Columns;
+}
 
 export interface NumStats {
   min: number;
@@ -103,7 +112,12 @@ export type Columns = Array<ColumnAttr>;
 export type Row = Array<string>;
 export type Cells = Array<Row>;
 
+export interface TableArgs {
+  source: Database;
+}
+
 export class Table extends OBJIOItem {
+  protected db: Database;
   protected table: string;
   protected columns: Columns = Array<ColumnAttr>();
   protected idColumn: string = 'row_uid';
@@ -112,6 +126,13 @@ export class Table extends OBJIOItem {
   protected fileObjId: string;
 
   protected totalRowsNum: number = 0;
+
+  constructor(args: TableArgs) {
+    super();
+
+    if (args)
+      this.db = args.source;
+  }
 
   getState(): StateObject {
     return this.state;
@@ -173,13 +194,15 @@ export class Table extends OBJIOItem {
     return this.idColumn;
   }
 
+  static TYPE_ID = 'Table';
   static SERIALIZE: SERIALIZER = () => ({
-    'state':            { type: 'object' },
-    'table':            { type: 'string' },
-    'columns':          { type: 'json' },
-    'totalRowsNum':     { type: 'integer' },
-    'idColumn':         { type: 'string' },
-    'lastExecuteTime':  { type: 'number' },
-    'fileObjId':        { type: 'string' }
+    'state':           { type: 'object'  },
+    'table':           { type: 'string'  },
+    'columns':         { type: 'json'    },
+    'totalRowsNum':    { type: 'integer' },
+    'idColumn':        { type: 'string'  },
+    'lastExecuteTime': { type: 'number'  },
+    'fileObjId':       { type: 'string'  },
+    'db':              { type: 'object'  }
   })
 }

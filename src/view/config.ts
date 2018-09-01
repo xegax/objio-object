@@ -26,8 +26,11 @@ export interface ClientClass {
   getClassSources?(): Array<OBJIOItemClass>;
 }
 
-export abstract class ConfigBase<TObjArgs extends Object = Object> extends React.Component<Partial<Props>> {
+export abstract class ConfigBase
+  <TObjArgs extends Object = Object, TState extends Object = Object>
+  extends React.Component<Partial<Props>, Partial<TState>> {
   protected config: Partial<TObjArgs> = {};
+  state: Readonly<Partial<TState>> = {} as TState;
 
   getConfig(): Partial<TObjArgs> {
     return this.config;

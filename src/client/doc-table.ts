@@ -11,9 +11,11 @@ import { DocTable as DocTableBase } from '../server/doc-table';
 import { CSVFileObject } from './csv-file-object';
 import { StateObject } from './state-object';
 import { Table } from './table';
+import { Database } from './database';
 
 export interface DocTableArgs {
   source: CSVFileObject;
+  dest: Database;
   tableName: string;
 }
 
@@ -26,6 +28,13 @@ export class DocTable extends DocTableBase {
 
   constructor(args?: DocTableArgs) {
     super();
+
+    if (args) {
+      if (!args.dest)
+        throw 'database not found';
+
+      this.table = new Table({ source: args.dest });
+    }
 
     this.render.setHandler({
       loadItems: (from, count) => {
@@ -47,9 +56,11 @@ export class DocTable extends DocTableBase {
         this.totalRows = this.table.getTotalRowsNum();
         this.cols = this.table.getColumns();
         this.holder.notify();
+        this.onInit();
         return Promise.resolve();
       },
       onCreate: () => {
+        this.onInit();
         return this.execute({
           fileObjId: args.source.holder.getID(),
           columns: args.source.getColumns(),
@@ -65,7 +76,9 @@ export class DocTable extends DocTableBase {
         this.holder.notify();
       }
     });
+  }
 
+  onInit() {
     this.table.holder.addEventHandler({
       onObjChange: () => {
         if (!this.table.getState().isValid())
