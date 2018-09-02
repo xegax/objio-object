@@ -12,7 +12,8 @@ import {
   CompoundCond,
   ValueCond,
   NumStatsArgs,
-  Cells
+  Cells,
+  NumStats
 } from '../client/table';
 import { SERIALIZER, EXTEND } from 'objio';
 import { CSVReader, CSVBunch } from 'objio/server';
@@ -163,6 +164,10 @@ export class Table extends TableBase {
 
   pushCells(args: PushRowArgs): Promise<number> {
     return this.db.pushCells({ ...args, table: this.table });
+  }
+
+  getNumStats(args: NumStatsArgs): Promise<NumStats> {
+    return this.db.getNumStats({...args, table: args.table || this.table});
   }
 
   loadCells(args: LoadCellsArgs): Promise<Cells> {
