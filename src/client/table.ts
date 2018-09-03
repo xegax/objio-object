@@ -4,6 +4,7 @@ import {
 } from 'objio';
 import { StateObject } from '../client/state-object';
 import { Database } from './database';
+import { ObjectBase } from './object-base';
 
 export interface TableNameArgs {
   table: string;
@@ -116,7 +117,7 @@ export interface TableArgs {
   source: Database;
 }
 
-export class Table extends OBJIOItem {
+export class Table extends ObjectBase {
   protected db: Database;
   protected table: string;
   protected columns: Columns = Array<ColumnAttr>();

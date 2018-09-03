@@ -1,5 +1,6 @@
 import { OBJIOItem, SERIALIZER } from 'objio';
 import { StateObject } from '../server/state-object';
+import { ObjectBase } from '../server/object-base';
 
 export interface FileArgs {
   name: string;
@@ -14,9 +15,8 @@ export function getExt(fileName: string): string {
   return fileName.substring(i);
 }
 
-export class FileObject extends OBJIOItem {
+export class FileObject extends ObjectBase {
   protected origName: string = '';
-  protected name: string = '';
   protected size: number = 0;
   protected mime: string = '';
   protected loadSize: number = 0;
@@ -34,21 +34,8 @@ export class FileObject extends OBJIOItem {
     this.state.setStateType('not configured');
   }
 
-  getName(): string {
-    return this.name;
-  }
-
   getOriginName() {
     return this.origName;
-  }
-
-  setName(name: string): void {
-    if (name == this.name)
-      return;
-
-    this.name = name;
-    this.holder.save();
-    this.holder.delayedNotify();
   }
 
   getFileName(): string {
@@ -86,7 +73,7 @@ export class FileObject extends OBJIOItem {
 
   static TYPE_ID: string = 'FileObject';
   static SERIALIZE: SERIALIZER = () => ({
-    'name':       { type: 'string' },
+    ...ObjectBase.SERIALIZE(),
     'origName':   { type: 'string' },
     'size':       { type: 'number' },
     'mime':       { type: 'string' },

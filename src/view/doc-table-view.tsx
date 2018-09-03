@@ -229,7 +229,7 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
       if (obj instanceof CSVFileObject)
         return obj;
       return null;
-    }).filter(obj => obj != null);
+    }).filter(obj => obj != null) as Array<CSVFileObject>;
 
     this.config.dest = dbs[0];
     this.config.source = csvs[0];
@@ -266,8 +266,9 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
                 <option
                   key={i}
                   value={db.holder.getID()}
+                  title={OBJIOItem.getClass(db).TYPE_ID}
                 >
-                  {db.holder.getID()}, { OBJIOItem.getClass(db).TYPE_ID }
+                  { db.getName() }
                 </option>
               );
             })}
@@ -288,7 +289,7 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
                   key={i}
                   value={csv.holder.getID()}
                 >
-                  {csv.holder.getID()}, { OBJIOItem.getClass(csv).TYPE_ID }
+                  { csv.getName() }
                 </option>
               );
             })}

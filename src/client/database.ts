@@ -11,8 +11,9 @@ import {
   TableNameArgs,
   PushRowArgs
 } from './table';
+import { ObjectBase } from './object-base';
 
-export class Database extends OBJIOItem {
+export class Database extends ObjectBase {
   loadTableInfo = (args: TableNameArgs): Promise<Array<ColumnAttr>> => {
     return this.holder.invokeMethod('loadTableInfo', args);
   }

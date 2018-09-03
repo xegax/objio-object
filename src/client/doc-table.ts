@@ -137,6 +137,6 @@ export class DocTable extends DocTableBase {
 
   static TYPE_ID = 'DocTable';
   static SERIALIZE: SERIALIZER = () => ({
-    table: { type: 'object' }
+    ...DocTableBase.SERIALIZE()
   })
 }

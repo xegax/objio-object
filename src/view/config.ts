@@ -1,5 +1,10 @@
 import * as React from 'react';
 import { OBJIOItem, OBJIOItemClass } from 'objio';
+import { ObjectBase } from '../client/object-base';
+
+export {
+  ObjectBase
+};
 
 export interface FactoryItem< TProps = {}, TArgs = {}, TObject = OBJIOItem> {
   classObj: OBJIOItemClass;
@@ -16,8 +21,8 @@ export interface ClientView {
 }
 
 export interface Props {
-  objects(): Array<OBJIOItem>;
-  source?: OBJIOItem;
+  objects(): Array<ObjectBase>;
+  source?: ObjectBase;
 }
 
 export interface ClientClass {
