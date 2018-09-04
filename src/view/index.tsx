@@ -53,7 +53,8 @@ export function getViews(): Array<OBJIOItemClass & ClientClass> {
     }],
     sources: [ CSVFileObject ],
     config: props => <DocTableConfig {...props}/>,
-    flags: ['create-wizard']
+    flags: ['create-wizard'],
+    desc: 'Database table'
   });
 
   return [
