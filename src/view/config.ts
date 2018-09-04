@@ -25,10 +25,17 @@ export interface Props {
   source?: ObjectBase;
 }
 
+export type ViewDescFlags = 'create-wizard';
+export interface ViewDesc {
+  desc: string;
+  flags: Set<ViewDescFlags> | Array<ViewDescFlags>;
+  views: Array<ClientView>;
+  config(props: Props): JSX.Element;
+  sources: Array<OBJIOItemClass>;
+}
+
 export interface ClientClass {
-  getClientViews?(): Array<ClientView>;
-  getClientConfig?(props: Props): JSX.Element;
-  getClassSources?(): Array<OBJIOItemClass>;
+  getViewDesc?(): Partial<ViewDesc>;
 }
 
 export abstract class ConfigBase

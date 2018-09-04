@@ -3,20 +3,25 @@ import { FileObject, FileObjectView, Props as FileViewProps } from './file-objec
 import { CSVFileObject, CSVFileView, Props as CSVViewProps } from './csv-file-view';
 import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video-file-view';
 import { DocTable, DocTableView, DocTableConfig, Props as TableViewProps } from './doc-table-view';
-import { ClientClass, ClientView, Props } from './config';
+import { ClientClass, ViewDesc, ViewDescFlags } from './config';
 import { OBJIOItemClass } from 'objio';
 
-interface RegisterArgs {
+interface RegisterArgs extends Partial<ViewDesc> {
   classObj: OBJIOItemClass;
-  views: Array<ClientView>;
-  sources?: Array<OBJIOItemClass>;
-  config?(props: Props): JSX.Element;
 }
 
 function registerViews(args: RegisterArgs) {
-  (args.classObj as ClientClass).getClientViews = () => args.views;
-  args.sources && ((args.classObj as ClientClass).getClassSources = () => args.sources);
-  args.config && ((args.classObj as ClientClass).getClientConfig = args.config);
+  const cc = args.classObj as ClientClass;
+  const flags = Array.isArray(args.flags || []) ? new Set(args.flags) : args.flags;
+  cc.getViewDesc = (): ViewDesc => {
+    return {
+      flags,
+      desc: args.desc || args.classObj.TYPE_ID,
+      views: args.views,
+      config: args.config,
+      sources: args.sources
+    };
+  };
 }
 
 export function getViews(): Array<OBJIOItemClass & ClientClass> {
@@ -47,7 +52,8 @@ export function getViews(): Array<OBJIOItemClass & ClientClass> {
       view: (props: TableViewProps) => <DocTableView {...props}/>
     }],
     sources: [ CSVFileObject ],
-    config: props => <DocTableConfig {...props}/>
+    config: props => <DocTableConfig {...props}/>,
+    flags: ['create-wizard']
   });
 
   return [

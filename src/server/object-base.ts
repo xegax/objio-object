@@ -2,7 +2,7 @@ import { OBJIOItem, SERIALIZER } from 'objio';
 
 export class ObjectBase extends OBJIOItem {
   protected name: string;
-  
+
   getName(): string {
     return this.name;
   }
@@ -19,5 +19,5 @@ export class ObjectBase extends OBJIOItem {
   static TYPE_ID = 'ObjectBase';
   static SERIALIZE: SERIALIZER = () => ({
     name: { type: 'string' }
-  });
+  })
 }

@@ -4,6 +4,7 @@
 	"files.exclude": {
 		"client": true,
 		"server": true,
+		"view": true,
 		"task": true,
 		"**/build": true,
 		"**/.git": true,
