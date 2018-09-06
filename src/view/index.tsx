@@ -5,6 +5,12 @@ import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video
 import { DocTable, DocTableView, DocTableConfig, Props as TableViewProps } from './doc-table-view';
 import { ClientClass, ViewDesc, ViewDescFlags } from './config';
 import { OBJIOItemClass } from 'objio';
+import {
+  FilesContainer,
+  FilesContainerView,
+  FilesContainerConfig,
+  FilesContainerProps
+} from './files-container-view';
 
 interface RegisterArgs extends Partial<ViewDesc> {
   classObj: OBJIOItemClass;
@@ -57,7 +63,18 @@ export function getViews(): Array<OBJIOItemClass & ClientClass> {
     desc: 'Database table'
   });
 
+  registerViews({
+    classObj: FilesContainer,
+    views: [{
+      view: (props: FilesContainerProps) => <FilesContainerView {...props}/>
+    }],
+    config: props => <FilesContainerConfig {...props}/>,
+    flags: ['create-wizard'],
+    desc: 'Files container object'
+  });
+
   return [
+    FilesContainer,
     FileObject,
     CSVFileObject,
     VideoFileObject,

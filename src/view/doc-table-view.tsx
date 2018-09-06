@@ -242,59 +242,70 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
 
   render() {
     return (
-      <div>
-        <div>
-          table name:
-          <input
-            defaultValue={this.config.tableName}
-            onChange={evt => {
-              this.config.tableName = evt.currentTarget.value;
-            }}
-          />
-        </div>
-        <div>
-          db:
-          <select
-            value={this.state.dbId}
-            onChange={evt => {
-              const dbId = evt.currentTarget.value;
-              this.config.dest = this.state.dbs.find(db => db.holder.getID() == dbId);
-              this.setState({ dbId });
-            }}>
-            {(this.state.dbs || []).map((db, i) => {
-              return (
-                <option
-                  key={i}
-                  value={db.holder.getID()}
-                  title={OBJIOItem.getClass(db).TYPE_ID}
-                >
-                  { db.getName() }
-                </option>
-              );
-            })}
-          </select>
-        </div>
-        <div>
-          csv:
-          <select
-            value={this.state.csvId}
-            onChange={evt => {
-              const csvId = evt.currentTarget.value;
-              this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId);
-              this.setState({ csvId });
-            }}>
-            {(this.state.csvs || []).map((csv, i) => {
-              return (
-                <option
-                  key={i}
-                  value={csv.holder.getID()}
-                >
-                  { csv.getName() }
-                </option>
-              );
-            })}
-          </select>
-        </div>
+      <div style={{ display: 'flex' }}>
+        <table style={{ flexGrow: 1 }}>
+          <tr>
+            <td> table name </td>
+            <td>
+              <input
+                style={{ width: '100%' }}
+                defaultValue={this.config.tableName}
+                onChange={evt => {
+                  this.config.tableName = evt.currentTarget.value;
+                }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td> database </td>
+            <td>
+              <select
+                style={{ width: '100%' }}
+                value={this.state.dbId}
+                onChange={evt => {
+                  const dbId = evt.currentTarget.value;
+                  this.config.dest = this.state.dbs.find(db => db.holder.getID() == dbId);
+                  this.setState({ dbId });
+                }}>
+                {(this.state.dbs || []).map((db, i) => {
+                  return (
+                    <option
+                      key={i}
+                      value={db.holder.getID()}
+                      title={OBJIOItem.getClass(db).TYPE_ID}
+                    >
+                      { db.getName() }
+                    </option>
+                  );
+                })}
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td> csv file source </td>
+            <td>
+              <select
+                style={{ width: '100%' }}
+                value={this.state.csvId}
+                onChange={evt => {
+                  const csvId = evt.currentTarget.value;
+                  this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId);
+                  this.setState({ csvId });
+                }}>
+                {(this.state.csvs || []).map((csv, i) => {
+                  return (
+                    <option
+                      key={i}
+                      value={csv.holder.getID()}
+                    >
+                      { csv.getName() }
+                    </option>
+                  );
+                })}
+              </select>
+            </td>
+          </tr>
+        </table>
       </div>
     );
   }

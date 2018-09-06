@@ -5,6 +5,7 @@ import { StateObject } from './state-object';
 import { DocTable } from './doc-table';
 import { Table } from './table';
 import { OBJIOItemClass } from 'objio';
+import { FilesContainer } from './files-container';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
@@ -24,6 +25,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     StateObject,
     FileObject,
     CSVFileObject,
-    VideoFileObject
+    VideoFileObject,
+    FilesContainer
   ];
 }

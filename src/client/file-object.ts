@@ -1,4 +1,4 @@
-import { OBJIOItem, SERIALIZER } from 'objio';
+import { SERIALIZER } from 'objio';
 import { StateObject } from '../server/state-object';
 import { ObjectBase } from '../server/object-base';
 

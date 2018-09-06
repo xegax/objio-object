@@ -1,4 +1,4 @@
-import { OBJIOItem, SERIALIZER } from 'objio';
+import { SERIALIZER } from 'objio';
 import { Table } from '../client/table';
 import { ObjectBase } from './object-base';
 

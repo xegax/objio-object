@@ -163,7 +163,11 @@ export class Table extends TableBase {
   }
 
   pushCells(args: PushRowArgs): Promise<number> {
-    return this.db.pushCells({ ...args, table: this.table });
+    let task = this.db.pushCells({ ...args, table: this.table });
+    if (!args.updRowCounter)
+      return task;
+
+    return task.then(() => this.updateRowNum());
   }
 
   getNumStats(args: NumStatsArgs): Promise<NumStats> {
