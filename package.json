@@ -1,6 +1,6 @@
 {
   "name": "objio-object",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "",
   "main": "index.js",
   "repository": "git@github.com:xegax/objio-object.git",
@@ -22,9 +22,9 @@
     "@types/react-dom": "^16.0.6"
   },
   "dependencies": {
-    "objio": "^0.0.29",
+    "objio": "^0.0.30",
     "react": "^16.4.1",
     "react-dom": "^16.4.1",
-    "ts-react-ui": "^0.1.9"
+    "ts-react-ui": "^0.1.10"
   }
 }

@@ -4,18 +4,26 @@ import { SERIALIZER } from 'objio';
 import { Table } from './table';
 import { RenderListModel } from 'ts-react-ui/model/list';
 import { timer, cancelable, Cancelable } from 'objio/common/promise';
+import { ColumnAttr } from './table';
 
 export interface FilesContainerArgs {
   source: Database;
 }
 
+export interface Loading {
+  progress: number;
+  name: string;
+  loading: boolean;
+}
+
 export class FilesContainer extends ObjectBase {
-  protected table = new Table(null);
+  protected table: Table;
   protected database: Database;
   private render = new RenderListModel(0, 20);
   private lastLoadTimer: Cancelable;
   private maxTimeBetweenRequests: number = 0;
   private selectedUrl: string;
+  protected loading: Loading = { progress: 1, name: '', loading: false };
 
   constructor(args?: FilesContainerArgs) {
     super();
@@ -92,17 +100,22 @@ export class FilesContainer extends ObjectBase {
     return this.render;
   }
 
-  getColumns() {
+  getColumns(): Array<ColumnAttr> {
     if (!this.table)
       return [];
-    
+
     return this.table.getColumns();
+  }
+
+  getProgress(userId?: string): Loading {
+    return { ...this.loading };
   }
 
   static TYPE_ID = 'FilesContainer';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),
     database: { type: 'object' },
-    table:    { type: 'object' }
+    table:    { type: 'object' },
+    loading:  { type: 'json' }
   })
 }

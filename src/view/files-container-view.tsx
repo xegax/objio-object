@@ -88,12 +88,25 @@ export class FilesContainerView extends React.Component<FilesContainerProps> {
     );
   }
 
+  renderProgress() {
+    const progress = this.props.model.getProgress();
+    if (!progress.loading)
+      return null;
+
+    return (
+      <div style={{flexGrow: 0}}>{progress.name}, {progress.progress}</div>
+    );
+  }
+
   render() {
     return (
-      <div style={{display: 'flex', flexGrow: 1}}>
-        {this.renderTable()}
-        {this.renderImage()}
-        {this.renderVideo()}
+      <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
+        {this.renderProgress()}
+        <div style={{display: 'flex', flexGrow: 1}}>
+          {this.renderTable()}
+          {this.renderImage()}
+          {this.renderVideo()}
+        </div>
       </div>
     );
   }
