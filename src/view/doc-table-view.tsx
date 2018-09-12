@@ -156,11 +156,10 @@ export class DocTableView extends React.Component<Props, State> {
   }
 
   renderInvalid(): JSX.Element {
-    const state = this.props.model.getState();
-    const stateType = state.getType();
-    if (stateType == 'in progress')
+    const table = this.props.model.getTableRef();
+    if (table.getStatus() == 'in progress')
       return (
-        <div>in progress, {state.getProgress()}</div>
+        <div>in progress, {table.getProgress()}</div>
       );
 
     return (
@@ -202,7 +201,7 @@ export class DocTableView extends React.Component<Props, State> {
     const model = this.props.model;
     return (
       <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
-        {model.getState().isValid() ? this.renderValid() : this.renderInvalid()}
+        {model.getTableRef().isStatusValid() ? this.renderValid() : this.renderInvalid()}
       </div>
     );
   }
@@ -236,7 +235,7 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
     this.setState({
       dbs,
       csvs,
-      dbId: dbs[0].holder.getID()
+      dbId: dbs.length ? dbs[0].holder.getID() : ''
     });
   }
 
@@ -244,6 +243,7 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
     return (
       <div style={{ display: 'flex' }}>
         <table style={{ flexGrow: 1 }}>
+        <tbody>
           <tr>
             <td> table name </td>
             <td>
@@ -305,6 +305,7 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
               </select>
             </td>
           </tr>
+        </tbody>
         </table>
       </div>
     );

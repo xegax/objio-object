@@ -1,5 +1,4 @@
 import { SERIALIZER } from 'objio';
-import { StateObject } from '../server/state-object';
 import { ObjectBase } from '../server/object-base';
 
 export interface FileArgs {
@@ -20,7 +19,6 @@ export class FileObject extends ObjectBase {
   protected size: number = 0;
   protected mime: string = '';
   protected loadSize: number = 0;
-  protected state = new StateObject();
 
   constructor(args?: FileArgs) {
     super();
@@ -31,7 +29,6 @@ export class FileObject extends ObjectBase {
     this.origName = this.name = args.name;
     this.size = args.size;
     this.mime = args.mime;
-    this.state.setStateType('not configured');
   }
 
   getOriginName() {
@@ -67,17 +64,12 @@ export class FileObject extends ObjectBase {
     return this.holder.invokeMethod('send-file', file);
   }
 
-  getState(): StateObject {
-    return this.state;
-  }
-
   static TYPE_ID: string = 'FileObject';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),
     'origName':   { type: 'string' },
     'size':       { type: 'number' },
     'mime':       { type: 'string' },
-    'loadSize':   { type: 'number' },
-    'state':      { type: 'object' }
+    'loadSize':   { type: 'number' }
   })
 }

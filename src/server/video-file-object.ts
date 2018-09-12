@@ -21,7 +21,7 @@ export class VideoFileObject extends Base {
     return (
       this.holder.getObject<Base>(args.parentId)
       .then(video => {
-        this.state.setStateType('in progress');
+        this.setStatus('in progress');
         encodeFile({
           inFile: video.getPath(),
           outFile: this.getPath(),
@@ -32,15 +32,15 @@ export class VideoFileObject extends Base {
             } catch (e) {
               console.log(e);
             }
-            this.state.setProgress(p);
+            this.setProgress(p);
             this.holder.save();
           }
         }).then(() => {
           this.size = this.loadSize = lstatSync(this.getPath()).size;
           return parseFile(this.getPath());
         }).then(info => {
-          this.state.setProgress(1);
-          this.state.setStateType('valid');
+          this.setProgress(1);
+          this.setStatus('ok');
           this.details.duration = toString(info.duration);
           this.holder.save();
         });

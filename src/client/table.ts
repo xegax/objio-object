@@ -1,8 +1,6 @@
 import {
-  OBJIOItem,
   SERIALIZER
 } from 'objio';
-import { StateObject } from '../client/state-object';
 import { Database } from './database';
 import { ObjectBase } from './object-base';
 
@@ -122,7 +120,6 @@ export class Table extends ObjectBase {
   protected table: string;
   protected columns: Columns = Array<ColumnAttr>();
   protected idColumn: string = 'row_uid';
-  protected state = new StateObject();
   protected lastExecuteTime: number = 0;
   protected fileObjId: string;
 
@@ -133,10 +130,6 @@ export class Table extends ObjectBase {
 
     if (args)
       this.db = args.source;
-  }
-
-  getState(): StateObject {
-    return this.state;
   }
 
   execute(args: ExecuteArgs): Promise<any> {
@@ -197,7 +190,7 @@ export class Table extends ObjectBase {
 
   static TYPE_ID = 'Table';
   static SERIALIZE: SERIALIZER = () => ({
-    'state':           { type: 'object'  },
+    ...ObjectBase.SERIALIZE(),
     'table':           { type: 'string'  },
     'columns':         { type: 'json'    },
     'totalRowsNum':    { type: 'integer' },

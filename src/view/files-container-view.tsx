@@ -89,7 +89,7 @@ export class FilesContainerView extends React.Component<FilesContainerProps> {
   }
 
   renderProgress() {
-    const progress = this.props.model.getProgress();
+    const progress = this.props.model.getUserProgress();
     if (!progress.loading)
       return null;
 

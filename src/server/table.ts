@@ -152,7 +152,7 @@ export class Table extends TableBase {
       });
 
       return this.pushCells({values, updRowCounter: false}).then(() => {
-        this.state.setProgress(bunch.progress);
+        this.setProgress(bunch.progress);
         this.totalRowsNum += rows.length;
       });
     };
@@ -235,7 +235,7 @@ export class Table extends TableBase {
     return task.then(() => {
       this.holder.getObject<FileObject>(args.fileObjId)
       .then(obj => {
-        this.state.setStateType('in progress').save();
+        this.setStatus('in progress');
         this.holder.save();
         startTime = Date.now();
         return this.readRows(obj, readRowCols, 1, 50);
@@ -245,10 +245,10 @@ export class Table extends TableBase {
         this.fileObjId = args.fileObjId;
         this.lastExecuteTime = Date.now() - startTime;
         this.holder.save();
-        this.state.setProgress(1);
-        this.state.setStateType('valid').save();
+        this.setProgress(1);
+        this.setStatus('ok');
       }).catch(err => {
-        this.state.addError(err.toString()).save();
+        this.addError(err.toString());
       });
     });
   }

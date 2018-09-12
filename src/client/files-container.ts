@@ -107,7 +107,7 @@ export class FilesContainer extends ObjectBase {
     return this.table.getColumns();
   }
 
-  getProgress(userId?: string): Loading {
+  getUserProgress(userId?: string): Loading {
     return { ...this.loading };
   }
 

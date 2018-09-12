@@ -67,7 +67,7 @@ export class FilesContainer extends Base {
     return file;
   }
 
-  getProgress(userId: string): Loading {
+  getUserProgress(userId: string): Loading {
     return this.loadingUserMap[userId] || (this.loadingUserMap[userId] = { ...this.loading });
   }
 
@@ -79,7 +79,7 @@ export class FilesContainer extends Base {
       .then(() => {
         return new Promise(resolve => {
           let loaded = 0;
-          let loading = this.getProgress(userId);
+          let loading = this.getUserProgress(userId);
           loading.loading = true;
           loading.name = args.name;
           this.holder.save();
@@ -96,12 +96,12 @@ export class FilesContainer extends Base {
             let progress = loaded / args.size;
             progress = Math.round(progress * 100) / 100;
             if (progress != loading.progress) {
-              this.getProgress(userId).progress = progress;
+              this.getUserProgress(userId).progress = progress;
               this.holder.save();
             }
           });
           args.data.on('end', () => {
-            let loading = this.getProgress(userId);
+            let loading = this.getUserProgress(userId);
             loading.loading = false;
             loading.progress = 1;
             this.holder.save();

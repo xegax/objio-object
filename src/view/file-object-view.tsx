@@ -42,8 +42,8 @@ export class FileObjectView extends React.Component<Props> {
   }
 
   renderContent(): JSX.Element | string {
-    const state = this.props.model.getState();
-    if (!state.isValid() || state.getProgress() < 1)
+    const model = this.props.model;
+    if (!model.isStatusValid() || model.getProgress() < 1)
       return null;
 
     return this.renderImage();
@@ -58,8 +58,8 @@ export class FileObjectView extends React.Component<Props> {
           <div>size: {model.getSize()}</div>
           <div>mime: {model.getMIME()}</div>
           <div>loaded: {model.getLoadSize()}</div>
-          <div>progress: {model.getState().getProgress()}</div>
-          <div>{model.getState().getType()}</div>
+          <div>progress: {model.getProgress()}</div>
+          <div>{model.getStatus()}</div>
         </div> : null}
         <div style={{flexGrow: 1, display: 'flex', position: 'relative'}}>
           {this.renderContent()}

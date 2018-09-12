@@ -27,8 +27,8 @@ export class FileObject extends Base {
   }
 
   sendFileImpl = (args: { name: string, size: number, mime: string, data: http.IncomingMessage }): Promise<void> => {
-    this.state.setProgress(0);
-    this.state.setStateType('in progress');
+    this.setProgress(0);
+    this.setStatus('in progress');
 
     this.origName = args.name;
     this.size = args.size;
@@ -44,15 +44,13 @@ export class FileObject extends Base {
         else
           this.loadSize += chunk.byteLength;
 
-        this.state.setProgress(this.loadSize / this.size);
+        this.setProgress(this.loadSize / this.size);
         this.holder.save();
       });
       args.data.on('end', () => {
         this.onFileUploaded().then(() => {
-          console.log('send-file end');
-          this.state.setStateType('valid');
-          this.state.setProgress(1);
-          this.state.save();
+          this.setStatus('ok');
+          this.setProgress(1);
           this.holder.save();
           resolve();
         });

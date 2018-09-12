@@ -9,7 +9,6 @@ import {
 } from './table';
 import { DocTable as DocTableBase } from '../server/doc-table';
 import { CSVFileObject } from './csv-file-object';
-import { StateObject } from './state-object';
 import { Table } from './table';
 import { Database } from './database';
 
@@ -81,17 +80,16 @@ export class DocTable extends DocTableBase {
   onInit() {
     this.table.holder.addEventHandler({
       onObjChange: () => {
-        if (!this.table.getState().isValid())
+        if (!this.table.isStatusValid()) {
+          this.holder.delayedNotify();
           return;
+        }
+
         this.totalRows = this.table.getTotalRowsNum();
         this.cols = this.table.getColumns();
         this.holder.notify();
       }
     });
-  }
-
-  getState(): StateObject {
-    return this.table.getState();
   }
 
   getTable(): string {

@@ -3,7 +3,7 @@ import { FileObject, FileObjectView, Props as FileViewProps } from './file-objec
 import { CSVFileObject, CSVFileView, Props as CSVViewProps } from './csv-file-view';
 import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video-file-view';
 import { DocTable, DocTableView, DocTableConfig, Props as TableViewProps } from './doc-table-view';
-import { ClientClass, ViewDesc, ViewDescFlags } from './config';
+import { ClientClass, ViewDesc } from './config';
 import { OBJIOItemClass } from 'objio';
 import {
   FilesContainer,
@@ -11,6 +11,7 @@ import {
   FilesContainerConfig,
   FilesContainerProps
 } from './files-container-view';
+import { Database } from '../client/database';
 
 interface RegisterArgs extends Partial<ViewDesc> {
   classObj: OBJIOItemClass;
@@ -57,7 +58,7 @@ export function getViews(): Array<OBJIOItemClass & ClientClass> {
     views: [{
       view: (props: TableViewProps) => <DocTableView {...props}/>
     }],
-    sources: [ CSVFileObject ],
+    sources: [ [ CSVFileObject, Database ] ],
     config: props => <DocTableConfig {...props}/>,
     flags: ['create-wizard'],
     desc: 'Database table'
@@ -70,7 +71,8 @@ export function getViews(): Array<OBJIOItemClass & ClientClass> {
     }],
     config: props => <FilesContainerConfig {...props}/>,
     flags: ['create-wizard'],
-    desc: 'Files container object'
+    desc: 'Files container object',
+    sources: [ [ Database ] ]
   });
 
   return [

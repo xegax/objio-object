@@ -31,7 +31,7 @@ export interface ViewDesc {
   flags: Set<ViewDescFlags> | Array<ViewDescFlags>;
   views: Array<ClientView>;
   config(props: Props): JSX.Element;
-  sources: Array<OBJIOItemClass>;
+  sources: Array<Array<OBJIOItemClass>>;
 }
 
 export interface ClientClass {
