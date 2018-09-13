@@ -132,6 +132,10 @@ export class Table extends ObjectBase {
       this.db = args.source;
   }
 
+  getDatabase(): Database {
+    return this.db;
+  }
+
   execute(args: ExecuteArgs): Promise<any> {
     return this.holder.invokeMethod('execute', args);
   }

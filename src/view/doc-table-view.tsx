@@ -171,6 +171,7 @@ export class DocTableView extends React.Component<Props, State> {
     const model = this.props.model;
     return (
       <React.Fragment>
+        <div>database: {model.getTableRef().getDatabase().getName()}</div>
         <div>table: {model.getTable()}</div>
         <div>rows: {model.getTotalRowsNum()}</div>
         <div>last execute time: {model.getLastExecuteTime()}</div>
