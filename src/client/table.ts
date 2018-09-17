@@ -55,6 +55,7 @@ export interface ColumnAttr {
   primary?: boolean;
   autoInc?: boolean;
   discard?: boolean;
+  index?: boolean;
   removeQuotes?: boolean; //  default true
 }
 
@@ -70,6 +71,10 @@ export interface ExecuteArgs {
 
 export interface Distinct {
   column: string;
+}
+
+export interface LoadTableInfoArgs {
+  table: string;
 }
 
 export interface SubtableAttrs {
@@ -186,6 +191,10 @@ export class Table extends ObjectBase {
 
   getNumStats(args: NumStatsArgs): Promise<NumStats> {
     return this.holder.invokeMethod('getNumStats', args);
+  }
+
+  loadTableInfo(args: LoadTableInfoArgs): Promise<{ columns: Columns, totalRows: number }> {
+    return this.holder.invokeMethod('loadTableInfo', args);
   }
 
   getIdColumn(): string {

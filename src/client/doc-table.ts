@@ -1,5 +1,5 @@
 import { SERIALIZER } from 'objio';
-import { RenderListModel } from 'ts-react-ui/list';
+import { RenderListModel } from 'ts-react-ui/model/list';
 import { timer, cancelable, Cancelable } from 'objio/common/promise';
 import {
   CreateSubtableResult,
@@ -16,6 +16,7 @@ export interface DocTableArgs {
   source: CSVFileObject;
   dest: Database;
   tableName: string;
+  table?: Table;
 }
 
 export class DocTable extends DocTableBase {
@@ -24,15 +25,16 @@ export class DocTable extends DocTableBase {
   private maxTimeBetweenRequests: number = 300;
   private totalRows: number = 0;
   private cols = Array<ColumnAttr>();
+  private tableName: string;
 
   constructor(args?: DocTableArgs) {
     super();
 
     if (args) {
-      if (!args.dest)
-        throw 'database not found';
+      if (!args.dest && !args.table)
+        throw 'database or table must defined';
 
-      this.table = new Table({ source: args.dest });
+      this.table = args.table || new Table({ source: args.dest });
     }
 
     this.render.setHandler({
@@ -45,7 +47,7 @@ export class DocTable extends DocTableBase {
         this.lastLoadTimer = cancelable(timer(this.maxTimeBetweenRequests));
         return this.lastLoadTimer.then(() => {
           this.lastLoadTimer = null;
-          return this.table.loadCells({ first: from, count });
+          return this.table.loadCells({ first: from, count, table: this.tableName });
         });
       }
     });
@@ -94,6 +96,21 @@ export class DocTable extends DocTableBase {
 
   getTable(): string {
     return this.table.getTable();
+  }
+
+  getTableName() {
+    return this.tableName;
+  }
+
+  setTableName(name: string): Promise<void> {
+    return this.table.loadTableInfo({ table: name })
+    .then(res => {
+      this.tableName = name;
+      this.totalRows = res.totalRows;
+      this.cols = res.columns;
+      this.render.clearCache(false);
+      this.holder.notify();
+    });
   }
 
   getTableRef(): Table {

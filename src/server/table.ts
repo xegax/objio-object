@@ -13,7 +13,8 @@ import {
   ValueCond,
   NumStatsArgs,
   Cells,
-  NumStats
+  NumStats,
+  LoadTableInfoArgs
 } from '../client/table';
 import { SERIALIZER, EXTEND } from 'objio';
 import { CSVReader, CSVBunch } from 'objio/server';
@@ -92,7 +93,8 @@ export class Table extends TableBase {
       updateCells:    (args: UpdateRowArgs)   => this.updateCells(args),
       removeRows:     (args: RemoveRowsArgs)  => this.removeRows(args),
       execute:        (args: ExecuteArgs)     => this.execute(args),
-      getNumStats:    (args: NumStatsArgs)    => this.getNumStats(args)
+      getNumStats:    (args: NumStatsArgs)    => this.getNumStats(args),
+      loadTableInfo:  (args: LoadTableInfoArgs) => this.loadTableInfo(args)
     });
 
     this.holder.addEventHandler({
@@ -182,6 +184,21 @@ export class Table extends TableBase {
     return this.db.createSubtable({ ...args, table: this.table });
   }
 
+  loadTableInfo(args: LoadTableInfoArgs): Promise<{ columns: Columns, totalRows: number }> {
+    return (
+      Promise.all([
+        this.db.loadTableInfo({table: args.table}),
+        this.db.loadRowsCount({table: args.table})
+      ])
+      .then(res => {
+        return {
+          columns: res[0],
+          totalRows: res[1]
+        };
+      })
+    );
+  }
+
   execute(args: ExecuteArgs): Promise<any> {
     let startTime: number;
     let columns: Columns = [];
@@ -266,8 +283,6 @@ export class Table extends TableBase {
 
   static TYPE_ID = 'Table';
   static SERIALIZE: SERIALIZER = () => ({
-    ...TableBase.SERIALIZE(),
-    ...EXTEND({
-    }, { tags: ['sr'] })
+    ...TableBase.SERIALIZE()
   })
 }

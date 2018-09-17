@@ -29,9 +29,11 @@ export class CSVFileView extends React.Component<Props> {
     return (
       <div>
         <table>
+        <tbody>
           <tr>
             <td>Name</td>
             <td>Type</td>
+            <td>Index</td>
             <td>Discard</td>
           </tr>
           {csv.getColumns().map((col, i) => {
@@ -49,10 +51,32 @@ export class CSVFileView extends React.Component<Props> {
                         type: event.target.value
                       });
                     }}>
-                    {['TEXT', 'INTEGER', 'REAL', 'DATE'].map(type => {
+                    {[
+                      'TEXT',
+                      'INTEGER',
+                      'REAL',
+                      'DATE',
+                      'VARCHAR(16)',
+                      'VARCHAR(32)',
+                      'VARCHAR(64)',
+                      'VARCHAR(128)',
+                      'VARCHAR(256)'
+                    ].map(type => {
                       return <option key={type} value={type}>{type}</option>;
                     })}
                   </select>
+                </td>
+                <td>
+                  <input
+                    type='checkbox'
+                    checked={col.index}
+                    onChange={() => {
+                      csv.setColumn({
+                        name: col.name,
+                        index: !!!col.index
+                      });
+                    }}
+                  />
                 </td>
                 <td>
                   <input
@@ -69,6 +93,7 @@ export class CSVFileView extends React.Component<Props> {
               </tr>
             );
           })}
+        </tbody>
         </table>
       </div>
     );
