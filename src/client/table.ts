@@ -118,6 +118,7 @@ export type Cells = Array<Row>;
 
 export interface TableArgs {
   source: Database;
+  userIdColumn?: string;
 }
 
 export class Table extends ObjectBase {
@@ -127,14 +128,17 @@ export class Table extends ObjectBase {
   protected idColumn: string = 'row_uid';
   protected lastExecuteTime: number = 0;
   protected fileObjId: string;
+  protected userIdColumn: string;
 
   protected totalRowsNum: number = 0;
 
   constructor(args: TableArgs) {
     super();
 
-    if (args)
+    if (args) {
       this.db = args.source;
+      this.userIdColumn = args.userIdColumn;
+    }
   }
 
   getDatabase(): Database {
@@ -210,6 +214,7 @@ export class Table extends ObjectBase {
     'idColumn':        { type: 'string'  },
     'lastExecuteTime': { type: 'number'  },
     'fileObjId':       { type: 'string'  },
-    'db':              { type: 'object'  }
+    'db':              { type: 'object'  },
+    'userIdColumn':    { type: 'string', const: true }
   })
 }

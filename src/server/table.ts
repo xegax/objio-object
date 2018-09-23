@@ -87,14 +87,17 @@ export class Table extends TableBase {
     super(args);
 
     this.holder.setMethodsToInvoke({
-      createSubtable: (args: SubtableAttrs)   => this.createSubtable(args),
-      loadCells:      (args: LoadCellsArgs)   => this.loadCells(args),
-      pushCells:      (args: PushRowArgs)     => this.pushCells(args),
-      updateCells:    (args: UpdateRowArgs)   => this.updateCells(args),
-      removeRows:     (args: RemoveRowsArgs)  => this.removeRows(args),
-      execute:        (args: ExecuteArgs)     => this.execute(args),
-      getNumStats:    (args: NumStatsArgs)    => this.getNumStats(args),
-      loadTableInfo:  (args: LoadTableInfoArgs) => this.loadTableInfo(args)
+      createSubtable: { method: (args: SubtableAttrs) =>     this.createSubtable(args), rights: 'write' },
+      loadCells:      { method: (args: LoadCellsArgs) =>     this.loadCells(args),      rights: 'read'  },
+      pushCells:      { method: (args: PushRowArgs) =>       this.pushCells(args),      rights: 'write' },
+      updateCells:    { method: (args: UpdateRowArgs) =>     this.updateCells(args),    rights: 'write' },
+      removeRows:     { method: (args: RemoveRowsArgs) =>    this.removeRows(args),     rights: 'write' },
+      execute:        { method: (args: ExecuteArgs) =>       this.execute(args),        rights: 'write' },
+      getNumStats:    { method: (args: NumStatsArgs) =>      this.getNumStats(args),    rights: 'read'  },
+      loadTableInfo:  {
+        method: (args: LoadTableInfoArgs, userId: string) => this.loadTableInfo(args, userId),
+        rights: 'read'
+      }
     });
 
     this.holder.addEventHandler({
@@ -184,12 +187,18 @@ export class Table extends TableBase {
     return this.db.createSubtable({ ...args, table: this.table });
   }
 
-  loadTableInfo(args: LoadTableInfoArgs): Promise<{ columns: Columns, totalRows: number }> {
+  loadTableInfo(args: LoadTableInfoArgs, userId?: string): Promise<{ columns: Columns, totalRows: number }> {
+    const table = args.table;
     return (
-      Promise.all([
-        this.db.loadTableInfo({table: args.table}),
-        this.db.loadRowsCount({table: args.table})
-      ])
+      Promise.resolve()
+      .then(() => {
+        return (
+          Promise.all([
+            this.db.loadTableInfo({ table }),
+            this.db.loadRowsCount({ table })
+          ])
+        );
+      })
       .then(res => {
         return {
           columns: res[0],

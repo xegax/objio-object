@@ -22,7 +22,7 @@ export class FileObject extends Base {
     });
 
     this.holder.setMethodsToInvoke({
-      'send-file': this.sendFileImpl
+      'send-file': { method: this.sendFileImpl, rights: 'write' }
     });
   }
 

@@ -13,7 +13,7 @@ export class VideoFileObject extends Base {
 
     this.holder.setMethodsToInvoke({
       ...this.holder.getMethodsToInvoke(),
-      split: this.split
+      split: { method: this.split, rights: 'write' }
     });
   }
 

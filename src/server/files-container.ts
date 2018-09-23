@@ -11,16 +11,19 @@ function getColumns(): Array<ColumnAttr> {
   return [
     {
       name: 'origName',
-      type: 'TEXT'
+      type: 'VARCHAR(256)'
     }, {
       name: 'ext',
-      type: 'TEXT'
+      type: 'VARCHAR(16)'
     }, {
       name: 'size',
       type: 'INTEGER'
     }, {
       name: 'fileName',
-      type: 'TEXT'
+      type: 'VARCHAR(72)'
+    }, {
+      name: 'userId',
+      type: 'VARCHAR(32)'
     }
   ];
 }
@@ -36,12 +39,15 @@ export class FilesContainer extends Base {
     });
 
     this.holder.setMethodsToInvoke({
-      'send-file': this.sendFileImpl
+      'send-file': { method: this.sendFileImpl, rights: 'write' }
     });
   }
 
   onCreate = () => {
-    let table = new Table({ source: this.database });
+    let table = new Table({
+      source: this.database,
+      userIdColumn: 'userId'
+    });
     return (
       this.holder.createObject(table)
       .then(() => {
@@ -116,7 +122,8 @@ export class FilesContainer extends Base {
             fileName: [ file ],
             origName: [ args.name ],
             ext: [ ext ],
-            size: [ args.size + '' ]
+            size: [ args.size + '' ],
+            userId: [ userId ]
           }
         });
       })
