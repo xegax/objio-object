@@ -16,6 +16,14 @@ export interface Loading {
   loading: boolean;
 }
 
+export interface FileItem {
+  url: string;
+  ext: string;
+  size: number;
+  id: string;
+  name: string;
+}
+
 export class FilesContainer extends ObjectBase {
   protected table: Table;
   protected database: Database;
@@ -24,6 +32,7 @@ export class FilesContainer extends ObjectBase {
   private maxTimeBetweenRequests: number = 0;
   private selectedUrl: string;
   protected loading: Loading = { progress: 1, name: '', loading: false };
+  private remoteSelect: Array<FileItem> = [];
 
   constructor(args?: FilesContainerArgs) {
     super();
@@ -35,10 +44,15 @@ export class FilesContainer extends ObjectBase {
     this.holder.addEventHandler({
       onLoad: () => {
         this.render.subscribe(() => {
-          const rows = this.render.getItems(this.render.getSelRow(), 1);
-          if (!rows)
-            return;
-          this.selectedUrl = this.getPath(rows[0][4]);
+          this.remoteSelect = [];
+          const item = this.getItem(this.render.getSelRow());
+          if (!item)
+            return this.holder.save();
+
+          this.remoteSelect = [ {...item} ];
+          this.holder.save();
+
+          this.selectedUrl = this.getPath(item.url);
           this.holder.delayedNotify();
         }, 'select-row');
 
@@ -77,12 +91,56 @@ export class FilesContainer extends ObjectBase {
     return 'files_container_' + this.holder.getID();
   }
 
+  selectNextFile(ext?: string): boolean {
+    let selRow = this.render.getSelRow() + 1;
+    if (selRow >= this.render.getItemsCount())
+      selRow = 0;
+
+    this.remoteSelect = [];
+    for (let n = selRow; n < this.render.getItemsCount(); n++) {
+      const item = this.getItem(n);
+      if (!item) {
+        this.holder.save();
+        return false;
+      }
+
+      if (ext && item.ext.toLowerCase() != ext)
+        continue;
+
+      this.remoteSelect = [ {...item} ];
+      this.holder.save();
+      this.render.setSelRow(n);
+      return true;
+    }
+
+    return false;
+  }
+
+  getItem(n: number): FileItem {
+    const rows = this.render.getItems(n, 1);
+    if (!rows)
+      return null;
+
+    const row = rows[0];
+    return {
+      id: row[0],
+      name: row[1],
+      ext: row[2],
+      size: +row[3],
+      url: row[4]
+    };
+  }
+
   getPath(file: string) {
     return this.holder.getFilePath([this.getDirPath(), file].join('/'));
   }
 
   getSelectedUrl() {
     return this.selectedUrl;
+  }
+
+  getRemoteSelect(): Array<FileItem> {
+    return this.remoteSelect;
   }
 
   setNextRequestDelay(delay: number) {
@@ -114,8 +172,9 @@ export class FilesContainer extends ObjectBase {
   static TYPE_ID = 'FilesContainer';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),
-    database: { type: 'object' },
-    table:    { type: 'object' },
-    loading:  { type: 'json' }
+    database:     { type: 'object'  },
+    table:        { type: 'object'  },
+    loading:      { type: 'json'    },
+    remoteSelect: { type: 'json'    }
   })
 }

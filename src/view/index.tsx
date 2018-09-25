@@ -12,6 +12,7 @@ import {
   FilesContainerProps
 } from './files-container-view';
 import { Database } from '../client/database';
+import { ServerInstanceView, ServerInstance, ServerInstProps } from './server-instance-view';
 
 interface RegisterArgs extends Partial<ViewDesc> {
   classObj: OBJIOItemClass;
@@ -75,7 +76,15 @@ export function getViews(): Array<OBJIOItemClass & ClientClass> {
     sources: [ [ Database ] ]
   });
 
+  registerViews({
+    classObj: ServerInstance,
+    views: [{
+      view: (props: ServerInstProps) => <ServerInstanceView {...props}/>
+    }]
+  });
+
   return [
+    ServerInstance,
     FilesContainer,
     FileObject,
     CSVFileObject,

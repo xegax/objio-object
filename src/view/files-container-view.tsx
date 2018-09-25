@@ -54,8 +54,18 @@ export class FilesContainerView extends React.Component<FilesContainerProps> {
     );
   }
 
+  getSelectedUrl() {
+    let url = this.props.model.getSelectedUrl();
+    let remote = this.props.model.getRemoteSelect();
+    if (this.watch && remote && remote.length) {
+      return this.props.model.getPath(remote[0].url);
+    }
+
+    return url;
+  }
+
   renderImage() {
-    const url = this.props.model.getSelectedUrl();
+    const url = this.getSelectedUrl();
 
     if (!url || !['.gif', '.jpg', '.jpeg', '.png'].some(e => url.endsWith(e)))
       return null;
@@ -63,7 +73,7 @@ export class FilesContainerView extends React.Component<FilesContainerProps> {
     return (
       <div style={{
         flexGrow: 1,
-        backgroundImage: `url(${this.props.model.getSelectedUrl()})`,
+        backgroundImage: `url(${url})`,
         backgroundPosition: 'center',
         backgroundSize: 'contain',
         backgroundRepeat: 'no-repeat'
@@ -71,8 +81,47 @@ export class FilesContainerView extends React.Component<FilesContainerProps> {
     );
   }
 
+  watch = false;
+  autoplay = false;
+  audio = React.createRef<HTMLAudioElement>();
+
+  toggleWatch = () => {
+    this.watch = !this.watch;
+    if (this.watch)
+      this.subscriber();
+    else
+      this.setState({});
+  }
+
+  renderMusic() {
+    const url = this.getSelectedUrl();
+
+    if (!url || !['.mp3'].some(e => url.endsWith(e)))
+      return null;
+
+    return (
+      <div style={{flexGrow: 1}}>
+        <audio ref={this.audio} src={url} autoPlay={this.autoplay || this.watch} controls
+          onClick={() => {
+            setTimeout(() => {
+              if (!this.audio.current)
+                return;
+
+              this.autoplay = !this.audio.current.paused;
+            }, 100);
+          }}
+
+          onEnded={() => {
+            if (!this.watch)
+              this.props.model.selectNextFile('.mp3');
+          }}
+        />
+      </div>
+    );
+  }
+
   renderVideo() {
-    const url = this.props.model.getSelectedUrl();
+    const url = this.getSelectedUrl();
     if (!url || !['.webm', '.mp4'].some(e => url.endsWith(e)))
       return null;
 
@@ -102,10 +151,15 @@ export class FilesContainerView extends React.Component<FilesContainerProps> {
     return (
       <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
         {this.renderProgress()}
+        <div style={{flexGrow: 0}}>
+          <input type='checkbox' id='watch' checked={this.watch} onClick={this.toggleWatch}/>
+          <label htmlFor='watch' onClick={this.toggleWatch}>watch</label>
+        </div>
         <div style={{display: 'flex', flexGrow: 1}}>
           {this.renderTable()}
           {this.renderImage()}
           {this.renderVideo()}
+          {this.renderMusic()}
         </div>
       </div>
     );
