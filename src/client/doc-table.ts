@@ -1,6 +1,6 @@
 import { SERIALIZER } from 'objio';
 import { RenderListModel } from 'ts-react-ui/model/list';
-import { timer, cancelable, Cancelable } from 'objio/common/promise';
+import { Cancelable, ExtPromise } from 'objio';
 import {
   CreateSubtableResult,
   ExecuteArgs,
@@ -44,7 +44,7 @@ export class DocTable extends DocTableBase {
           this.lastLoadTimer = null;
         }
 
-        this.lastLoadTimer = cancelable(timer(this.maxTimeBetweenRequests));
+        this.lastLoadTimer = ExtPromise().cancelable( ExtPromise().timer(this.maxTimeBetweenRequests) );
         return this.lastLoadTimer.then(() => {
           this.lastLoadTimer = null;
           return this.table.loadCells({ first: from, count, table: this.tableName });

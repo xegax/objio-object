@@ -14,7 +14,7 @@ export class VideoFileObject extends FileObject {
   }
 
   split(args: {from: Time, to: Time, parentId: string}): Promise<void> {
-    return this.holder.invokeMethod('split', args);
+    return this.holder.invokeMethod({ method: 'split', args });
   }
 
   static toTime(timeSec: number): Time {

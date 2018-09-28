@@ -1,7 +1,7 @@
 import { FileObject as Base, FileArgs } from '../client/file-object';
 import { SERIALIZER } from 'objio';
 import { createWriteStream, unlinkSync, existsSync } from 'fs';
-import * as http from 'http';
+import { Readable } from 'stream';
 
 export class FileObject extends Base {
   constructor(args?: FileArgs) {
@@ -26,7 +26,7 @@ export class FileObject extends Base {
     });
   }
 
-  sendFileImpl = (args: { name: string, size: number, mime: string, data: http.IncomingMessage }): Promise<void> => {
+  sendFileImpl = (args: { name: string, size: number, mime: string, data: Readable }): Promise<void> => {
     this.setProgress(0);
     this.setStatus('in progress');
 

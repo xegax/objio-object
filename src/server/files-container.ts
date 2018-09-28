@@ -2,7 +2,7 @@ import { SERIALIZER } from 'objio';
 import { getExt } from '../client/file-object';
 import { Table } from './table';
 import { ColumnAttr } from '../client/table';
-import { FilesContainer as Base, Loading } from '../client/files-container';
+import { FilesContainer as Base, Loading, SendFileArgs } from '../client/files-container';
 import * as http from 'http';
 import * as fs from 'fs';
 import { createWriteStream } from 'fs';
@@ -130,7 +130,7 @@ export class FilesContainer extends Base {
     );
   }
 
-  sendFile(file: File): Promise<any> {
+  sendFile(args: SendFileArgs): Promise<any> {
     return Promise.reject(null);
   }
 

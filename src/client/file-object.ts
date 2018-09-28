@@ -1,5 +1,6 @@
 import { SERIALIZER } from 'objio';
 import { ObjectBase } from '../server/object-base';
+import { SendFileArgs } from './files-container';
 
 export interface FileArgs {
   name: string;
@@ -60,8 +61,12 @@ export class FileObject extends ObjectBase {
     return this.loadSize;
   }
 
-  sendFile(file: File): Promise<any> {
-    return this.holder.invokeMethod('send-file', file);
+  sendFile(args: SendFileArgs): Promise<any> {
+    return this.holder.invokeMethod({ method: 'send-file', args: args.file, onProgress: args.onProgress });
+  }
+
+  sendFileByForm(args: SendFileArgs): Promise<any> {
+    return this.holder.invokeMethod({ method: 'send-file-form', args: args.file, onProgress: args.onProgress });
   }
 
   static TYPE_ID: string = 'FileObject';

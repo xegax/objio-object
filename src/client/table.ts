@@ -146,7 +146,7 @@ export class Table extends ObjectBase {
   }
 
   execute(args: ExecuteArgs): Promise<any> {
-    return this.holder.invokeMethod('execute', args);
+    return this.holder.invokeMethod({ method: 'execute', args });
   }
 
   getLastExecuteTime(): number {
@@ -174,31 +174,31 @@ export class Table extends ObjectBase {
   }
 
   loadCells(args: LoadCellsArgs): Promise<Cells> {
-    return this.holder.invokeMethod('loadCells', args);
+    return this.holder.invokeMethod({ method: 'loadCells', args });
   }
 
   pushCells(args: PushRowArgs): Promise<number> {
-    return this.holder.invokeMethod('pushCells', args);
+    return this.holder.invokeMethod({ method: 'pushCells', args });
   }
 
   updateCells(args: UpdateRowArgs): Promise<void> {
-    return this.holder.invokeMethod('updateCell', args);
+    return this.holder.invokeMethod({ method: 'updateCell', args });
   }
 
   removeRows(args: RemoveRowsArgs): Promise<any> {
-    return this.holder.invokeMethod('removeRows', args);
+    return this.holder.invokeMethod({ method: 'removeRows', args });
   }
 
   createSubtable(args: Partial<SubtableAttrs>): Promise<CreateSubtableResult> {
-    return this.holder.invokeMethod('createSubtable', args);
+    return this.holder.invokeMethod({ method: 'createSubtable', args });
   }
 
   getNumStats(args: NumStatsArgs): Promise<NumStats> {
-    return this.holder.invokeMethod('getNumStats', args);
+    return this.holder.invokeMethod({method: 'getNumStats', args });
   }
 
   loadTableInfo(args: LoadTableInfoArgs): Promise<{ columns: Columns, totalRows: number }> {
-    return this.holder.invokeMethod('loadTableInfo', args);
+    return this.holder.invokeMethod({ method: 'loadTableInfo', args });
   }
 
   getIdColumn(): string {

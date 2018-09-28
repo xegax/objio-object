@@ -3,8 +3,13 @@ import { Database } from './database';
 import { SERIALIZER } from 'objio';
 import { Table } from './table';
 import { RenderListModel } from 'ts-react-ui/model/list';
-import { timer, cancelable, Cancelable } from 'objio/common/promise';
+import { Cancelable, ExtPromise } from 'objio';
 import { ColumnAttr } from './table';
+
+export interface SendFileArgs {
+  file: File;
+  onProgress?(value: number): void;
+}
 
 export interface FilesContainerArgs {
   source: Database;
@@ -73,7 +78,7 @@ export class FilesContainer extends ObjectBase {
           this.lastLoadTimer = null;
         }
 
-        this.lastLoadTimer = cancelable(timer(this.maxTimeBetweenRequests));
+        this.lastLoadTimer = ExtPromise().cancelable( ExtPromise().timer(this.maxTimeBetweenRequests) );
         this.maxTimeBetweenRequests = 300;
         return this.lastLoadTimer.then(() => {
           this.lastLoadTimer = null;
@@ -83,8 +88,12 @@ export class FilesContainer extends ObjectBase {
     });
   }
 
-  sendFile(file: File): Promise<any> {
-    return this.holder.invokeMethod('send-file', file);
+  sendFile(args: SendFileArgs): Promise<any> {
+    return this.holder.invokeMethod({
+      method: 'send-file',
+      args: args.file,
+      onProgress: args.onProgress
+    });
   }
 
   getDirPath(): string {
