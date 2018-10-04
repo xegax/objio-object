@@ -26,6 +26,7 @@ export interface Props {
 }
 
 export type ViewDescFlags = 'create-wizard';
+
 export interface ViewDesc {
   desc: string;
   flags: Set<ViewDescFlags> | Array<ViewDescFlags>;
@@ -34,8 +35,26 @@ export interface ViewDesc {
   sources: Array<Array<OBJIOItemClass>>;
 }
 
-export interface ClientClass {
+export interface OBJIOItemClassViewable extends OBJIOItemClass {
   getViewDesc?(): Partial<ViewDesc>;
+}
+
+export interface RegisterArgs extends Partial<ViewDesc> {
+  classObj: OBJIOItemClass;
+}
+
+export function registerViews(args: RegisterArgs) {
+  const cc = args.classObj as OBJIOItemClassViewable;
+  const flags = Array.isArray(args.flags || []) ? new Set(args.flags) : args.flags;
+  cc.getViewDesc = (): ViewDesc => {
+    return {
+      flags,
+      desc: args.desc || args.classObj.TYPE_ID,
+      views: args.views,
+      config: args.config,
+      sources: args.sources
+    };
+  };
 }
 
 export abstract class ConfigBase

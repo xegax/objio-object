@@ -41,7 +41,7 @@ export class FileObject extends ObjectBase {
   }
 
   getPath(): string {
-    return this.holder.getFilePath(this.getFileName());
+    return this.holder.getPublicPath(this.getFileName());
   }
 
   getSize(): number {

@@ -141,7 +141,7 @@ export class FilesContainer extends ObjectBase {
   }
 
   getPath(file: string) {
-    return this.holder.getFilePath([this.getDirPath(), file].join('/'));
+    return this.holder.getPublicPath([this.getDirPath(), file].join('/'));
   }
 
   getSelectedUrl() {

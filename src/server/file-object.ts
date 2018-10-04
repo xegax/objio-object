@@ -63,7 +63,7 @@ export class FileObject extends Base {
   }
 
   getPath(): string {
-    return this.holder.getFilePath(super.getFileName());
+    return this.holder.getPublicPath(super.getFileName());
   }
 
   static TYPE_ID = 'FileObject';

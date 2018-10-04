@@ -3,8 +3,7 @@ import { FileObject, FileObjectView, Props as FileViewProps } from './file-objec
 import { CSVFileObject, CSVFileView, Props as CSVViewProps } from './csv-file-view';
 import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video-file-view';
 import { DocTable, DocTableView, DocTableConfig, Props as TableViewProps } from './doc-table-view';
-import { ClientClass, ViewDesc } from './config';
-import { OBJIOItemClass } from 'objio';
+import { OBJIOItemClassViewable, registerViews } from './config';
 import {
   FilesContainer,
   FilesContainerView,
@@ -14,25 +13,7 @@ import {
 import { Database } from '../client/database';
 import { ServerInstanceView, ServerInstance, ServerInstProps } from './server-instance-view';
 
-interface RegisterArgs extends Partial<ViewDesc> {
-  classObj: OBJIOItemClass;
-}
-
-function registerViews(args: RegisterArgs) {
-  const cc = args.classObj as ClientClass;
-  const flags = Array.isArray(args.flags || []) ? new Set(args.flags) : args.flags;
-  cc.getViewDesc = (): ViewDesc => {
-    return {
-      flags,
-      desc: args.desc || args.classObj.TYPE_ID,
-      views: args.views,
-      config: args.config,
-      sources: args.sources
-    };
-  };
-}
-
-export function getViews(): Array<OBJIOItemClass & ClientClass> {
+export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
     classObj: FileObject,
     views: [{

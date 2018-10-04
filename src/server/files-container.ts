@@ -51,7 +51,7 @@ export class FilesContainer extends Base {
     return (
       this.holder.createObject(table)
       .then(() => {
-        fs.mkdirSync(this.holder.getFilePath(this.getDirPath()));
+        fs.mkdirSync(this.holder.getPublicPath(this.getDirPath()));
         this.table = table;
         this.holder.save();
         table.holder.save();
