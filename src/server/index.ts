@@ -1,6 +1,7 @@
 import { OBJIOItemClass } from 'objio';
 import { FileObject } from './file-object';
 import { CSVFileObject } from './csv-file-object';
+import { JSONFileObject } from './json-file-object';
 import { VideoFileObject } from './video-file-object';
 import { DocTable } from './doc-table';
 import { Table } from './table';
@@ -11,6 +12,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     DocTable,
     FileObject,
     CSVFileObject,
+    JSONFileObject,
     VideoFileObject,
     Table,
     FilesContainer

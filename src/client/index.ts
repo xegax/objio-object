@@ -1,5 +1,6 @@
 import { FileObject, FileArgs, getExt } from './file-object';
 import { CSVFileObject } from './csv-file-object';
+import { JSONFileObject } from './json-file-object';
 import { VideoFileObject } from './video-file-object';
 import { DocTable } from './doc-table';
 import { Table } from './table';
@@ -17,6 +18,9 @@ export function createFileObject(args: FileArgs): FileObject {
   if (ext == '.csv')
     return new CSVFileObject(args);
 
+  if (ext == '.json')
+    return new JSONFileObject(args);
+
   return new FileObject(args);
 }
 
@@ -29,6 +33,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     DocTable,
     FileObject,
     CSVFileObject,
+    JSONFileObject,
     VideoFileObject,
     FilesContainer
   ];

@@ -9,6 +9,7 @@ import { CSVFileObject } from '../client/csv-file-object';
 import { ConfigBase } from './config';
 import { Database } from '../client/database';
 import { OBJIOItem } from 'objio';
+import { JSONFileObject } from '../client/json-file-object';
 
 export { DocTable };
 
@@ -212,7 +213,7 @@ export interface CfgState {
   dbId: string;
   csvId: string;
   dbs: Array<Database>;
-  csvs: Array<CSVFileObject>;
+  csvs: Array<CSVFileObject | JSONFileObject>;
 }
 
 export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
@@ -226,13 +227,13 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
     }).filter(obj => obj != null);
 
     const csvs = this.props.objects().map(obj => {
-      if (obj instanceof CSVFileObject)
+      if (obj instanceof CSVFileObject || obj instanceof JSONFileObject)
         return obj;
       return null;
-    }).filter(obj => obj != null) as Array<CSVFileObject>;
+    }).filter(obj => obj != null) as Array<CSVFileObject | JSONFileObject>;
 
     this.config.dest = dbs[0];
-    this.config.source = csvs[0];
+    this.config.source = csvs[0] as CSVFileObject;
     this.setState({
       dbs,
       csvs,
@@ -290,7 +291,7 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
                 value={this.state.csvId}
                 onChange={evt => {
                   const csvId = evt.currentTarget.value;
-                  this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId);
+                  this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId) as CSVFileObject;
                   this.setState({ csvId });
                 }}>
                 {(this.state.csvs || []).map((csv, i) => {

@@ -20,7 +20,9 @@ import { SERIALIZER, EXTEND } from 'objio';
 import { CSVReader, CSVBunch } from 'objio/server';
 import { FileObject } from './file-object';
 import { TableArgs, CreateSubtableResult } from '../client/table';
-
+import { CSVFileObject } from './csv-file-object';
+import { JSONFileObject } from './json-file-object';
+import { JSONReader, JSONBunch } from 'objio/common/json-reader';
 export function getCompSqlCondition(cond: CompoundCond, col?: string): string {
   let sql = '';
   if (cond.values.length == 1) {
@@ -120,7 +122,7 @@ export class Table extends TableBase {
     });
   }
 
-  private readColumns(csv: FileObject): Promise<Array<ColumnAttr>> {
+  private readCSVColumns(csv: CSVFileObject): Promise<Array<ColumnAttr>> {
     let cols: Array<ColumnAttr>;
 
     const onNextBunch = (bunch: CSVBunch) => {
@@ -131,10 +133,80 @@ export class Table extends TableBase {
       bunch.done();
     };
 
-    return CSVReader.read({file: csv.getPath(), onNextBunch, linesPerBunch: 1}).then(() => cols);
+    return ( 
+      CSVReader.read({file: csv.getPath(), onNextBunch, linesPerBunch: 1})
+      .then(() => cols)
+    );
+  }
+
+  private readJSONColumns(json: JSONFileObject): Promise<Array<ColumnAttr>> {
+    let cols: Array<ColumnAttr>;
+
+    const onNextBunch = (bunch: JSONBunch) => {
+      const row = bunch.rows[0];
+      cols = Object.keys(row).map(col => ({
+        name: col,
+        type: 'TEXT'
+      }));
+      bunch.done();
+    };
+
+    return ( 
+      JSONReader.read({file: json.getPath(), onNextBunch, linesPerBunch: 5})
+      .then(() => cols)
+    );
+  }
+
+  private readColumns(fo: FileObject): Promise<Array<ColumnAttr>> {
+    if (fo instanceof CSVFileObject)
+      return this.readCSVColumns(fo);
+    else if (fo instanceof JSONFileObject)
+      return this.readJSONColumns(fo);
+    return Promise.reject('unknown type of source file')
   }
 
   private readRows(csv: FileObject, columns: Columns, startRow: number, flushPerRows: number): Promise<any> {
+    if (csv instanceof CSVFileObject)
+      return this.readRowsCSV(csv, columns, startRow, flushPerRows);
+    else if (csv instanceof JSONFileObject)
+      return this.readRowsJSON(csv, columns, startRow, flushPerRows);
+    return Promise.reject('unknown type of source file');
+  }
+
+  private readRowsJSON(json: JSONFileObject, columns: Columns, startRow: number, flushPerRows: number): Promise<any> {
+    const onNextBunch = (bunch: JSONBunch) => {
+      const rows = bunch.firstLineIdx == 0 ? bunch.rows.slice(1) : bunch.rows;
+      const values: {[col: string]: Array<string>} = {};
+
+      rows.forEach(row => {
+        Object.keys(row).forEach(key => {
+          let v = (row[key] != null ? row[key] : '').trim();
+
+          const colAttr = columns.find(c => c.name == key);
+          if (colAttr.discard)
+            return;
+
+          const col = values[colAttr.name] || (values[colAttr.name] = []);
+          if (colAttr.removeQuotes != false) {
+            if (v.length > 1 && v[0] == '"' && v[v.length - 1] == '"')
+              v = v.substr(1, v.length - 2);
+          }
+          col.push(v);
+        });
+      });
+
+      return this.pushCells({values, updRowCounter: false}).then(() => {
+        this.setProgress(bunch.progress);
+        this.totalRowsNum += rows.length;
+      });
+    };
+
+    return (
+      JSONReader.read({file: json.getPath(), onNextBunch})
+    );
+  }
+
+  private readRowsCSV(csv: FileObject, columns: Columns, startRow: number, flushPerRows: number): Promise<any> {
     const onNextBunch = (bunch: CSVBunch) => {
       const rows = bunch.firstLineIdx == 0 ? bunch.rows.slice(1) : bunch.rows;
       const values: {[col: string]: Array<string>} = {};

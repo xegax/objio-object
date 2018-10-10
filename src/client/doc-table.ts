@@ -11,9 +11,10 @@ import { DocTable as DocTableBase } from '../server/doc-table';
 import { CSVFileObject } from './csv-file-object';
 import { Table } from './table';
 import { Database } from './database';
+import { JSONFileObject } from './json-file-object';
 
 export interface DocTableArgs {
-  source: CSVFileObject;
+  source: CSVFileObject | JSONFileObject;
   dest: Database;
   tableName: string;
   table?: Table;

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { FileObject, FileObjectView, Props as FileViewProps } from './file-object-view';
 import { CSVFileObject, CSVFileView, Props as CSVViewProps } from './csv-file-view';
+import { JSONFileObject, JSONFileView, Props as JSONViewProps } from './json-file-view';
 import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video-file-view';
 import { DocTable, DocTableView, DocTableConfig, Props as TableViewProps } from './doc-table-view';
 import { OBJIOItemClassViewable, registerViews } from './config';
@@ -29,6 +30,13 @@ export function getViews(): Array<OBJIOItemClassViewable> {
   });
 
   registerViews({
+    classObj: JSONFileObject,
+    views: [{
+      view: (props: JSONViewProps) => <JSONFileView {...props}/>
+    }]
+  });
+
+  registerViews({
     classObj: VideoFileObject,
     views: [{
       view: (props: VideoViewProps) => <VideoFileView {...props}/>
@@ -40,7 +48,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     views: [{
       view: (props: TableViewProps) => <DocTableView {...props}/>
     }],
-    sources: [ [ CSVFileObject, Database ] ],
+    sources: [ [ CSVFileObject, Database ], [JSONFileObject, Database] ],
     config: props => <DocTableConfig {...props}/>,
     flags: ['create-wizard'],
     desc: 'Database table'
@@ -69,6 +77,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     FilesContainer,
     FileObject,
     CSVFileObject,
+    JSONFileObject,
     VideoFileObject,
     DocTable
   ];
