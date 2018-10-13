@@ -36,6 +36,7 @@ export interface SortPair {
 export interface ValueCond {
   column: string;
   value: string | Array<string | number> | CompoundCond;
+  like?: boolean;
   inverse?: boolean;
 }
 
