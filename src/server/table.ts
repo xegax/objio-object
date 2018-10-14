@@ -195,10 +195,18 @@ export class Table extends TableBase {
         });
       });
 
-      return this.pushCells({values, updRowCounter: false}).then(() => {
-        this.setProgress(bunch.progress);
-        this.totalRowsNum += rows.length;
-      });
+      return (
+        this.pushCells({values, updRowCounter: false})
+        .then(() => {
+          this.setProgress(bunch.progress);
+          this.totalRowsNum += rows.length;
+        })
+        .catch(e => {
+          bunch.done();
+          this.setStatus('error');
+          this.addError(e.toString());
+        })
+      );
     };
 
     return (
@@ -281,6 +289,8 @@ export class Table extends TableBase {
   }
 
   execute(args: ExecuteArgs): Promise<any> {
+    this.clearErrors();
+
     let startTime: number;
     let columns: Columns = [];
     let readRowCols: Columns = [];

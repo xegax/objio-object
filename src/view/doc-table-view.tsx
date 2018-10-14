@@ -168,6 +168,22 @@ export class DocTableView extends React.Component<Props, State> {
     );
   }
 
+  renderErrors() {
+    const errors = [
+      ...this.props.model.getErrors(),
+      ...this.props.model.getTableRef().getErrors()
+    ];
+
+    if (!errors.length)
+      return null;
+
+    return (
+      <div>
+        {errors.join(', ')}
+      </div>
+    );
+  }
+
   renderValid() {
     const model = this.props.model;
     return (
@@ -176,6 +192,7 @@ export class DocTableView extends React.Component<Props, State> {
         <div>table: {model.getTable()}</div>
         <div>rows: {model.getTotalRowsNum()}</div>
         <div>last execute time: {model.getLastExecuteTime()}</div>
+        {this.renderErrors()}
         <div>
           <button
             onClick={() => {

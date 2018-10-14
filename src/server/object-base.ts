@@ -75,6 +75,15 @@ export class ObjectBase extends OBJIOItem {
     this.holder.delayedNotify();
   }
 
+  clearErrors(): void {
+    if (this.holder.isClient())
+      return;
+
+    this.errors = [];
+    this.holder.save();
+    this.holder.delayedNotify();
+  }
+
   getErrors(): Array<string> {
     return this.errors;
   }
