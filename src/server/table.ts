@@ -14,7 +14,8 @@ import {
   NumStatsArgs,
   Cells,
   NumStats,
-  LoadTableInfoArgs
+  LoadTableInfoArgs,
+  PushCellsResult
 } from '../client/table';
 import { SERIALIZER, EXTEND } from 'objio';
 import { CSVReader, CSVBunch } from 'objio/server';
@@ -84,6 +85,10 @@ function createIdColumn(cols: Array<ColumnAttr>, idColName?: string): ColumnAttr
   return idCol;
 }
 
+export interface ReadRowsResult {
+  skipRows: number;
+}
+
 export class Table extends TableBase {
   constructor(args: TableArgs) {
     super(args);
@@ -108,6 +113,8 @@ export class Table extends TableBase {
         if (!this.table)
           return;
 
+        this.progress = 0;
+        this.status = 'ok';
         return (
           Promise.all([
             this.db.loadTableInfo({table: this.table}),
@@ -157,7 +164,7 @@ export class Table extends TableBase {
     );
   }
 
-  private readColumns(fo: FileObject): Promise<Array<ColumnAttr>> {
+  private readColumns(fo: FileObject): Promise< Array<ColumnAttr> > {
     if (fo instanceof CSVFileObject)
       return this.readCSVColumns(fo);
     else if (fo instanceof JSONFileObject)
@@ -165,20 +172,21 @@ export class Table extends TableBase {
     return Promise.reject('unknown type of source file')
   }
 
-  private readRows(csv: FileObject, columns: Columns, startRow: number, flushPerRows: number): Promise<any> {
-    if (csv instanceof CSVFileObject)
-      return this.readRowsCSV(csv, columns, startRow, flushPerRows);
-    else if (csv instanceof JSONFileObject)
-      return this.readRowsJSON(csv, columns, startRow, flushPerRows);
+  private readRows(file: FileObject, columns: Columns, rowsPerBunch: number): Promise<ReadRowsResult> {
+    if (file instanceof CSVFileObject)
+      return this.readRowsCSV(file, columns, rowsPerBunch);
+    else if (file instanceof JSONFileObject)
+      return this.readRowsJSON(file, columns, rowsPerBunch);
     return Promise.reject('unknown type of source file');
   }
 
-  private readRowsJSON(json: JSONFileObject, columns: Columns, startRow: number, flushPerRows: number): Promise<any> {
+  private readRowsJSON(json: JSONFileObject, columns: Columns, rowsPerBunch: number): Promise<ReadRowsResult> {
+    let result: ReadRowsResult = { skipRows: 0 };
     const onNextBunch = (bunch: JSONBunch) => {
       const rows = bunch.firstLineIdx == 0 ? bunch.rows.slice(1) : bunch.rows;
       const values: {[col: string]: Array<string>} = {};
 
-      rows.forEach(row => {
+      rows.forEach((row, i) => {
         Object.keys(row).forEach(key => {
           let v = (row[key] != null ? row[key] : '').trim();
 
@@ -186,18 +194,22 @@ export class Table extends TableBase {
           if (colAttr.discard)
             return;
 
-          const col = values[colAttr.name] || (values[colAttr.name] = []);
+          const col = values[colAttr.name] || (values[colAttr.name] = new Array(rows.length).fill(''));
           if (colAttr.removeQuotes != false) {
             if (v.length > 1 && v[0] == '"' && v[v.length - 1] == '"')
               v = v.substr(1, v.length - 2);
           }
-          col.push(v);
+          if (v == '')
+            return;
+
+          col[i] = v;
         });
       });
 
       return (
         this.pushCells({values, updRowCounter: false})
-        .then(() => {
+        .then(res => {
+          result.skipRows += rows.length - res.pushRows;
           this.setProgress(bunch.progress);
           this.totalRowsNum += rows.length;
         })
@@ -210,11 +222,15 @@ export class Table extends TableBase {
     };
 
     return (
-      JSONReader.read({file: json.getPath(), onNextBunch})
+      JSONReader.read({file: json.getPath(), onNextBunch, linesPerBunch: rowsPerBunch})
+      .then(() => {
+        return result;
+      })
     );
   }
 
-  private readRowsCSV(csv: FileObject, columns: Columns, startRow: number, flushPerRows: number): Promise<any> {
+  private readRowsCSV(csv: FileObject, columns: Columns, rowsPerBunch: number): Promise<ReadRowsResult> {
+    let result: ReadRowsResult = { skipRows: 0 };
     const onNextBunch = (bunch: CSVBunch) => {
       const rows = bunch.firstLineIdx == 0 ? bunch.rows.slice(1) : bunch.rows;
       const values: {[col: string]: Array<string>} = {};
@@ -236,23 +252,64 @@ export class Table extends TableBase {
         });
       });
 
-      return this.pushCells({values, updRowCounter: false}).then(() => {
-        this.setProgress(bunch.progress);
-        this.totalRowsNum += rows.length;
-      });
+      return (
+        this.pushCells({values, updRowCounter: false})
+        .then(res => {
+          this.setProgress(bunch.progress);
+          this.totalRowsNum += rows.length;
+          result.skipRows += rows.length - res.pushRows;
+        })
+      );
     };
 
     return (
       CSVReader.read({file: csv.getPath(), onNextBunch})
+      .then(() => {
+        return result;
+      })
     );
   }
 
-  pushCells(args: PushRowArgs): Promise<number> {
-    let task = this.db.pushCells({ ...args, table: this.table });
-    if (!args.updRowCounter)
-      return task;
+  pushCells(args: PushRowArgs): Promise<PushCellsResult> {
+    let result: PushCellsResult = { pushRows: args.values[Object.keys(args.values)[0]].length };
+    let task = (
+      this.db.pushCells({ ...args, table: this.table })
+      .then(() => result)
+    );
+    task = task.catch(() => {
+      const values = args.values;
+      const cols = Object.keys(values);
+      const rows = values[ cols[0] ].length;
+      let prom: Promise<any> = Promise.resolve();
+      for (let n = 0; n < rows; n++) {
+        let rowVals: {[key: string]: Array<string>} = {};
+        cols.forEach(col => rowVals[col] = [ values[col][n] ]);
+        const pushArgs = { ...args, table: this.table, values: rowVals };
+        prom = prom.then(() => {
+          return (
+            this.db.pushCells(pushArgs)
+            .catch(() => {
+              result.pushRows--;
+              console.log('error at pushCells');
+              console.log(rowVals);
+            })
+          );
+        });
+      }
+      return prom.then(() => result);
+    });
 
-    return task.then(() => this.updateRowNum());
+    if (args.updRowCounter) {
+      return (
+        task.then(() => this.updateRowNum())
+        .then(num => {
+          result.totalRows = num;
+          return result;
+        })
+      );
+    }
+
+    return task;
   }
 
   getNumStats(args: NumStatsArgs): Promise<NumStats> {
@@ -346,9 +403,12 @@ export class Table extends TableBase {
         this.setStatus('in progress');
         this.holder.save();
         startTime = Date.now();
-        return this.readRows(obj, readRowCols, 1, 50);
+        return this.readRows(obj, readRowCols, 100);
       })
-      .then(() => this.updateRowNum())
+      .then(res => {
+        console.log('skipped', res.skipRows);
+        return this.updateRowNum();
+      })
       .then(() => {
         this.fileObjId = args.fileObjId;
         this.lastExecuteTime = Date.now() - startTime;

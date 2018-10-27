@@ -220,7 +220,7 @@ export class DocTableView extends React.Component<Props, State> {
     const model = this.props.model;
     return (
       <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
-        {model.getTableRef().isStatusValid() ? this.renderValid() : this.renderInvalid()}
+        {!model.getTableRef().isStatusInProgess() ? this.renderValid() : this.renderInvalid()}
       </div>
     );
   }

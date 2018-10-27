@@ -122,6 +122,11 @@ export interface TableArgs {
   userIdColumn?: string;
 }
 
+export interface PushCellsResult {
+  totalRows?: number;
+  pushRows: number;
+}
+
 export class Table extends ObjectBase {
   protected db: Database;
   protected table: string;
@@ -178,7 +183,7 @@ export class Table extends ObjectBase {
     return this.holder.invokeMethod({ method: 'loadCells', args });
   }
 
-  pushCells(args: PushRowArgs): Promise<number> {
+  pushCells(args: PushRowArgs): Promise<PushCellsResult> {
     return this.holder.invokeMethod({ method: 'pushCells', args });
   }
 

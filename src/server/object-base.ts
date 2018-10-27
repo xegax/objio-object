@@ -52,6 +52,10 @@ export class ObjectBase extends OBJIOItem {
     return this.status == 'ok';
   }
 
+  isStatusInProgess(): boolean {
+    return this.status == 'in progress';
+  }
+
   setProgress(value: number): void {
     let newValue = Math.round(value * 100) / 100;
     if (this.holder.isClient() || newValue == this.progress)
