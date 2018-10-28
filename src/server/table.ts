@@ -17,13 +17,12 @@ import {
   LoadTableInfoArgs,
   PushCellsResult
 } from '../client/table';
-import { SERIALIZER, EXTEND } from 'objio';
-import { CSVReader, CSVBunch } from 'objio/server';
+import { SERIALIZER } from 'objio';
 import { FileObject } from './file-object';
 import { TableArgs, CreateSubtableResult } from '../client/table';
+import { TableFileObject, OnRowsArgs } from './table-file-object';
 import { CSVFileObject } from './csv-file-object';
-import { JSONFileObject } from './json-file-object';
-import { JSONReader, JSONBunch } from 'objio/common/json-reader';
+
 export function getCompSqlCondition(cond: CompoundCond, col?: string): string {
   let sql = '';
   if (cond.values.length == 1) {
@@ -129,141 +128,33 @@ export class Table extends TableBase {
     });
   }
 
-  private readCSVColumns(csv: CSVFileObject): Promise<Array<ColumnAttr>> {
-    let cols: Array<ColumnAttr>;
+  private readRows(fo: TableFileObject, rowsPerBunch: number): Promise<ReadRowsResult> {
+    if (!(fo instanceof TableFileObject))
+      return Promise.reject('unknown type of source file');
 
-    const onNextBunch = (bunch: CSVBunch) => {
-      cols = bunch.rows[0].map(col => ({
-        name: col,
-        type: 'TEXT'
-      }));
-      bunch.done();
-    };
-
-    return ( 
-      CSVReader.read({file: csv.getPath(), onNextBunch, linesPerBunch: 1})
-      .then(() => cols)
-    );
-  }
-
-  private readJSONColumns(json: JSONFileObject): Promise<Array<ColumnAttr>> {
-    let cols: Array<ColumnAttr>;
-
-    const onNextBunch = (bunch: JSONBunch) => {
-      const row = bunch.rows[0];
-      cols = Object.keys(row).map(col => ({
-        name: col,
-        type: 'TEXT'
-      }));
-      bunch.done();
-    };
-
-    return ( 
-      JSONReader.read({file: json.getPath(), onNextBunch, linesPerBunch: 5})
-      .then(() => cols)
-    );
-  }
-
-  private readColumns(fo: FileObject): Promise< Array<ColumnAttr> > {
-    if (fo instanceof CSVFileObject)
-      return this.readCSVColumns(fo);
-    else if (fo instanceof JSONFileObject)
-      return this.readJSONColumns(fo);
-    return Promise.reject('unknown type of source file')
-  }
-
-  private readRows(file: FileObject, columns: Columns, rowsPerBunch: number): Promise<ReadRowsResult> {
-    if (file instanceof CSVFileObject)
-      return this.readRowsCSV(file, columns, rowsPerBunch);
-    else if (file instanceof JSONFileObject)
-      return this.readRowsJSON(file, columns, rowsPerBunch);
-    return Promise.reject('unknown type of source file');
-  }
-
-  private readRowsJSON(json: JSONFileObject, columns: Columns, rowsPerBunch: number): Promise<ReadRowsResult> {
-    let result: ReadRowsResult = { skipRows: 0 };
-    const onNextBunch = (bunch: JSONBunch) => {
-      const rows = bunch.firstLineIdx == 0 ? bunch.rows.slice(1) : bunch.rows;
-      const values: {[col: string]: Array<string>} = {};
-
-      rows.forEach((row, i) => {
-        Object.keys(row).forEach(key => {
-          let v = (row[key] != null ? row[key] : '').trim();
-
-          const colAttr = columns.find(c => c.name == key);
-          if (colAttr.discard)
-            return;
-
-          const col = values[colAttr.name] || (values[colAttr.name] = new Array(rows.length).fill(''));
-          if (colAttr.removeQuotes != false) {
-            if (v.length > 1 && v[0] == '"' && v[v.length - 1] == '"')
-              v = v.substr(1, v.length - 2);
-          }
-          if (v == '')
-            return;
-
-          col[i] = v;
-        });
-      });
-
+    const result: ReadRowsResult = { skipRows: 0 };
+    const onRows = (args: OnRowsArgs) => {
       return (
-        this.pushCells({values, updRowCounter: false})
+        this.pushCells({values: args.rows, updRowCounter: false})
         .then(res => {
-          result.skipRows += rows.length - res.pushRows;
-          this.setProgress(bunch.progress);
-          this.totalRowsNum += rows.length;
+          result.skipRows += args.rows.length - res.pushRows;
+          this.setProgress(args.progress);
+          this.totalRowsNum += args.rows.length;
         })
         .catch(e => {
-          bunch.done();
           this.setStatus('error');
           this.addError(e.toString());
+          return Promise.reject(e);
         })
       );
     };
 
     return (
-      JSONReader.read({file: json.getPath(), onNextBunch, linesPerBunch: rowsPerBunch})
-      .then(() => {
-        return result;
+      fo.readRows({
+        file: fo.getPath(),
+        onRows,
+        linesPerBunch: rowsPerBunch
       })
-    );
-  }
-
-  private readRowsCSV(csv: FileObject, columns: Columns, rowsPerBunch: number): Promise<ReadRowsResult> {
-    let result: ReadRowsResult = { skipRows: 0 };
-    const onNextBunch = (bunch: CSVBunch) => {
-      const rows = bunch.firstLineIdx == 0 ? bunch.rows.slice(1) : bunch.rows;
-      const values: {[col: string]: Array<string>} = {};
-
-      rows.forEach(row => {
-        row.forEach((v, i) => {
-          v = v.trim();
-
-          const colAttr = columns[i];
-          if (colAttr.discard)
-            return;
-
-          const col = values[colAttr.name] || (values[colAttr.name] = []);
-          if (colAttr.removeQuotes != false) {
-            if (v.length > 1 && v[0] == '"' && v[v.length - 1] == '"')
-              v = v.substr(1, v.length - 2);
-          }
-          col.push(v);
-        });
-      });
-
-      return (
-        this.pushCells({values, updRowCounter: false})
-        .then(res => {
-          this.setProgress(bunch.progress);
-          this.totalRowsNum += rows.length;
-          result.skipRows += rows.length - res.pushRows;
-        })
-      );
-    };
-
-    return (
-      CSVReader.read({file: csv.getPath(), onNextBunch})
       .then(() => {
         return result;
       })
@@ -271,27 +162,26 @@ export class Table extends TableBase {
   }
 
   pushCells(args: PushRowArgs): Promise<PushCellsResult> {
-    let result: PushCellsResult = { pushRows: args.values[Object.keys(args.values)[0]].length };
+    const result: PushCellsResult = {
+      pushRows: args.values.length
+    };
+
+    const columns = this.columns.map(col => col.name);
     let task = (
-      this.db.pushCells({ ...args, table: this.table })
+      this.db.pushCells({ ...args, table: this.table, columns })
       .then(() => result)
     );
     task = task.catch(() => {
-      const values = args.values;
-      const cols = Object.keys(values);
-      const rows = values[ cols[0] ].length;
       let prom: Promise<any> = Promise.resolve();
-      for (let n = 0; n < rows; n++) {
-        let rowVals: {[key: string]: Array<string>} = {};
-        cols.forEach(col => rowVals[col] = [ values[col][n] ]);
-        const pushArgs = { ...args, table: this.table, values: rowVals };
+      for (let n = 0; n < args.values.length; n++) {
+        const pushArgs = { ...args, table: this.table, values: [ args.values[n] ], columns };
         prom = prom.then(() => {
           return (
             this.db.pushCells(pushArgs)
             .catch(() => {
               result.pushRows--;
+              console.log(pushArgs.values);
               console.log('error at pushCells');
-              console.log(rowVals);
             })
           );
         });
@@ -355,8 +245,8 @@ export class Table extends TableBase {
 
     let prepCols: Promise<Array<ColumnAttr>>;
     if (args.fileObjId) {
-      prepCols = this.holder.getObject<FileObject>(args.fileObjId)
-      .then(csv => this.readColumns(csv))
+      prepCols = this.holder.getObject<TableFileObject>(args.fileObjId)
+      .then(file => file.getColumns())
       .then(cols => {
         if (!args.columns || args.columns.length == 0)
           return cols;
@@ -398,12 +288,12 @@ export class Table extends TableBase {
       return task;
 
     return task.then(() => {
-      this.holder.getObject<FileObject>(args.fileObjId)
+      this.holder.getObject<TableFileObject>(args.fileObjId)
       .then(obj => {
         this.setStatus('in progress');
         this.holder.save();
         startTime = Date.now();
-        return this.readRows(obj, readRowCols, 100);
+        return this.readRows(obj, 100);
       })
       .then(res => {
         console.log('skipped', res.skipRows);

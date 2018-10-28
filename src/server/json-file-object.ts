@@ -1,39 +1,55 @@
-import { FileObject } from './file-object';
 import { JSONReader, JSONBunch } from 'objio/common/json-reader';
 import { SERIALIZER } from 'objio';
+import { TableFileObject, ReadLinesArgs, Bunch } from './table-file-object';
 import { ColumnAttr } from '../client/table';
 
-export class JSONFileObject extends FileObject {
-  protected columns = new Array<ColumnAttr>();
+export class JSONFileObject extends TableFileObject {
+  readCols(file: string): Promise< Array<ColumnAttr> > {
+    let cols: Array<ColumnAttr> = [];
+    return (
+      JSONReader.read({
+        file,
+        linesPerBunch: 1,
+        onNextBunch: (bunch: JSONBunch) => {
+          cols = (
+            Object.keys(bunch.rows[0])
+            .map(name => {
+              return {
+                name,
+                type: 'TEXT'
+              };
+            })
+          );
+    
+          bunch.done();
+        }
+      })
+      .then(() => cols)
+    );
+  }
 
-  onFileUploaded(): Promise<void> {
-    const onNextBunch = (bunch: JSONBunch) => {
-      const row = bunch.rows[0];
-      this.columns = (
-        Object.keys(row)
-        .map(col => {
-          return {
-            name: col,
-            type: 'TEXT'
-          };
-        })
-      );
-
-      bunch.done();
-    };
-
-    return JSONReader.read({
-      linesPerBunch: 1,
-      file: this.getPath(),
-      onNextBunch
-    }).then(() => {
-      console.log('json columns', JSON.stringify(this.columns, null, ' '));
-    });
+  readRows(args: ReadLinesArgs): Promise<any> {
+    return (
+        JSONReader.read({
+        file: args.file,
+        linesPerBunch: args.linesPerBunch,
+        onNextBunch: (bunch: JSONBunch) => {
+          return (
+            args.onRows({
+              rows: bunch.rows,
+              progress: bunch.progress
+            })
+            .catch(e => {
+              bunch.done();
+            })
+          );
+        }
+      })
+    );
   }
 
   static TYPE_ID = 'JSONFileObject';
   static SERIALIZE: SERIALIZER = () => ({
-    ...FileObject.SERIALIZE(),
-    columns:  { type: 'json' }
+    ...TableFileObject.SERIALIZE()
   })
 }

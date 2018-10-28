@@ -118,13 +118,13 @@ export class FilesContainer extends Base {
       .then(() => {
         return this.table.pushCells({
           updRowCounter: true,
-          values: {
-            fileName: [ file ],
-            origName: [ args.name ],
-            ext: [ ext ],
-            size: [ args.size + '' ],
-            userId: [ userId ]
-          }
+          values: [{
+            fileName: file,
+            origName: args.name,
+            ext: ext,
+            size: args.size + '',
+            userId: userId
+          }]
         });
       })
     );
