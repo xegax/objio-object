@@ -92,6 +92,10 @@ export class ObjectBase extends OBJIOItem {
     return this.errors;
   }
 
+  getAppComponents(): Array<JSX.Element> {
+    return [];
+  }
+
   static TYPE_ID = 'ObjectBase';
   static SERIALIZE: SERIALIZER = () => ({
     name:     { type: 'string' },

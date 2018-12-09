@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ServerInstance } from 'objio/client/server-instance';
+import { ServerInstance } from 'objio/object/client/server-instance';
 
 export { ServerInstance };
 

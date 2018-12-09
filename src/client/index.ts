@@ -6,9 +6,9 @@ import { DocTable } from './doc-table';
 import { Table } from './table';
 import { OBJIOItemClass } from 'objio';
 import { FilesContainer } from './files-container';
-import { ServerInstance } from 'objio/client/server-instance';
-import { User } from 'objio/client/User';
-import { UserGroup } from 'objio/client/user-group';
+import { ServerInstance } from 'objio/object/client/server-instance';
+import { UserObject } from 'objio/object/client/user-object';
+import { UserGroup } from 'objio/object/client/user-group';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
@@ -26,7 +26,7 @@ export function createFileObject(args: FileArgs): FileObject {
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
-    User,
+    UserObject,
     UserGroup,
     ServerInstance,
     Table,
