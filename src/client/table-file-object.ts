@@ -1,6 +1,6 @@
 import { SERIALIZER } from 'objio';
 import { FileObject } from './file-object';
-import { Columns, ColumnAttr } from './table';
+import { Columns, ColumnAttr } from '../base/table';
 
 export class TableFileObject extends FileObject {
   protected columns = Array<ColumnAttr>();

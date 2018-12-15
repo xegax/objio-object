@@ -1,6 +1,6 @@
 import { SERIALIZER } from 'objio';
 import { FileObject } from './file-object';
-import { ColumnAttr } from '../client/table';
+import { ColumnAttr } from '../base/table';
 import { Bunch } from 'objio/common/line-reader';
 
 export {

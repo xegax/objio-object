@@ -6,8 +6,8 @@ import {
   ExecuteArgs,
   SubtableAttrs,
   ColumnAttr
-} from './table';
-import { DocTable as DocTableBase } from '../server/doc-table';
+} from '../base/table';
+import { DocTableBase } from '../base/doc-table';
 import { CSVFileObject } from './csv-file-object';
 import { Table } from './table';
 import { Database } from './database';
@@ -150,9 +150,4 @@ export class DocTable extends DocTableBase {
   getRender(): RenderListModel {
     return this.render;
   }
-
-  static TYPE_ID = 'DocTable';
-  static SERIALIZE: SERIALIZER = () => ({
-    ...DocTableBase.SERIALIZE()
-  })
 }

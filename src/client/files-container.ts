@@ -1,10 +1,10 @@
-import { ObjectBase } from './object-base';
+import { ObjectBase } from '../base/object-base';
 import { Database } from './database';
 import { SERIALIZER } from 'objio';
 import { Table } from './table';
 import { RenderListModel } from 'ts-react-ui/model/list';
 import { Cancelable, ExtPromise } from 'objio';
-import { ColumnAttr } from './table';
+import { ColumnAttr } from '../base/table';
 
 export interface SendFileArgs {
   file: File;

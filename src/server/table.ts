@@ -1,5 +1,5 @@
 import {
-  Table as TableBase,
+  TableBase,
   ExecuteArgs,
   Columns,
   ColumnAttr,
@@ -16,12 +16,10 @@ import {
   NumStats,
   LoadTableInfoArgs,
   PushCellsResult
-} from '../client/table';
+} from '../base/table';
 import { SERIALIZER } from 'objio';
-import { FileObject } from './file-object';
-import { TableArgs, CreateSubtableResult } from '../client/table';
+import { TableArgs, CreateSubtableResult } from '../base/table';
 import { TableFileObject, OnRowsArgs } from './table-file-object';
-import { CSVFileObject } from './csv-file-object';
 
 export function getCompSqlCondition(cond: CompoundCond, col?: string): string {
   let sql = '';
@@ -161,6 +159,14 @@ export class Table extends TableBase {
     );
   }
 
+  removeRows(args: RemoveRowsArgs): Promise<any> {
+    return Promise.reject('not implemented');
+  }
+
+  updateCells(args: UpdateRowArgs): Promise<void> {
+    return Promise.reject('not implemented');
+  }
+
   pushCells(args: PushRowArgs): Promise<PushCellsResult> {
     const result: PushCellsResult = {
       pushRows: args.values.length
@@ -293,7 +299,7 @@ export class Table extends TableBase {
         this.setStatus('in progress');
         this.holder.save();
         startTime = Date.now();
-        return this.readRows(obj, 100);
+        return this.readRows(obj, 50);
       })
       .then(res => {
         console.log('skipped', res.skipRows);
@@ -321,9 +327,4 @@ export class Table extends TableBase {
       })
     );
   }
-
-  static TYPE_ID = 'Table';
-  static SERIALIZE: SERIALIZER = () => ({
-    ...TableBase.SERIALIZE()
-  })
 }

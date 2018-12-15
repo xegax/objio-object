@@ -1,7 +1,7 @@
 import { JSONReader, JSONBunch } from 'objio/common/json-reader';
 import { SERIALIZER } from 'objio';
 import { TableFileObject, ReadLinesArgs, Bunch } from './table-file-object';
-import { ColumnAttr } from '../client/table';
+import { ColumnAttr } from '../base/table';
 
 export class JSONFileObject extends TableFileObject {
   readCols(file: string): Promise< Array<ColumnAttr> > {

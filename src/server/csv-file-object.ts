@@ -1,7 +1,7 @@
 import { CSVReader, CSVBunch } from 'objio/server';
 import { SERIALIZER } from 'objio';
 import { TableFileObject, ReadLinesArgs, ReadRowsResult } from './table-file-object';
-import { ColumnAttr } from '../client/table';
+import { ColumnAttr } from '../base/table';
 
 function rawValsToRows(cols: Array<string>, rows: Array<Array<string>>): ReadRowsResult {
   return (

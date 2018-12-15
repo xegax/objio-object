@@ -1,9 +1,15 @@
-import { FileObject as Base, FileArgs } from '../client/file-object';
-import { SERIALIZER } from 'objio';
+import { FileObjectBase, FileArgs, SendFileArgs } from '../base/file-object';
 import { createWriteStream, unlinkSync, existsSync } from 'fs';
 import { Readable } from 'stream';
 
-export class FileObject extends Base {
+interface ServerSendFileArgs {
+  name: string;
+  size: number;
+  mime: string;
+  data: Readable;
+}
+
+export class FileObject extends FileObjectBase {
   constructor(args?: FileArgs) {
     super(args);
 
@@ -22,11 +28,18 @@ export class FileObject extends Base {
     });
 
     this.holder.setMethodsToInvoke({
-      'send-file': { method: this.sendFileImpl, rights: 'write' }
+      'send-file': {
+        method: this.sendFileImpl,
+        rights: 'write'
+      }
     });
   }
 
-  sendFileImpl = (args: { name: string, size: number, mime: string, data: Readable }): Promise<void> => {
+  sendFile(args: SendFileArgs): Promise<any> {
+    return Promise.reject('not implemented');
+  }
+
+  private sendFileImpl = (args: ServerSendFileArgs): Promise<void> => {
     this.setProgress(0);
     this.setStatus('in progress');
 
@@ -65,9 +78,4 @@ export class FileObject extends Base {
   getPath(): string {
     return this.holder.getPublicPath(super.getFileName());
   }
-
-  static TYPE_ID = 'FileObject';
-  static SERIALIZE: SERIALIZER = () => ({
-    ...Base.SERIALIZE()
-  })
 }

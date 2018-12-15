@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { DocTable, DocTableArgs } from '../client/doc-table';
-import { ExecuteArgs } from '../client/table';
+import { ExecuteArgs } from '../base/table';
 import { FileObject } from '../client/file-object';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import { RenderListModel, RenderArgs } from 'ts-react-ui/model/list';
