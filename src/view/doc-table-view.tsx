@@ -10,6 +10,7 @@ import { ConfigBase } from './config';
 import { Database } from '../client/database';
 import { OBJIOItem } from 'objio';
 import { JSONFileObject } from '../client/json-file-object';
+import { PropSheet, PropsGroup, TextPropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
 
 export { DocTable };
 
@@ -59,64 +60,6 @@ export class DocTableView extends React.Component<Props, State> {
     model.setColumns(this.props.model.getColumns().map((col, c) => {
       return {
         name: col.name,
-        /*renderHeader: (jsx: JSX.Element) => {
-          return (
-            <div onContextMenu={evt => {
-              const items = [
-                <MenuItem
-                  key='hc'
-                  text={`hide column "${col.name}"`}
-                  onClick={() => {
-                    const cols = this.props.model.getColumns().map(col => col.name).filter(c => c != col.name);
-                    this.props.model.updateSubtable({
-                      cols,
-                      sort: null
-                    }).then(update);
-                  }}
-                />,
-                <MenuItem
-                  key='all'
-                  text='show all column'
-                  onClick={() => {
-                    const cols = this.props.model.getAllColumns().map(col => col.name);
-                    this.props.model.updateSubtable({
-                      cols
-                    }).then(update);
-                  }}
-                />,
-                <MenuItem
-                  key='sort-asc'
-                  text='Sort asc'
-                  onClick={() => {
-                    this.props.model.updateSubtable({
-                      sort: [{ column: col.name, dir: 'asc'} ]
-                    }).then(update);
-                  }}
-                />,
-                <MenuItem
-                  key='sort-desc'
-                  text='Sort desc'
-                  onClick={() => {
-                    this.props.model.updateSubtable({
-                      sort: [{ column: col.name, dir: 'desc'} ]
-                    }).then(update);
-                  }}
-                />,
-                <MenuItem
-                  key='distinct'
-                  text='Distinct'
-                  onClick={() => {
-                    this.props.model.updateSubtable({ distinct: { column: col.name } }).then(update);
-                  }}
-                />
-              ];
-
-              evt.preventDefault();
-              evt.stopPropagation();
-              ContextMenu.show(<Menu>{items}</Menu>, {left: evt.clientX, top: evt.clientY});
-            }}>{jsx}</div>
-          );
-        },*/
         render: (args: RenderArgs<Array<string>>) => {
           if (this.state.editRow == args.rowIdx && this.state.editCol == args.colIdx)
             return (
@@ -260,73 +203,44 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
 
   render() {
     return (
-      <div style={{ display: 'flex' }}>
-        <table style={{ flexGrow: 1 }}>
-        <tbody>
-          <tr>
-            <td> table name </td>
-            <td>
-              <input
-                style={{ width: '100%' }}
-                defaultValue={this.config.tableName}
-                onChange={evt => {
-                  this.config.tableName = evt.currentTarget.value;
-                }}
-              />
-            </td>
-          </tr>
-          <tr>
-            <td> database </td>
-            <td>
-              <select
-                style={{ width: '100%' }}
-                value={this.state.dbId}
-                onChange={evt => {
-                  const dbId = evt.currentTarget.value;
-                  this.config.dest = this.state.dbs.find(db => db.holder.getID() == dbId);
-                  this.setState({ dbId });
-                }}>
-                {(this.state.dbs || []).map((db, i) => {
-                  return (
-                    <option
-                      key={i}
-                      value={db.holder.getID()}
-                      title={OBJIOItem.getClass(db).TYPE_ID}
-                    >
-                      { db.getName() }
-                    </option>
-                  );
-                })}
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <td> csv file source </td>
-            <td>
-              <select
-                style={{ width: '100%' }}
-                value={this.state.csvId}
-                onChange={evt => {
-                  const csvId = evt.currentTarget.value;
-                  this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId) as CSVFileObject;
-                  this.setState({ csvId });
-                }}>
-                {(this.state.csvs || []).map((csv, i) => {
-                  return (
-                    <option
-                      key={i}
-                      value={csv.holder.getID()}
-                    >
-                      { csv.getName() }
-                    </option>
-                  );
-                })}
-              </select>
-            </td>
-          </tr>
-        </tbody>
-        </table>
-      </div>
+      <PropsGroup label='database table'>
+        <DropDownPropItem
+          label='database'
+          value={{value: this.state.dbId}}
+          values={(this.state.dbs || []).map((db, i) => {
+            return {
+              value: db.holder.getID(),
+              render: db.getName()
+            };
+          })}
+          onSelect={value => {
+            this.config.dest = this.state.dbs.find(db => db.holder.getID() == value.value);
+            this.setState({ dbId: value.value });
+          }}
+        />
+        <TextPropItem
+          label='table name'
+          value={this.config.tableName}
+          onEnter={value => {
+            this.config.tableName = value;
+          }}
+        />
+        <DropDownPropItem
+          label='file source'
+          value={{value: this.state.csvId}}
+          values={(this.state.csvs || []).map((csv, i) => {
+            return {
+              value: csv.holder.getID(),
+              render: csv.getName()
+            };
+          })}
+          onSelect={value => {
+            const csvId = value.value;
+            this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId) as CSVFileObject;
+            this.setState({ csvId });
+          }}
+        />
+      </PropsGroup>
     );
   }
 }
