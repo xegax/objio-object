@@ -15,8 +15,14 @@ export interface ClientView {
   view(props: {model: OBJIOItem}): JSX.Element;
 }
 
+export interface ViewDescIcon {
+  item?: JSX.Element;
+  bigDesc?: JSX.Element; 
+}
+
 export interface ViewDesc {
   desc: string;
+  icons?: ViewDescIcon;
   flags: Set<Flag> | Array<Flag>;
   views: Array<ClientView>;
   config(props: ConfigProps): JSX.Element;
@@ -40,7 +46,8 @@ export function registerViews(args: RegisterArgs) {
       desc: args.desc || args.classObj.TYPE_ID,
       views: args.views,
       config: args.config,
-      sources: args.sources
+      sources: args.sources,
+      icons: args.icons
     };
   };
 }

@@ -13,6 +13,7 @@ import {
 } from './files-container-view';
 import { Database } from '../client/database';
 import { ServerInstanceView, ServerInstance, ServerInstProps } from './server-instance-view';
+import { Icon } from 'ts-react-ui/icon';
 
 export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
@@ -24,6 +25,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: CSVFileObject,
+    icons: { item: <Icon src='csv-icon.png'/> },
     views: [{
       view: (props: CSVViewProps) => <CSVFileView {...props}/>
     }]
@@ -31,6 +33,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: JSONFileObject,
+    icons: { item: <Icon src='json-icon.png'/> },
     views: [{
       view: (props: JSONViewProps) => <JSONFileView {...props}/>
     }]
@@ -45,6 +48,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: DocTable,
+    icons: { item: <Icon src='table.png'/> },
     views: [{
       view: (props: TableViewProps) => <DocTableView {...props}/>
     }],
