@@ -1,11 +1,18 @@
 import { SERIALIZER } from 'objio';
 import { getExt } from '../client/file-object';
 import { Table } from './table';
-import { ColumnAttr } from '../base/table';
+import { ColumnAttr, PushCellsResult } from '../base/table';
 import { FilesContainer as Base, Loading, SendFileArgs } from '../client/files-container';
 import * as http from 'http';
 import * as fs from 'fs';
 import { createWriteStream } from 'fs';
+
+export interface SendFileArgs2 {
+  name: string;
+  size: number;
+  mime: string;
+  data: http.IncomingMessage;
+}
 
 function getColumns(): Array<ColumnAttr> {
   return [
@@ -77,7 +84,7 @@ export class FilesContainer extends Base {
     return this.loadingUserMap[userId] || (this.loadingUserMap[userId] = { ...this.loading });
   }
 
-  sendFileImpl = (args: { name: string, size: number, mime: string, data: http.IncomingMessage }, userId: string) => {
+  sendFileImpl = (args: SendFileArgs2, userId: string): Promise<PushCellsResult> => {
     const ext = getExt(args.name);
     const file = this.generateFileName(ext);
     return (

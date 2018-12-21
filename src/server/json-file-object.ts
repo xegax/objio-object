@@ -20,7 +20,7 @@ export class JSONFileObject extends TableFileObject {
               };
             })
           );
-    
+
           bunch.done();
         }
       })
