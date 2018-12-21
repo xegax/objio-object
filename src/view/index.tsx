@@ -13,7 +13,11 @@ import {
 } from './files-container-view';
 import { Database } from '../client/database';
 import { ServerInstanceView, ServerInstance, ServerInstProps } from './server-instance-view';
+import 'ts-react-ui/typings';
 import { Icon } from 'ts-react-ui/icon';
+import * as CSVIcon from '../images/csv-icon.png';
+import * as JSONIcon from '../images/json-icon.png';
+import * as TableIcon from '../images/table-icon.png';
 
 export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
@@ -25,7 +29,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: CSVFileObject,
-    icons: { item: <Icon src='csv-icon.png'/> },
+    icons: { item: <Icon src={CSVIcon}/> },
     views: [{
       view: (props: CSVViewProps) => <CSVFileView {...props}/>
     }]
@@ -33,7 +37,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: JSONFileObject,
-    icons: { item: <Icon src='json-icon.png'/> },
+    icons: { item: <Icon src={JSONIcon}/> },
     views: [{
       view: (props: JSONViewProps) => <JSONFileView {...props}/>
     }]
@@ -48,7 +52,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: DocTable,
-    icons: { item: <Icon src='table.png'/> },
+    icons: { item: <Icon src={TableIcon}/> },
     views: [{
       view: (props: TableViewProps) => <DocTableView {...props}/>
     }],
