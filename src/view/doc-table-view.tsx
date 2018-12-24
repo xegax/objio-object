@@ -5,11 +5,10 @@ import { FileObject } from '../client/file-object';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import { RenderListModel, RenderArgs } from 'ts-react-ui/model/list';
 import { List } from 'ts-react-ui/list';
-import { CSVFileObject } from '../client/csv-file-object';
+import { TableFile } from '../client/table-file';
 import { ConfigBase } from './config';
 import { Database } from '../client/database';
 import { OBJIOItem } from 'objio';
-import { JSONFileObject } from '../client/json-file-object';
 import { PropSheet, PropsGroup, TextPropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
 
 export { DocTable };
@@ -145,7 +144,7 @@ export class DocTableView extends React.Component<Props, State> {
               };
 
               model.holder.getObject<FileObject>(model.getFileObjId())
-              .then((csv: CSVFileObject) => {
+              .then((csv: TableFile) => {
                 args.columns = csv.getColumns();
                 model.execute(args);
               });
@@ -173,7 +172,7 @@ export interface CfgState {
   dbId: string;
   csvId: string;
   dbs: Array<Database>;
-  csvs: Array<CSVFileObject | JSONFileObject>;
+  csvs: Array<TableFile>;
 }
 
 export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
@@ -187,13 +186,13 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
     }).filter(obj => obj != null);
 
     const csvs = this.props.objects().map(obj => {
-      if (obj instanceof CSVFileObject || obj instanceof JSONFileObject)
+      if (obj instanceof TableFile)
         return obj;
       return null;
-    }).filter(obj => obj != null) as Array<CSVFileObject | JSONFileObject>;
+    }).filter(obj => obj != null) as Array<TableFile>;
 
     this.config.dest = dbs[0];
-    this.config.source = csvs[0] as CSVFileObject;
+    this.config.source = csvs[0] as TableFile;
     this.setState({
       dbs,
       csvs,
@@ -236,7 +235,7 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
           })}
           onSelect={value => {
             const csvId = value.value;
-            this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId) as CSVFileObject;
+            this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId) as TableFile;
             this.setState({ csvId });
           }}
         />

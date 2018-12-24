@@ -1,11 +1,11 @@
 import * as React from 'react';
-import { JSONFileObject } from '../client/json-file-object';
+import { JSONTableFile } from '../client/table-file';
 
-export { JSONFileObject };
+export { JSONTableFile };
 
 export interface Props {
   onlyContent?: boolean;
-  model: JSONFileObject;
+  model: JSONTableFile;
 }
 
 export class JSONFileView extends React.Component<Props> {
@@ -22,8 +22,8 @@ export class JSONFileView extends React.Component<Props> {
   }
 
   renderCSV(): JSX.Element | string {
-    const csv = this.props.model as JSONFileObject;
-    if (!(csv instanceof JSONFileObject))
+    const csv = this.props.model as JSONTableFile;
+    if (!(csv instanceof JSONTableFile))
       return null;
 
     return (

@@ -2,6 +2,9 @@
 {
 	"editor.tabSize": 2,
 	"files.exclude": {
+		"base": true,
+		"common": true,
+		"images": true,
 		"client": true,
 		"server": true,
 		"view": true,

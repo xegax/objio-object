@@ -8,13 +8,12 @@ import {
   ColumnAttr
 } from '../base/table';
 import { DocTableBase } from '../base/doc-table';
-import { CSVFileObject } from './csv-file-object';
 import { Table } from './table';
 import { Database } from './database';
-import { JSONFileObject } from './json-file-object';
+import { TableFileBase } from '../base/table-file';
 
 export interface DocTableArgs {
-  source: CSVFileObject | JSONFileObject;
+  source: TableFileBase;
   dest: Database;
   tableName: string;
   table?: Table;

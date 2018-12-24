@@ -1,11 +1,11 @@
 import * as React from 'react';
-import { CSVFileObject } from '../client/csv-file-object';
+import { CSVTableFile } from '../client/table-file';
 
-export { CSVFileObject };
+export { CSVTableFile };
 
 export interface Props {
   onlyContent?: boolean;
-  model: CSVFileObject;
+  model: CSVTableFile;
 }
 
 export class CSVFileView extends React.Component<Props> {
@@ -22,8 +22,8 @@ export class CSVFileView extends React.Component<Props> {
   }
 
   renderCSV(): JSX.Element | string {
-    const csv = this.props.model as CSVFileObject;
-    if (!(csv instanceof CSVFileObject))
+    const csv = this.props.model as CSVTableFile;
+    if (!(csv instanceof CSVTableFile))
       return null;
 
     return (

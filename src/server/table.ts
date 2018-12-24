@@ -17,9 +17,8 @@ import {
   LoadTableInfoArgs,
   PushCellsResult
 } from '../base/table';
-import { SERIALIZER } from 'objio';
 import { TableArgs, CreateSubtableResult } from '../base/table';
-import { TableFileObject, OnRowsArgs } from './table-file-object';
+import { TableFile, OnRowsArgs } from './table-file/index';
 
 export function getCompSqlCondition(cond: CompoundCond, col?: string): string {
   let sql = '';
@@ -126,8 +125,8 @@ export class Table extends TableBase {
     });
   }
 
-  private readRows(fo: TableFileObject, rowsPerBunch: number): Promise<ReadRowsResult> {
-    if (!(fo instanceof TableFileObject))
+  private readRows(fo: TableFile, rowsPerBunch: number): Promise<ReadRowsResult> {
+    if (!(fo instanceof TableFile))
       return Promise.reject('unknown type of source file');
 
     const result: ReadRowsResult = { skipRows: 0 };
@@ -148,8 +147,7 @@ export class Table extends TableBase {
     };
 
     return (
-      fo.readRows({
-        file: fo.getPath(),
+      fo.getDataReading().readRows({
         onRows,
         linesPerBunch: rowsPerBunch
       })
@@ -251,7 +249,7 @@ export class Table extends TableBase {
 
     let prepCols: Promise<Array<ColumnAttr>>;
     if (args.fileObjId) {
-      prepCols = this.holder.getObject<TableFileObject>(args.fileObjId)
+      prepCols = this.holder.getObject<TableFile>(args.fileObjId)
       .then(file => file.getColumns())
       .then(cols => {
         if (!args.columns || args.columns.length == 0)
@@ -294,7 +292,7 @@ export class Table extends TableBase {
       return task;
 
     return task.then(() => {
-      this.holder.getObject<TableFileObject>(args.fileObjId)
+      this.holder.getObject<TableFile>(args.fileObjId)
       .then(obj => {
         this.setStatus('in progress');
         this.holder.save();

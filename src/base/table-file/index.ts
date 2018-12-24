@@ -1,11 +1,18 @@
 import { SERIALIZER } from 'objio';
-import { FileObject } from './file-object';
-import { Columns, ColumnAttr } from '../base/table';
+import { FileObjectBase, SendFileArgs } from '../file-object';
+import { ColumnAttr } from '../../base/table';
+import { DataReading } from './data-reading';
 
-export class TableFileObject extends FileObject {
+export { SendFileArgs };
+
+export abstract class TableFileBase extends FileObjectBase {
   protected columns = Array<ColumnAttr>();
 
-  getColumns(): Columns {
+  getColumns(args?: { discard: boolean }): Array<ColumnAttr> {
+    args = args || { discard: false };
+    if (args.discard == false)
+      return this.columns.filter(col => col.discard != true);
+
     return this.columns;
   }
 
@@ -29,8 +36,11 @@ export class TableFileObject extends FileObject {
     this.holder.save();
   }
 
+  // server side implementation
+  abstract getDataReading(): DataReading;
+
   static SERIALIZE: SERIALIZER = () => ({
-    ...FileObject.SERIALIZE(),
+    ...FileObjectBase.SERIALIZE(),
     columns: { type: 'json' }
   })
 }

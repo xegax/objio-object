@@ -65,6 +65,7 @@ export abstract class FileObjectBase extends ObjectBase {
     return this.loadSize;
   }
 
+  abstract onFileUploaded(): Promise<void>;
   abstract sendFile(args: SendFileArgs): Promise<any>;
 
   static TYPE_ID: string = 'FileObject';
