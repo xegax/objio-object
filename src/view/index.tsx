@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { FileObject, FileObjectView, Props as FileViewProps } from './file-object-view';
-import { CSVTableFile, CSVFileView, Props as CSVViewProps } from './csv-file-view';
-import { JSONTableFile, JSONFileView, Props as JSONViewProps } from './json-file-view';
+import { JSONTableFile, CSVTableFile } from '../client/table-file';
 import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video-file-view';
 import { DocTable, DocTableView, DocTableConfig, Props as TableViewProps } from './doc-table-view';
 import { OBJIOItemClassViewable, registerViews } from './config';
@@ -30,17 +29,13 @@ export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
     classObj: CSVTableFile,
     icons: { item: <Icon src={CSVIcon}/> },
-    views: [{
-      view: (props: CSVViewProps) => <CSVFileView {...props}/>
-    }]
+    views: []
   });
 
   registerViews({
     classObj: JSONTableFile,
     icons: { item: <Icon src={JSONIcon}/> },
-    views: [{
-      view: (props: JSONViewProps) => <JSONFileView {...props}/>
-    }]
+    views: []
   });
 
   registerViews({

@@ -96,6 +96,10 @@ export class ObjectBase extends OBJIOItem {
     return [];
   }
 
+  getObjPropGroups(): JSX.Element {
+    return null;
+  }
+
   static TYPE_ID = 'ObjectBase';
   static SERIALIZE: SERIALIZER = () => ({
     name:     { type: 'string' },

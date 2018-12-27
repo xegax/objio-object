@@ -2,7 +2,7 @@ import { FileObjectBase, FileArgs, SendFileArgs } from '../base/file-object';
 import { createWriteStream, unlinkSync, existsSync } from 'fs';
 import { Readable } from 'stream';
 
-interface ServerSendFileArgs {
+export interface ServerSendFileArgs {
   name: string;
   size: number;
   mime: string;
@@ -74,7 +74,7 @@ export class FileObject extends FileObjectBase {
           });
         });
       });
-    }
+    };
   }
 
   static getPath(obj: FileObject) {

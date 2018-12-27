@@ -1,5 +1,8 @@
+import * as React from 'react';
 import { CSVTableFile as Base } from '../../base/table-file/csv-table-file';
 import { SendFileArgs } from '../../base/file-object';
+import { PropsGroup } from 'ts-react-ui/prop-sheet/props-group';
+import { TableFileView } from '../../view/table-file-view';
 
 export class CSVTableFile extends Base {
   sendFile(args: SendFileArgs): Promise<any> {
@@ -11,11 +14,18 @@ export class CSVTableFile extends Base {
   }
 
   getDataReading() {
-    throw new Error('not implemented');
     return null;
   }
 
   onFileUploaded() {
     return Promise.resolve();
+  }
+
+  getObjPropGroups() {
+    return (
+      <PropsGroup label='columns'>
+        <TableFileView model={this}/>
+      </PropsGroup>
+    );
   }
 }
