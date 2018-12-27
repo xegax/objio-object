@@ -2,11 +2,13 @@ import { SERIALIZER } from 'objio';
 import { FileObjectBase, SendFileArgs } from '../file-object';
 import { ColumnAttr } from '../../base/table';
 import { DataReading } from './data-reading';
+import { StatMap } from 'objio/common/reader/statistics';
 
 export { SendFileArgs };
 
 export abstract class TableFileBase extends FileObjectBase {
   protected columns = Array<ColumnAttr>();
+  protected statMap: StatMap = {};
 
   getColumns(args?: { discard: boolean }): Array<ColumnAttr> {
     args = args || { discard: false };
@@ -36,11 +38,20 @@ export abstract class TableFileBase extends FileObjectBase {
     this.holder.save();
   }
 
+  getStatMap(): StatMap {
+    return this.statMap;
+  }
+
+  setStatMap(map: StatMap) {
+    this.statMap = map;
+  }
+
   // server side implementation
   abstract getDataReading(): DataReading;
 
   static SERIALIZE: SERIALIZER = () => ({
     ...FileObjectBase.SERIALIZE(),
-    columns: { type: 'json' }
+    columns: { type: 'json' },
+    statMap: { type: 'json' }
   })
 }

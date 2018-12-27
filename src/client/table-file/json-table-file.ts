@@ -18,4 +18,8 @@ export class JSONTableFile extends Base {
   onFileUploaded() {
     return Promise.resolve();
   }
+
+  getAppComponents() {
+    return [];
+  }
 }

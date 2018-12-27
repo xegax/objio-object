@@ -1,8 +1,9 @@
-import { JSONReader, JSONBunch } from 'objio/common/json-reader';
+import { readJSONArray } from 'objio/common/reader/json-array-reader';
+import { pushStat, StatMap } from 'objio/common/reader/statistics';
 import { SERIALIZER } from 'objio';
 import { JSONTableFile as Base } from '../../base/table-file/json-table-file';
 import { ColumnAttr } from '../../base/table';
-import { ReadLinesArgs } from '../../base/table-file/data-reading';
+import { ReadLinesArgs, OnRowsArgs } from '../../base/table-file/data-reading';
 import { FileObject } from '../file-object';
 
 export class JSONTableFile extends Base {
@@ -12,16 +13,16 @@ export class JSONTableFile extends Base {
     FileObject.initFileObj(this);
   }
 
-  readCols(): Promise<Array<ColumnAttr>> {
+  protected readCols(): Promise<Array<ColumnAttr>> {
     const file = this.getPath();
     let cols: Array<ColumnAttr> = [];
     return (
-      JSONReader.read({
+      readJSONArray({
         file,
-        linesPerBunch: 1,
-        onNextBunch: (bunch: JSONBunch) => {
+        itemsPerBunch: 1,
+        onBunch: args => {
           cols = (
-            Object.keys(bunch.rows[0])
+            Object.keys(args.items[0])
               .map(name => {
                 return {
                   name,
@@ -29,7 +30,7 @@ export class JSONTableFile extends Base {
                 };
               })
           );
-          bunch.done();
+          return 'stop';
         }
       })
       .then(() => cols)
@@ -38,18 +39,15 @@ export class JSONTableFile extends Base {
 
   readRows(args: ReadLinesArgs): Promise<any> {
     return (
-      JSONReader.read({
+      readJSONArray({
         file: this.getPath(),
-        linesPerBunch: args.linesPerBunch,
-        onNextBunch: (bunch: JSONBunch) => {
+        itemsPerBunch: args.linesPerBunch,
+        onBunch: bunch => {
           return (
-            args.onRows({
-              rows: bunch.rows,
-              progress: bunch.progress
+            args.onRows({ rows: bunch.items as any, progress: bunch.progress })
+            .catch(e => {
+              return 'stop';
             })
-              .catch(e => {
-                bunch.done();
-              })
           );
         }
       })
@@ -60,13 +58,34 @@ export class JSONTableFile extends Base {
     return this;
   }
 
+  protected pushStat = (args: OnRowsArgs, map: StatMap) => {
+    this.setProgress(args.progress);
+    pushStat(args.rows as Array<Object>, map);
+    return Promise.resolve();
+  }
+
   onFileUploaded(): Promise<void> {
+    let statMap: StatMap = {};
+
+    this.setStatMap({});
+    this.holder.save();
+
     return (
       this.readCols()
-        .then(cols => {
-          this.columns = cols;
-          console.log('columns', JSON.stringify(this.columns, null, ' '));
-        })
+      .then(cols => {
+        this.columns = cols;
+        this.holder.save();
+        return (
+          this.readRows({
+            linesPerBunch: 100,
+            onRows: args => this.pushStat(args, statMap)
+          })
+        );
+      })
+      .then(() => {
+        this.setStatMap(statMap);
+        this.holder.save();
+      })
     );
   }
 

@@ -149,4 +149,16 @@ export class DocTable extends DocTableBase {
   getRender(): RenderListModel {
     return this.render;
   }
+
+  isStatusInProgess() {
+    return this.table.isStatusInProgess() || super.isStatusInProgess();
+  }
+
+  getProgress() {
+    return this.table.getProgress() || this.progress;
+  }
+
+  getStatus() {
+    return this.table.getStatus();
+  }
 }

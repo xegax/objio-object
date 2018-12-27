@@ -14,5 +14,4 @@ export type ReadRowsResult = Array<{[key: string]: string}>;
 
 export interface DataReading {
   readRows(args: ReadLinesArgs): Promise<any>;
-  readCols(): Promise< Array<ColumnAttr> >;
 }

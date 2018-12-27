@@ -9,7 +9,7 @@ interface ServerSendFileArgs {
   data: Readable;
 }
 
-export abstract class FileObject extends FileObjectBase {
+export class FileObject extends FileObjectBase {
   constructor(args?: FileArgs) {
     super(args);
 
@@ -79,6 +79,10 @@ export abstract class FileObject extends FileObjectBase {
 
   static getPath(obj: FileObject) {
     return obj.holder.getPublicPath(obj.getFileName());
+  }
+
+  onFileUploaded() {
+    return Promise.resolve();
   }
 
   getPath(): string {

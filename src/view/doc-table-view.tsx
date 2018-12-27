@@ -99,11 +99,8 @@ export class DocTableView extends React.Component<Props, State> {
   }
 
   renderInvalid(): JSX.Element {
-    const table = this.props.model.getTableRef();
-    if (table.getStatus() == 'in progress')
-      return (
-        <div>in progress, {table.getProgress()}</div>
-      );
+    if (this.props.model.getStatus() == 'ok')
+      return null;
 
     return (
       <div>not confgured</div>
@@ -129,11 +126,7 @@ export class DocTableView extends React.Component<Props, State> {
   renderValid() {
     const model = this.props.model;
     return (
-      <React.Fragment>
-        <div>database: {model.getTableRef().getDatabase().getName()}</div>
-        <div>table: {model.getTable()}</div>
-        <div>rows: {model.getTotalRowsNum()}</div>
-        <div>last execute time: {model.getLastExecuteTime()}</div>
+      <>
         {this.renderErrors()}
         <div>
           <button
@@ -154,7 +147,7 @@ export class DocTableView extends React.Component<Props, State> {
           </button>
         </div>
         {this.renderTable()}
-      </React.Fragment>
+      </>
     );
   }
 
@@ -162,7 +155,7 @@ export class DocTableView extends React.Component<Props, State> {
     const model = this.props.model;
     return (
       <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
-        {!model.getTableRef().isStatusInProgess() ? this.renderValid() : this.renderInvalid()}
+        {this.renderInvalid() || this.renderValid()}
       </div>
     );
   }

@@ -13,7 +13,7 @@ export class CSVTableFile extends Base {
     FileObject.initFileObj(this);
   }
 
-  readCols(): Promise< Array<ColumnAttr> > {
+  protected readCols(): Promise< Array<ColumnAttr> > {
     const file = this.getPath();
     let cols: Array<ColumnAttr> = [];
     return (
