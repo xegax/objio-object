@@ -3,6 +3,7 @@ import { CSVTableFile as Base } from '../../base/table-file/csv-table-file';
 import { SendFileArgs } from '../../base/file-object';
 import { PropsGroup } from 'ts-react-ui/prop-sheet/props-group';
 import { TableFileView } from '../../view/table-file-view';
+import { SwitchPropItem } from 'ts-react-ui/prop-sheet';
 
 export class CSVTableFile extends Base {
   sendFile(args: SendFileArgs): Promise<any> {
@@ -23,9 +24,21 @@ export class CSVTableFile extends Base {
 
   getObjPropGroups() {
     return (
-      <PropsGroup label='columns'>
-        <TableFileView model={this}/>
-      </PropsGroup>
+      <>
+        <PropsGroup label='csv file config'>
+          <SwitchPropItem
+            label='First row has columns'
+            value={this.isFirstRowIsCols()}
+            onChanged={newValue => {
+              this.setFirstRowIsCols(newValue);
+              this.holder.save();
+            }}
+          />
+        </PropsGroup>
+        <PropsGroup label='columns'>
+          <TableFileView model={this}/>
+        </PropsGroup>
+      </>
     );
   }
 }

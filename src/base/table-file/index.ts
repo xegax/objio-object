@@ -10,6 +10,10 @@ export abstract class TableFileBase extends FileObjectBase {
   protected columns = Array<ColumnAttr>();
   protected statMap: StatMap = {};
 
+  setColumns(cols: Array<ColumnAttr>) {
+    this.columns = cols;
+  }
+
   getColumns(args?: { discard: boolean }): Array<ColumnAttr> {
     args = args || { discard: false };
     if (args.discard == false)

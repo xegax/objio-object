@@ -5,6 +5,7 @@ import { JSONTableFile as Base } from '../../base/table-file/json-table-file';
 import { ColumnAttr } from '../../base/table';
 import { ReadLinesArgs, OnRowsArgs } from '../../base/table-file/data-reading';
 import { FileObject } from '../file-object';
+import { onFileUpload } from './table-file';
 
 export class JSONTableFile extends Base {
   constructor(args) {
@@ -13,7 +14,7 @@ export class JSONTableFile extends Base {
     FileObject.initFileObj(this);
   }
 
-  protected readCols(): Promise<Array<ColumnAttr>> {
+  readCols(): Promise<Array<ColumnAttr>> {
     const file = this.getPath();
     let cols: Array<ColumnAttr> = [];
     return (
@@ -58,35 +59,8 @@ export class JSONTableFile extends Base {
     return this;
   }
 
-  protected pushStat = (args: OnRowsArgs, map: StatMap) => {
-    this.setProgress(args.progress);
-    pushStat(args.rows as Array<Object>, map);
-    return Promise.resolve();
-  }
-
   onFileUploaded(): Promise<void> {
-    let statMap: StatMap = {};
-
-    this.setStatMap({});
-    this.holder.save();
-
-    return (
-      this.readCols()
-      .then(cols => {
-        this.columns = cols;
-        this.holder.save();
-        return (
-          this.readRows({
-            linesPerBunch: 100,
-            onRows: args => this.pushStat(args, statMap)
-          })
-        );
-      })
-      .then(() => {
-        this.setStatMap(statMap);
-        this.holder.save();
-      })
-    );
+    return onFileUpload(this);
   }
 
   sendFile() {

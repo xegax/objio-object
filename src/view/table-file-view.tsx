@@ -18,6 +18,10 @@ export interface Props {
   model: TableFile;
 }
 
+export interface State {
+  stats: boolean;
+}
+
 const allColumTypes = [
   'TEXT',
   'INTEGER',
@@ -30,7 +34,9 @@ const allColumTypes = [
   'VARCHAR(256)'
 ].map(type => ({ value: type }));
 
-export class TableFileView extends React.Component<Props> {
+export class TableFileView extends React.Component<Props, Partial<State>> {
+  state: Partial<State> = {};
+
   subscriber = () => {
     this.setState({});
   }
@@ -109,71 +115,127 @@ export class TableFileView extends React.Component<Props> {
           width={18}
           height={18}
           style={{ opacity: stat.nulls ? 1 : opacity, display: nulls ? null : 'none' }}
-          title={ stat.nulls ? `count: ${stat.nulls}` : ''}
+          title={stat.nulls ? `count: ${stat.nulls}` : ''}
         />
         <Icon
           src={numIcon}
           width={18}
           height={18}
           style={{ opacity: stat.nums ? 1 : opacity, display: nums ? null : 'none' }}
-          title={ stat.nums ? `count: ${stat.nums}; range: [${stat.minValue} ; ${stat.maxValue}]` : ''}
+          title={stat.nums ? `count: ${stat.nums}; range: [${stat.minValue} ; ${stat.maxValue}]` : ''}
         />
         <Icon
           src={intIcon}
           width={18}
           height={18}
           style={{ opacity: stat.ints ? 1 : opacity, display: ints ? null : 'none' }}
-          title={ stat.ints ? `count: ${stat.ints}; range: [${stat.minValue} ; ${stat.maxValue}]` : ''}
+          title={stat.ints ? `count: ${stat.ints}; range: [${stat.minValue} ; ${stat.maxValue}]` : ''}
         />
         <Icon
           src={strIcon}
           width={18}
           height={18}
           style={{ opacity: stat.strs ? 1 : opacity, display: strs ? null : 'none' }}
-          title={ stat.strs ? `count: ${stat.strs}; size range: [${stat.minSize} ; ${stat.maxSize}]` : ''}
+          title={stat.strs ? `count: ${stat.strs}; size range: [${stat.minSize} ; ${stat.maxSize}]` : ''}
         />
       </>
     );
   }
 
-  render() {
+  renderHeader() {
+    const style = {
+      alignItems: 'center',
+      display: 'flex'
+    };
+
     const model = this.props.model;
+    return (
+      <div className='horz-panel-5px' style={style}>
+        <CheckBox
+          title='toggle on/off all'
+          value={true}
+          onChange={() => {
+            let discards = 0;
+            model.getColumns({discard: true})
+            .forEach(col => col.discard && discards++);
+
+            model.getColumns({discard: true})
+            .forEach(col => {
+              model.setColumn({ name: col.name, discard: discards == 0 ? true : false });
+            });
+          }}
+        />
+        <CheckIcon
+          title='column will be indexed'
+          faIcon='fa fa-info-circle'
+          value={true}
+          onChange={() => {
+            let indexs = 0;
+            model.getColumns({discard: true})
+            .forEach(col => col.index && indexs++);
+
+            model.getColumns({discard: true})
+            .forEach(col => {
+              model.setColumn({ name: col.name, index: indexs == 0 ? true : false });
+            });
+          }}
+        />
+        <CheckIcon
+          title='toggle statistics'
+          faIcon='fa fa-pie-chart'
+          value={true}
+          onChange={() => {
+            this.setState({ stats: !this.state.stats });
+          }}
+        />
+      </div>
+    );
+  }
+
+  renderColumn = (col: ColumnAttr) => {
+    const style = {
+      alignItems: 'center',
+      display: 'flex',
+      color: col.discard ? 'silver' : null
+    };
+
+    return {
+      value: col.name,
+      render: (
+        <div className='horz-panel-5px' style={style}>
+          <CheckBox
+            title='toggle on/off'
+            value={!col.discard}
+            onChange={show => {
+              this.props.model.setColumn({ name: col.name, discard: !show });
+            }}
+          />
+          <CheckIcon
+            title='column will be indexed'
+            faIcon='fa fa-info-circle'
+            value={col.index}
+            onChange={index => {
+              this.props.model.setColumn({ name: col.name, index });
+            }}
+          />
+          {this.renderType(col)}
+          {this.state.stats && this.renderDataTypeIcons(col)}
+          <span>{col.name}</span>
+        </div>
+      )
+    };
+  }
+
+  render() {
+    const values = [
+      { value: '', render: this.renderHeader() },
+      ...this.props.model.getColumns({ discard: true }).map(this.renderColumn)
+    ];
+
     return (
       <ListView
         border={false}
-        values={model.getColumns({ discard: true }).map((col, i) => {
-          const style = {
-            alignItems: 'center',
-            display: 'flex',
-            color: col.discard ? 'silver' : null
-          };
-
-          return {
-            value: col.name,
-            render: (
-              <div className='horz-panel-5px' style={style}>
-                <CheckBox
-                  title='toggle on/off'
-                  value={!col.discard}
-                  onChange={show => {
-                    model.setColumn({ name: col.name, discard: !show });
-                  }}
-                />
-                <CheckIcon
-                  title='column will be indexed'
-                  faIcon='fa fa-info-circle'
-                  value={col.index}
-                  onChange={index => {
-                    model.setColumn({ name: col.name, index });
-                  }}
-                />
-                {this.renderType(col)}
-                {this.renderDataTypeIcons(col)}
-                <span>{col.name}</span>
-              </div>
-            )
-          };
-        })}
+        values={values}
       />
     );
   }

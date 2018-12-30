@@ -10,8 +10,9 @@ export interface ReadLinesArgs {
   onRows?(args: OnRowsArgs): Promise<any>;
 }
 
-export type ReadRowsResult = Array<{[key: string]: string}>;
+export type ReadRowsResult = Array<{[key: string]: string | number}>;
 
 export interface DataReading {
   readRows(args: ReadLinesArgs): Promise<any>;
+  readCols(): Promise<Array<ColumnAttr>>;
 }

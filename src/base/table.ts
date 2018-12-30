@@ -93,7 +93,7 @@ export interface Range {
 
 export interface PushRowArgs {
   updRowCounter?: boolean;
-  values: Array<{[column: string]: string}>;
+  values: Array<{[column: string]: string | number}>;
   columns?: Array<string>;
 }
 

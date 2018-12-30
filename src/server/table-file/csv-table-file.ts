@@ -3,8 +3,8 @@ import { SERIALIZER } from 'objio';
 import { CSVTableFile as Base } from '../../base/table-file/csv-table-file';
 import { ReadLinesArgs, ReadRowsResult } from '../../base/table-file/data-reading';
 import { ColumnAttr } from '../../base/table';
-import { JSONTableFile } from '../../base/table-file/json-table-file';
 import { FileObject } from '../file-object';
+import { onFileUpload } from './table-file';
 
 export class CSVTableFile extends Base {
   constructor(args) {
@@ -13,21 +13,22 @@ export class CSVTableFile extends Base {
     FileObject.initFileObj(this);
   }
 
-  protected readCols(): Promise< Array<ColumnAttr> > {
+  readCols(): Promise< Array<ColumnAttr> > {
     const file = this.getPath();
     let cols: Array<ColumnAttr> = [];
+    const isFirstRowIsCols = this.isFirstRowIsCols();
     return (
       CSVReader.read({
         file,
         linesPerBunch: 1,
         onNextBunch: (bunch: CSVBunch) => {
-          cols = bunch.rows[0].map(col => {
+          cols = bunch.rows[0].map((col, i) => {
             return {
-              name: col,
+              name: isFirstRowIsCols ? col : 'column_' + i,
               type: 'TEXT'
             };
           });
-    
+
           bunch.done();
         }
       })
@@ -36,14 +37,20 @@ export class CSVTableFile extends Base {
   }
 
   readRows(args: ReadLinesArgs): Promise<any> {
+    let bunchIdx = 0;
     const cols = this.columns.map(col => col.name);
     const readArgs = {
       file: this.getPath(),
       linesPerBunch: args.linesPerBunch,
       onNextBunch: (bunch: CSVBunch) => {
+        let rows = rawValsToRows(cols, bunch.rows);
+        if (bunchIdx == 0 && this.isFirstRowIsCols())
+          rows = rows.slice(1);
+
+        bunchIdx++;
         return (
           args.onRows({
-            rows: rawValsToRows(cols, bunch.rows),
+            rows,
             progress: bunch.progress
           })
           .catch(() => {
@@ -65,13 +72,7 @@ export class CSVTableFile extends Base {
   }
 
   onFileUploaded(): Promise<void> {
-    return (
-      this.readCols()
-      .then(cols => {
-        this.columns = cols;
-        console.log('columns', JSON.stringify(this.columns, null, ' '));
-      })
-    );
+    return onFileUpload(this);
   }
 
   static SERIALIZE: SERIALIZER = () => ({
@@ -84,8 +85,10 @@ function rawValsToRows(cols: Array<string>, rows: Array<Array<string>>): ReadRow
     rows.map(values => {
       const row = {};
 
-      for (let c = 0; c < values.length; c++)
-        row[ cols[c] ] = values[c];
+      for (let c = 0; c < values.length; c++) {
+        const value = values[c].trim();
+        row[ cols[c] ] = Number.isNaN(+value) ? value : +value;
+      }
 
       return row;
     })
