@@ -1,4 +1,5 @@
-import { SERIALIZER } from 'objio';
+import * as React from 'react';
+import { PropsGroup, PropItem } from 'ts-react-ui/prop-sheet';
 import { RenderListModel } from 'ts-react-ui/model/list';
 import { Cancelable, ExtPromise } from 'objio';
 import {
@@ -11,6 +12,8 @@ import { DocTableBase } from '../base/doc-table';
 import { Table } from './table';
 import { Database } from './database';
 import { TableFileBase } from '../base/table-file';
+import { TableFile } from './table-file';
+import { FileObject } from './file-object';
 
 export interface DocTableArgs {
   source: TableFileBase;
@@ -92,6 +95,34 @@ export class DocTable extends DocTableBase {
         this.holder.notify();
       }
     });
+  }
+
+  getObjPropGroups() {
+    return (
+      <PropsGroup label='table'>
+        <PropItem label='name' value={this.table.getTable()}/>
+        <PropItem label='rows number' value={this.getTotalRowsNum()}/>
+        <PropItem label='columns number' value={this.getAllColumns().length}/>
+        <PropItem label='execute time' value={this.table.getLastExecuteTime() + ' ms'}/>
+        <button
+          disabled={this.isStatusInProgess()}
+          onClick={() => {
+            const args: ExecuteArgs = {
+              table: this.getTable(),
+              fileObjId: this.getFileObjId()
+            };
+
+            this.holder.getObject<FileObject>(args.fileObjId)
+            .then((file: TableFile) => {
+              args.columns = file.getColumns();
+              this.execute(args);
+            });
+          }}
+        >
+          execute
+        </button>
+      </PropsGroup>
+    );
   }
 
   getTable(): string {

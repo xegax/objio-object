@@ -128,24 +128,6 @@ export class DocTableView extends React.Component<Props, State> {
     return (
       <>
         {this.renderErrors()}
-        <div>
-          <button
-            onClick={() => {
-              const args: ExecuteArgs = {
-                table: model.getTable(),
-                fileObjId: model.getFileObjId()
-              };
-
-              model.holder.getObject<FileObject>(model.getFileObjId())
-              .then((csv: TableFile) => {
-                args.columns = csv.getColumns();
-                model.execute(args);
-              });
-            }}
-          >
-            execute
-          </button>
-        </div>
         {this.renderTable()}
       </>
     );
