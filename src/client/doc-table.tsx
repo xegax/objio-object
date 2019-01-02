@@ -104,23 +104,25 @@ export class DocTable extends DocTableBase {
         <PropItem label='rows number' value={this.getTotalRowsNum()}/>
         <PropItem label='columns number' value={this.getAllColumns().length}/>
         <PropItem label='execute time' value={this.table.getLastExecuteTime() + ' ms'}/>
-        <button
-          disabled={this.isStatusInProgess()}
-          onClick={() => {
-            const args: ExecuteArgs = {
-              table: this.getTable(),
-              fileObjId: this.getFileObjId()
-            };
+        <PropItem>
+          <button
+            disabled={this.isStatusInProgess()}
+            onClick={() => {
+              const args: ExecuteArgs = {
+                table: this.getTable(),
+                fileObjId: this.getFileObjId()
+              };
 
-            this.holder.getObject<FileObject>(args.fileObjId)
-            .then((file: TableFile) => {
-              args.columns = file.getColumns();
-              this.execute(args);
-            });
-          }}
-        >
-          execute
-        </button>
+              this.holder.getObject<FileObject>(args.fileObjId)
+              .then((file: TableFile) => {
+                args.columns = file.getColumns();
+                this.execute(args);
+              });
+            }}
+          >
+            execute
+          </button>
+        </PropItem>
       </PropsGroup>
     );
   }

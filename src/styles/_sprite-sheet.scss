@@ -1,0 +1,49 @@
+.sprite-sheet-view {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  right: 0px;
+  bottom: 0px;
+  overflow: auto;
+
+  & .rect {
+    border: 1px solid silver;
+    position: absolute;
+    background-color: blue;
+    opacity: 0.3;
+
+    & .corner {
+      width: 5px;
+      height: 5px;
+      position: absolute;
+    }
+
+    & .lt-corner {
+      left: 0px;
+      top: 0px;
+      cursor: nw-resize;
+    }
+
+    & .rt-corner {
+      right: 0px;
+      top: 0px;
+      cursor: ne-resize;
+    }
+
+    & .rb-corner {
+      right: 0px;
+      bottom: 0px;
+      cursor: nw-resize;
+    }
+
+    & .lb-corner {
+      left: 0px;
+      bottom: 0px;
+      cursor: ne-resize;
+    }
+  }
+
+  & .rect-select {
+    border-color: red;
+  }
+}

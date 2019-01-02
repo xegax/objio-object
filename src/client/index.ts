@@ -8,6 +8,7 @@ import { FilesContainer } from './files-container';
 import { ServerInstance } from 'objio/object/client/server-instance';
 import { UserObject } from 'objio/object/client/user-object';
 import { UserGroup } from 'objio/object/client/user-group';
+import { Animation, SpriteSheet } from './sprite-sheet';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
@@ -25,6 +26,8 @@ export function createFileObject(args: FileArgs): FileObject {
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
+    Animation,
+    SpriteSheet,
     UserObject,
     UserGroup,
     ServerInstance,

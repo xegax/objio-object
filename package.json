@@ -12,8 +12,8 @@
     "clean": "npm run clean-src && npm run clean-dirs",
     "clean-src": "shx rm -rf src/**/*.js src/**/*.js.map src/**/*.d.ts *.d.ts *.js *.js.map",
     "clean-build": "shx rm -rf build/**/*",
-    "copy": "shx rm -rf images && shx cp -rf ./src/images ./images",
-    "clean-dirs": "shx rm -rf client server task view common base images"
+    "copy": "shx rm -rf images && shx cp -rf ./src/images ./images && shx cp -rf ./src/styles ./styles",
+    "clean-dirs": "shx rm -rf client server task view common base images styles"
   },
   "author": "xega",
   "license": "ISC",

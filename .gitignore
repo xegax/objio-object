@@ -8,3 +8,4 @@ src/**/*.d.ts
 package-lock.json
 build
 /images
+/styles

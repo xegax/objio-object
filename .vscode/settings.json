@@ -2,6 +2,7 @@
 {
 	"editor.tabSize": 2,
 	"files.exclude": {
+		"styles": true,
 		"base": true,
 		"common": true,
 		"images": true,

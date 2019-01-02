@@ -11,12 +11,18 @@ import {
   FilesContainerProps
 } from './files-container-view';
 import { Database } from '../client/database';
-import { ServerInstanceView, ServerInstance, ServerInstProps } from './server-instance-view';
+import { SpriteSheet, SpriteSheetView, SpriteConfig } from './sprite-sheet';
+import {
+  ServerInstanceView,
+  ServerInstance,
+  ServerInstProps
+} from './server-instance-view';
 import 'ts-react-ui/typings';
 import { Icon } from 'ts-react-ui/icon';
 import * as CSVIcon from '../images/csv-icon.png';
 import * as JSONIcon from '../images/json-icon.png';
 import * as TableIcon from '../images/table-icon.png';
+import { FileObjectBase } from '../base/file-object';
 
 export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
@@ -75,6 +81,17 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     }]
   });
 
+  registerViews({
+    classObj: SpriteSheet,
+    views: [{
+      view: (props: {model: SpriteSheet}) => <SpriteSheetView key={props.model.holder.getID()} {...props} />
+    }],
+    config: props => <SpriteConfig {...props}/>,
+    sources: [ [ FileObjectBase ] ],
+    flags:  [ 'create-wizard' ],
+    desc: 'Sprite sheet object'
+  });
+
   return [
     ServerInstance,
     FilesContainer,
@@ -82,6 +99,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     CSVTableFile,
     JSONTableFile,
     VideoFileObject,
-    DocTable
+    DocTable,
+    SpriteSheet
   ];
 }
