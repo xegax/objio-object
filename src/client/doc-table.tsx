@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { PropsGroup, PropItem } from 'ts-react-ui/prop-sheet';
 import { RenderListModel } from 'ts-react-ui/model/list';
-import { Cancelable, ExtPromise } from 'objio';
 import {
   CreateSubtableResult,
   ExecuteArgs,
@@ -24,7 +23,7 @@ export interface DocTableArgs {
 
 export class DocTable extends DocTableBase {
   private render = new RenderListModel(0, 20);
-  private lastLoadTimer: Cancelable;
+  private lastLoadTimer: Promise<any>;
   private maxTimeBetweenRequests: number = 300;
   private totalRows: number = 0;
   private cols = Array<ColumnAttr>();
@@ -47,7 +46,7 @@ export class DocTable extends DocTableBase {
           this.lastLoadTimer = null;
         }
 
-        this.lastLoadTimer = ExtPromise().cancelable( ExtPromise().timer(this.maxTimeBetweenRequests) );
+        this.lastLoadTimer = Promise.delay(this.maxTimeBetweenRequests);
         return this.lastLoadTimer.then(() => {
           this.lastLoadTimer = null;
           return this.table.loadCells({ first: from, count, table: this.tableName });

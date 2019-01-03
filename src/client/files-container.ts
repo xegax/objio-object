@@ -3,7 +3,6 @@ import { Database } from './database';
 import { SERIALIZER } from 'objio';
 import { Table } from './table';
 import { RenderListModel } from 'ts-react-ui/model/list';
-import { Cancelable, ExtPromise } from 'objio';
 import { ColumnAttr } from '../base/table';
 
 export interface SendFileArgs {
@@ -33,7 +32,7 @@ export class FilesContainer extends ObjectBase {
   protected table: Table;
   protected database: Database;
   private render = new RenderListModel(0, 20);
-  private lastLoadTimer: Cancelable;
+  private lastLoadTimer: Promise<any>;
   private maxTimeBetweenRequests: number = 0;
   private selectedUrl: string;
   protected loading: Loading = { progress: 1, name: '', loading: false };
@@ -78,7 +77,7 @@ export class FilesContainer extends ObjectBase {
           this.lastLoadTimer = null;
         }
 
-        this.lastLoadTimer = ExtPromise().cancelable( ExtPromise().timer(this.maxTimeBetweenRequests) );
+        this.lastLoadTimer = Promise.delay(this.maxTimeBetweenRequests);
         this.maxTimeBetweenRequests = 300;
         return this.lastLoadTimer.then(() => {
           this.lastLoadTimer = null;
