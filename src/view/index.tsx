@@ -12,17 +12,15 @@ import {
 } from './files-container-view';
 import { Database } from '../client/database';
 import { SpriteSheet, SpriteSheetView, SpriteConfig } from './sprite-sheet';
-import {
-  ServerInstanceView,
-  ServerInstance,
-  ServerInstProps
-} from './server-instance-view';
 import 'ts-react-ui/typings';
 import { Icon } from 'ts-react-ui/icon';
 import * as CSVIcon from '../images/csv-icon.png';
 import * as JSONIcon from '../images/json-icon.png';
 import * as TableIcon from '../images/table-icon.png';
 import { FileObjectBase } from '../base/file-object';
+import { Project, ProjectView } from './project';
+
+export { registerViews };
 
 export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
@@ -75,13 +73,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
   });
 
   registerViews({
-    classObj: ServerInstance,
-    views: [{
-      view: (props: ServerInstProps) => <ServerInstanceView {...props}/>
-    }]
-  });
-
-  registerViews({
     classObj: SpriteSheet,
     views: [{
       view: (props: {model: SpriteSheet}) => <SpriteSheetView key={props.model.holder.getID()} {...props} />
@@ -92,8 +83,15 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     desc: 'Sprite sheet object'
   });
 
+  registerViews({
+    classObj: Project,
+    views: [{
+      view: (props: { model: Project }) => <ProjectView {...props}/>
+    }]
+  });
+
   return [
-    ServerInstance,
+    Project,
     FilesContainer,
     FileObject,
     CSVTableFile,
