@@ -19,6 +19,7 @@ import * as JSONIcon from '../images/json-icon.png';
 import * as TableIcon from '../images/table-icon.png';
 import { FileObjectBase } from '../base/file-object';
 import { Project, ProjectView } from './project';
+import { ServerInstanceView, ServerInstance } from './server-inst-view';
 
 export { registerViews };
 
@@ -87,6 +88,13 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     classObj: Project,
     views: [{
       view: (props: { model: Project }) => <ProjectView {...props}/>
+    }]
+  });
+
+  registerViews({
+    classObj: ServerInstance,
+    views: [{
+      view: (props: {model: ServerInstance}) => <ServerInstanceView {...props}/>
     }]
   });
 
