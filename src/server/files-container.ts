@@ -46,7 +46,7 @@ export class FilesContainer extends Base {
     });
 
     this.holder.setMethodsToInvoke({
-      'send-file': { method: this.sendFileImpl, rights: 'write' }
+      'sendFile': { method: this.sendFileImpl, rights: 'write' }
     });
   }
 

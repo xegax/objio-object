@@ -36,7 +36,7 @@ export class FileObject extends FileObjectBase {
     });
 
     obj.holder.setMethodsToInvoke({
-      'send-file': {
+      'sendFile': {
         method: FileObject.getUploadFileImpl(obj),
         rights: 'write'
       }
@@ -54,23 +54,24 @@ export class FileObject extends FileObjectBase {
       obj.loadSize = 0;
       obj.holder.save();
 
+      let received = 0;
       return new Promise(resolve => {
         args.data.pipe(createWriteStream(obj.getPath()));
         args.data.on('data', chunk => {
+          received += chunk.length;
           if (typeof chunk == 'string')
             obj.loadSize += chunk.length;
           else
             obj.loadSize += chunk.byteLength;
 
           obj.setProgress(obj.loadSize / obj.size);
-          obj.holder.save();
         });
         args.data.on('end', () => {
           obj.onFileUploaded().then(() => {
             obj.setStatus('ok');
             obj.setProgress(1);
             obj.holder.save();
-            resolve();
+            resolve(received);
           });
         });
       });

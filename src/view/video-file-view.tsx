@@ -45,17 +45,8 @@ export class VideoFileView extends React.Component<Props> {
   }
 
   render() {
-    const model = this.props.model;
     return (
       <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1}}>
-        {this.props.onlyContent != true ? <div>
-          <div>name: {model.getName()}</div>
-          <div>size: {model.getSize()}</div>
-          <div>mime: {model.getMIME()}</div>
-          <div>loaded: {model.getLoadSize()}</div>
-          <div>progress: {model.getProgress()}</div>
-          <div>{model.getStatus()}</div>
-        </div> : null}
         <div style={{flexGrow: 1, display: 'flex', position: 'relative'}}>
           {this.renderContent()}
         </div>

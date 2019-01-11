@@ -19,7 +19,7 @@ import * as JSONIcon from '../images/json-icon.png';
 import * as TableIcon from '../images/table-icon.png';
 import { FileObjectBase } from '../base/file-object';
 import { Project, ProjectView } from './project';
-import { ServerInstanceView, ServerInstance } from './server-inst-view';
+import { ServerInstanceView, ServerInstance } from './server-view';
 
 export { registerViews };
 

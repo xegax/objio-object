@@ -33,7 +33,7 @@ const classes = {
   lbCorner: 'lb-corner'
 };
 
-interface Props {
+export interface Props {
   model: SpriteSheet;
 }
 
@@ -141,8 +141,8 @@ class Preview extends React.Component<{anim: Animation, model: SpriteSheet}, {ti
   }
 }
 
-type Mode = 'add-anim';
-interface State {
+export type Mode = 'add-anim';
+export interface State {
   newRect?: Rect;
   mode?: Mode;
 }

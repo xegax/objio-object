@@ -8,7 +8,7 @@ import { SwitchPropItem } from 'ts-react-ui/prop-sheet';
 export class CSVTableFile extends Base {
   sendFile(args: SendFileArgs): Promise<any> {
     return this.holder.invokeMethod({
-      method: 'send-file',
+      method: 'sendFile',
       args: args.file,
       onProgress: args.onProgress
     });

@@ -7,7 +7,7 @@ import { TableFileView } from '../../view/table-file-view';
 export class JSONTableFile extends Base {
   sendFile(args: SendFileArgs): Promise<any> {
     return this.holder.invokeMethod({
-      method: 'send-file',
+      method: 'sendFile',
       args: args.file,
       onProgress: args.onProgress
     });

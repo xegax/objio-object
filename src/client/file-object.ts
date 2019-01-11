@@ -4,7 +4,7 @@ export { FileArgs, getExt };
 
 export class FileObject extends FileObjectBase {
   sendFile(args: SendFileArgs): Promise<any> {
-    return this.holder.invokeMethod({ method: 'send-file', args: args.file, onProgress: args.onProgress });
+    return this.holder.invokeMethod({ method: 'sendFile', args: args.file, onProgress: args.onProgress });
   }
 
   onFileUploaded(): Promise<void> {

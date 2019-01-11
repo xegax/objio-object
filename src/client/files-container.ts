@@ -89,7 +89,7 @@ export class FilesContainer extends ObjectBase {
 
   sendFile(args: SendFileArgs): Promise<any> {
     return this.holder.invokeMethod({
-      method: 'send-file',
+      method: 'sendFile',
       args: args.file,
       onProgress: args.onProgress
     });

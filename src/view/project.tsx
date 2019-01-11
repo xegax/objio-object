@@ -9,7 +9,7 @@ export interface Props {
   model: Project;
 }
 
-interface State {
+export interface State {
   user: UserObjectDesc;
 }
 
