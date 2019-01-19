@@ -1,23 +1,26 @@
 import * as React from 'react';
-import { OBJIOItem, OBJIOItemClass } from 'objio';
-import { ObjectBase } from '../client/object-base';
+import { OBJIOItemClass } from 'objio';
+import { ObjectBase, ClientView, ViewDescIcon, ViewDesc } from '../base/object-base';
 import { FactoryItem, ConfigProps, Flag } from '../common/view-factory';
 
 export {
   ObjectBase,
   FactoryItem,
   ConfigProps,
-  Flag
+  Flag,
+  ClientView,
+  ViewDescIcon,
+  ViewDesc
 };
 
-export interface ClientView {
+/*export interface ClientView {
   viewType?: string;
   view(props: {model: OBJIOItem}): JSX.Element;
 }
 
 export interface ViewDescIcon {
   item?: JSX.Element;
-  bigDesc?: JSX.Element; 
+  bigDesc?: JSX.Element;
 }
 
 export interface ViewDesc {
@@ -27,7 +30,7 @@ export interface ViewDesc {
   views: Array<ClientView>;
   config(props: ConfigProps): JSX.Element;
   sources: Array<Array<OBJIOItemClass>>;
-}
+}*/
 
 export interface OBJIOItemClassViewable extends OBJIOItemClass {
   getViewDesc?(): Partial<ViewDesc>;

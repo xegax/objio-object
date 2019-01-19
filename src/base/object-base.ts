@@ -1,10 +1,30 @@
-import { OBJIOItem, SERIALIZER } from 'objio';
+import { OBJIOItem, SERIALIZER, OBJIOItemClass } from 'objio';
+import { Flag, ConfigProps } from '../common/view-factory';
 
 export type Status = 'ok' | 'error' | 'not configured' | 'in progress';
 
 export interface ObjectBaseArgs {
   status: Status;
   progress: number;
+}
+
+export interface ClientView {
+  viewType?: string;
+  view(props: {model: OBJIOItem}): JSX.Element;
+}
+
+export interface ViewDescIcon {
+  item?: JSX.Element;
+  bigDesc?: JSX.Element;
+}
+
+export interface ViewDesc {
+  desc: string;
+  icons?: ViewDescIcon;
+  flags: Set<Flag> | Array<Flag>;
+  views: Array<ClientView>;
+  config(props: ConfigProps): JSX.Element;
+  sources: Array<Array<OBJIOItemClass>>;
 }
 
 export class ObjectBase extends OBJIOItem {
@@ -58,7 +78,7 @@ export class ObjectBase extends OBJIOItem {
 
   setProgress(value: number): void {
     let newValue = Math.round(value * 100) / 100;
-    if (this.holder.isClient() || newValue == this.progress)
+    if (newValue == this.progress)
       return;
 
     this.progress = newValue;
@@ -98,6 +118,18 @@ export class ObjectBase extends OBJIOItem {
 
   getObjPropGroups(): JSX.Element {
     return null;
+  }
+
+  static getViewDesc(): Partial<ViewDesc> {
+    return {
+      desc: '',
+      flags: [],
+      views: [],
+      config: (props: ConfigProps) => {
+        return null;
+      },
+      sources: []
+    };
   }
 
   static TYPE_ID = 'ObjectBase';

@@ -2,7 +2,7 @@ import {
   SERIALIZER
 } from 'objio';
 import { DatabaseBase } from './database';
-import { ObjectBase } from './object-base';
+import { ObjectBase } from '../object-base';
 
 export interface TableNameArgs {
   table: string;

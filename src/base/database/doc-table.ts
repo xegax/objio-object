@@ -1,6 +1,6 @@
 import { SERIALIZER } from 'objio';
-import { Table } from '../client/table';
-import { ObjectBase } from './object-base';
+import { Table } from '../../client/database/table';
+import { ObjectBase } from '../object-base';
 
 export class DocTableBase extends ObjectBase {
   protected table: Table;

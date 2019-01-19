@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { FilesContainer, FilesContainerArgs } from '../client/files-container';
-import { Database } from '../client/database';
+import { Database } from '../client/database/database';
 import { ConfigBase } from './config';
 import { OBJIOItem } from 'objio';
 import { FitToParent } from 'ts-react-ui/fittoparent';

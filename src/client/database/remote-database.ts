@@ -9,10 +9,25 @@ import {
   SubtableAttrs,
   TableNameArgs,
   PushRowArgs
-} from '../base/table';
-import { DatabaseBase } from '../base/database';
+} from '../../base/database/table';
+import { RemoteDatabaseBase } from '../../base/database/remote-database';
+import { Connection } from './connection';
 
-export class Database extends DatabaseBase {
+export interface RemoteDatabaseArgs {
+  connection: Connection;
+  database: string;
+}
+
+export class RemoteDatabase extends RemoteDatabaseBase {
+  constructor(args?: RemoteDatabaseArgs) {
+    super();
+
+    if (args) {
+      this.connection = args.connection;
+      this.database = args.database;
+    }
+  }
+
   loadTableInfo(args: TableNameArgs): Promise<Array<ColumnAttr>> {
     return this.holder.invokeMethod({ method: 'loadTableInfo', args });
   }

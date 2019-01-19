@@ -6,13 +6,13 @@ import {
   ExecuteArgs,
   SubtableAttrs,
   ColumnAttr
-} from '../base/table';
-import { DocTableBase } from '../base/doc-table';
+} from '../../base/database/table';
+import { DocTableBase } from '../../base/database/doc-table';
 import { Table } from './table';
 import { Database } from './database';
-import { TableFileBase } from '../base/table-file';
-import { TableFile } from './table-file';
-import { FileObject } from './file-object';
+import { TableFileBase } from '../../base/table-file';
+import { TableFile } from '../table-file';
+import { FileObject } from '../file-object';
 
 export interface DocTableArgs {
   source: TableFileBase;

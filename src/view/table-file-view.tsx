@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { TableFile } from '../client/table-file';
-import { ColumnAttr } from '../base/table';
+import { ColumnAttr } from '../base/database';
 import { DropDown } from 'ts-react-ui/drop-down';
 import { CheckBox } from 'ts-react-ui/checkbox';
 import { ListView } from 'ts-react-ui/list-view';
@@ -13,7 +13,7 @@ import * as naIcon from '../images/na.png';
 
 export { TableFile };
 
-export interface Props {
+export interface TableFileProps {
   onlyContent?: boolean;
   model: TableFile;
 }
@@ -34,7 +34,7 @@ const allColumTypes = [
   'VARCHAR(256)'
 ].map(type => ({ value: type }));
 
-export class TableFileView extends React.Component<Props, Partial<State>> {
+export class TableFileView extends React.Component<TableFileProps, Partial<State>> {
   state: Partial<State> = {};
 
   subscriber = () => {

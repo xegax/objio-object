@@ -2,7 +2,7 @@ import * as React from 'react';
 import { FileObject, FileObjectView, Props as FileViewProps } from './file-object-view';
 import { JSONTableFile, CSVTableFile } from '../client/table-file';
 import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video-file-view';
-import { DocTable, DocTableView, DocTableConfig, Props as TableViewProps } from './doc-table-view';
+import { DocTable, DocTableView, DocTableConfig, DocTableProps } from './doc-table-view';
 import { OBJIOItemClassViewable, registerViews } from './config';
 import {
   FilesContainer,
@@ -10,7 +10,7 @@ import {
   FilesContainerConfig,
   FilesContainerProps
 } from './files-container-view';
-import { Database } from '../client/database';
+import { Database } from '../client/database/database';
 import { SpriteSheet, SpriteSheetView, SpriteConfig } from './sprite-sheet';
 import 'ts-react-ui/typings';
 import { Icon } from 'ts-react-ui/icon';
@@ -20,6 +20,7 @@ import * as TableIcon from '../images/table-icon.png';
 import { FileObjectBase } from '../base/file-object';
 import { Project, ProjectView } from './project';
 import { ServerInstanceView, ServerInstance } from './server-view';
+import { ConnectionView, Connection } from './connection-view';
 
 export { registerViews };
 
@@ -54,7 +55,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     classObj: DocTable,
     icons: { item: <Icon src={TableIcon}/> },
     views: [{
-      view: (props: TableViewProps) => <DocTableView {...props}/>
+      view: (props: DocTableProps) => <DocTableView {...props}/>
     }],
     sources: [ [ CSVTableFile, Database ], [JSONTableFile, Database] ],
     config: props => <DocTableConfig {...props}/>,

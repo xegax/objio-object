@@ -1,9 +1,8 @@
 import { readJSONArray } from 'objio/common/reader/json-array-reader';
-import { pushStat, StatMap } from 'objio/common/reader/statistics';
 import { SERIALIZER } from 'objio';
 import { JSONTableFile as Base } from '../../base/table-file/json-table-file';
-import { ColumnAttr } from '../../base/table';
-import { ReadLinesArgs, OnRowsArgs } from '../../base/table-file/data-reading';
+import { ColumnAttr } from '../../base/database/table';
+import { ReadLinesArgs } from '../../base/table-file/data-reading';
 import { FileObject } from '../file-object';
 import { onFileUpload } from './table-file';
 

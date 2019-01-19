@@ -13,7 +13,7 @@ import {
   Columns,
   Cells,
   PushCellsResult
-} from '../base/table';
+} from '../../base/database/table';
 
 export class Table extends TableBase {
   execute(args: ExecuteArgs): Promise<any> {

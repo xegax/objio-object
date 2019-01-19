@@ -1,5 +1,5 @@
 import { OBJIOItem, OBJIOItemClass } from 'objio';
-import { ObjectBase } from '../client/object-base';
+import { ObjectBase } from '../base/object-base';
 
 export interface ConfigProps {
   objects(): Array<ObjectBase>;

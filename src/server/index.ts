@@ -2,8 +2,7 @@ import { OBJIOItemClass } from 'objio';
 import { FileObject } from './file-object';
 import { CSVTableFile, JSONTableFile } from './table-file';
 import { VideoFileObject } from './video-file-object';
-import { DocTable } from './doc-table';
-import { Table } from './table';
+import { DocTable, Table } from './database';
 import { FilesContainer } from './files-container';
 import { SpriteSheet, Animation } from './sprite-sheet';
 

@@ -1,7 +1,7 @@
 import { SERIALIZER } from 'objio';
 import { getExt } from '../client/file-object';
-import { Table } from './table';
-import { ColumnAttr, PushCellsResult } from '../base/table';
+import { Table } from './database/table';
+import { ColumnAttr, PushCellsResult } from '../base/database/table';
 import { FilesContainer as Base, Loading, SendFileArgs } from '../client/files-container';
 import * as http from 'http';
 import * as fs from 'fs';

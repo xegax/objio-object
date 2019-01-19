@@ -1,33 +1,20 @@
 import * as React from 'react';
-import { DocTable, DocTableArgs } from '../client/doc-table';
-import { ExecuteArgs } from '../base/table';
-import { FileObject } from '../client/file-object';
+import { Database, DocTable, DocTableArgs, RemoteDatabase } from '../client/database';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import { RenderListModel, RenderArgs } from 'ts-react-ui/model/list';
 import { List } from 'ts-react-ui/list';
 import { TableFile } from '../client/table-file';
 import { ConfigBase } from './config';
-import { Database } from '../client/database';
-import { OBJIOItem } from 'objio';
-import { PropSheet, PropsGroup, TextPropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
+import { PropsGroup, TextPropItem, DropDownPropItem } from 'ts-react-ui/prop-sheet';
+import { TableFileBase } from '../base/table-file/index';
 
 export { DocTable };
 
-export interface Props {
+export interface DocTableProps {
   model: DocTable;
 }
 
-export interface State {
-  editRow?: number;
-  editCol?: number;
-}
-
-export class DocTableView extends React.Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = {};
-  }
-
+export class DocTableView extends React.Component<DocTableProps> {
   getRender(): RenderListModel {
     return this.props.model.getRender();
   }
@@ -49,34 +36,14 @@ export class DocTableView extends React.Component<Props, State> {
 
   updateModel() {
     const model = this.getRender();
-    const update = () => {
-      this.updateModel();
-      model.reload();
-      model.notify();
-    };
 
     model.setItemsCount(this.props.model.getTotalRowsNum());
     model.setColumns(this.props.model.getColumns().map((col, c) => {
       return {
         name: col.name,
         render: (args: RenderArgs<Array<string>>) => {
-          if (this.state.editRow == args.rowIdx && this.state.editCol == args.colIdx)
-            return (
-              <input
-                defaultValue={args.item[c]}
-                ref={el => el && el.focus()}
-                onBlur={() => {
-                  this.setState({editCol: null, editRow: null});
-                }}
-              />
-            );
-
           return (
-            <div
-              onDoubleClick={() => {
-                this.setState({editRow: args.rowIdx, editCol: c});
-              }}
-            >
+            <div>
               {args.item[c]}
             </div>
           );
@@ -124,7 +91,6 @@ export class DocTableView extends React.Component<Props, State> {
   }
 
   renderValid() {
-    const model = this.props.model;
     return (
       <>
         {this.renderErrors()}
@@ -146,28 +112,28 @@ export class DocTableView extends React.Component<Props, State> {
 export interface CfgState {
   dbId: string;
   csvId: string;
-  dbs: Array<Database>;
-  csvs: Array<TableFile>;
+  dbs: Array<Database | RemoteDatabase>;
+  csvs: Array<TableFileBase>;
 }
 
 export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
   componentDidMount() {
     this.config.tableName = 'table';
     const dbs = this.props.objects().map(obj => {
-      if (obj instanceof Database)
+      if (obj instanceof Database || obj instanceof RemoteDatabase)
         return obj;
 
       return null;
-    }).filter(obj => obj != null);
+    }).filter(obj => obj);
 
-    const csvs = this.props.objects().map(obj => {
+    const csvs = this.props.objects().map((obj: TableFileBase) => {
       if (obj instanceof TableFile)
         return obj;
       return null;
-    }).filter(obj => obj != null) as Array<TableFile>;
+    }).filter(obj => obj);
 
     this.config.dest = dbs[0];
-    this.config.source = csvs[0] as TableFile;
+    this.config.source = csvs[0];
     this.setState({
       dbs,
       csvs,
@@ -210,7 +176,7 @@ export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
           })}
           onSelect={value => {
             const csvId = value.value;
-            this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId) as TableFile;
+            this.config.source = this.state.csvs.find(csv => csv.holder.getID() == csvId);
             this.setState({ csvId });
           }}
         />

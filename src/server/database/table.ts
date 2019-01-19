@@ -16,9 +16,9 @@ import {
   NumStats,
   LoadTableInfoArgs,
   PushCellsResult
-} from '../base/table';
-import { TableArgs, CreateSubtableResult } from '../base/table';
-import { TableFile, OnRowsArgs } from './table-file/index';
+} from '../../base/database/table';
+import { TableArgs, CreateSubtableResult } from '../../base/database/table';
+import { TableFile, OnRowsArgs } from '../table-file/index';
 
 export function getCompSqlCondition(cond: CompoundCond, col?: string): string {
   let sql = '';
