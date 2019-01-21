@@ -5,9 +5,11 @@ export function onFileUpload(obj: TableFileBase) {
   let statMap: StatMap = {};
 
   obj.setStatMap({});
+  obj.setRows(0);
   obj.holder.save();
 
   const reading = obj.getDataReading();
+  let rows = 0;
   return (
     reading.readCols()
       .then(cols => {
@@ -18,6 +20,7 @@ export function onFileUpload(obj: TableFileBase) {
             linesPerBunch: 100,
             onRows: args => {
               obj.setProgress(args.progress);
+              rows += args.rows.length;
               pushStat({objs: args.rows as Array<Object>, statMap, emptyStrIsNull: true});
               return Promise.resolve();
             }
@@ -25,6 +28,7 @@ export function onFileUpload(obj: TableFileBase) {
         );
       })
       .then(() => {
+        obj.setRows(rows);
         obj.setStatMap(statMap);
         obj.getColumns({ discard: true }).forEach(col => {
           const stat = statMap[col.name];

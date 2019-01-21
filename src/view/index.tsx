@@ -20,7 +20,6 @@ import * as TableIcon from '../images/table-icon.png';
 import { FileObjectBase } from '../base/file-object';
 import { Project, ProjectView } from './project';
 import { ServerInstanceView, ServerInstance } from './server-view';
-import { ConnectionView, Connection } from './connection-view';
 
 export { registerViews };
 

@@ -9,6 +9,15 @@ export { SendFileArgs };
 export abstract class TableFileBase extends FileObjectBase {
   protected columns = Array<ColumnAttr>();
   protected statMap: StatMap = {};
+  protected rows: number = 0;
+
+  setRows(rows: number) {
+    this.rows = rows;
+  }
+
+  getRows() {
+    return this.rows;
+  }
 
   setColumns(cols: Array<ColumnAttr>) {
     this.columns = cols;
@@ -56,6 +65,7 @@ export abstract class TableFileBase extends FileObjectBase {
   static SERIALIZE: SERIALIZER = () => ({
     ...FileObjectBase.SERIALIZE(),
     columns: { type: 'json' },
-    statMap: { type: 'json' }
+    statMap: { type: 'json', const: true },
+    rows: { type: 'integer', const: true }
   })
 }
