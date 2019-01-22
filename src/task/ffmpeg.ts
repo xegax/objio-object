@@ -1,7 +1,7 @@
 import { runTask } from './task';
 import { existsSync, unlinkSync } from 'fs';
 import { normalize } from 'path';
-import { Time, parseTime, toString, toSeconds } from './time';
+import { Time, parseTime, getString, getSeconds } from '../common/time';
 
 function parseDuration(info: InputInfo): Time {
   const t = info.duration.split(', ')[0];
@@ -92,26 +92,26 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
         normalize(args.inFile)
       ];
 
-      let duration = toSeconds(info.duration);
+      let duration = getSeconds(info.duration);
       if (args.range) {
         const { from, to } = args.range;
         if (from)
-          argsArr.push('-ss', toString(from));
+          argsArr.push('-ss', getString(from));
         if (to)
-          argsArr.push('-to', toString(to));
+          argsArr.push('-to', getString(to));
 
         if (from && to) {
-          duration = toSeconds(to) - toSeconds(from);
+          duration = getSeconds(to) - getSeconds(from);
         } else if (from) {
-          duration = duration - toSeconds(from);
+          duration = duration - getSeconds(from);
         } else if (to) {
-          duration = toSeconds(to);
+          duration = getSeconds(to);
         }
       }
 
       argsArr.push(normalize(args.outFile));
       return runTask({
-        cmd: 'ffmpeg.exe',
+        cmd: process.env['FFMPEG'] || 'ffmpeg.exe',
         args: argsArr,
         handleOutput: out => {
           const s = out.data.toString();
@@ -119,7 +119,7 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
             let f = s.indexOf('time=');
             let e = s.indexOf(' bitrate=');
             const t = parseTime(s.substr(f, e - f).split('=')[1]);
-            args.onProgress && args.onProgress(Math.min(1, toSeconds(t) / duration));
+            args.onProgress && args.onProgress(Math.min(1, getSeconds(t) / duration));
           }
         }
       })

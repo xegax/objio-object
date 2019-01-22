@@ -32,7 +32,7 @@ export class AnimationBase extends OBJIOItem {
   static SERIALIZE: SERIALIZER = () => ({
     name:   { type: 'string' },
     frames: { type: 'json' }
-  });
+  })
 }
 
 export class SpriteSheetBase extends ObjectBase {
@@ -77,5 +77,5 @@ export class SpriteSheetBase extends ObjectBase {
     file: {type: 'object'},
     rects: {type: 'json'},
     anim: {type: 'object'}
-  });
+  })
 }
