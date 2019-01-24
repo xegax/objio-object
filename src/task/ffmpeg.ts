@@ -2,6 +2,8 @@ import { runTask } from './task';
 import { existsSync, unlinkSync } from 'fs';
 import { normalize } from 'path';
 import { Time, parseTime, getString, getSeconds } from '../common/time';
+import { MediaStream } from './media-desc';
+import { Rect } from '../common/point';
 
 function parseDuration(info: InputInfo): Time {
   const t = info.duration.split(', ')[0];
@@ -20,6 +22,40 @@ interface InputInfo {
 export interface FileInfo {
   stream: Array<string>;
   duration: Time;
+}
+
+export function parseStream(strm: string): MediaStream {
+  let idPos = strm.indexOf(': ');
+  if (idPos == -1)
+    return null;
+
+  const m: MediaStream = { id: strm.substr(0, idPos) };
+  let typePos = strm.indexOf(': ', idPos + 2);
+  if (typePos == -1)
+    return m;
+
+  let type = strm.substr(idPos + 2, typePos - idPos - 2).trim();
+  const props = strm.substr(typePos + 2).split(', ');
+  if (type == 'Video') {
+    const size = props[2].split('x');
+    m.video = {
+      codec: props[0],
+      pixelFmt: props[1],
+      width: +size[0],
+      height: +size[1],
+      bitrate: parseFloat(props[3]),
+      fps: parseFloat(props[5])
+    };
+  } else if (type == 'Audio') {
+    m.audio = {
+      codec: props[0],
+      freq: parseFloat(props[1]),
+      channels: { 'stereo': 2, 'mono': 1 }[props[2]],
+      bitrate: parseFloat(props[4])
+    };
+  }
+
+  return m;
 }
 
 function parseInputDetails(lines: Array<string>): Array<InputInfo> {
@@ -72,6 +108,7 @@ export interface EncodeArgs {
   inFile: string;
   outFile: string;
   range?: Partial<Range>;
+  crop?: Rect;
   overwrite?: boolean;
   onProgress?(t: number): void;
 }
@@ -108,6 +145,22 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
           duration = getSeconds(to);
         }
       }
+
+      let filterComplexArr = [];
+      if (args.crop) {
+        const crop = [
+          args.crop.width,
+          args.crop.height,
+          args.crop.x,
+          args.crop.y
+        ]
+        .map(v => Math.floor(v))
+        .join(':');
+        filterComplexArr.push(`crop=${crop}`);
+      }
+
+      if (filterComplexArr.length)
+        argsArr.push('-filter_complex', filterComplexArr.join(','));
 
       argsArr.push(normalize(args.outFile));
       return runTask({

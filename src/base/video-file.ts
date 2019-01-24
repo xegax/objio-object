@@ -1,27 +1,31 @@
 import { Time } from '../common/time';
 import { FileObjectBase, SendFileArgs } from './file-object';
-import { SERIALIZER, OBJIOArray } from 'objio';
+import { SERIALIZER } from 'objio';
+import { MediaStream } from '../task/media-desc';
+import { Rect } from '../common/point';
 
 export { SendFileArgs };
 
-export interface VideoFileDesc {
+export interface MediaFileDesc {
   duration: Time;
-  width: number;
-  height: number;
-  frameRate: number;
-  codec: string;
+  streamArr: Array<MediaStream>;
 }
 
 export interface Subfile {
   name: string;
   id: string;
-  desc: Partial<VideoFileDesc>;
-  split?: SplitArgs;
+  desc: Partial<MediaFileDesc>;
+  execArgs?: ExecuteArgs;
 }
 
-export interface SplitArgs {
+export interface TimeCutRange {
   startSec: number;
   endSec: number;
+}
+
+export interface ExecuteArgs {
+  timeCut?: TimeCutRange;
+  frameCut?: Rect;
 }
 
 export interface SplitId {
@@ -29,10 +33,10 @@ export interface SplitId {
 }
 
 export abstract class VideoFileBase extends FileObjectBase {
-  protected desc: Partial<VideoFileDesc> = {};
+  protected desc: Partial<MediaFileDesc> = {};
   protected subfiles = Array<Subfile>();
 
-  getDesc(): Partial<VideoFileDesc> {
+  getDesc(): Partial<MediaFileDesc> {
     return this.desc;
   }
 
@@ -56,8 +60,9 @@ export abstract class VideoFileBase extends FileObjectBase {
     return this.subfiles.find(item => item.id == id);
   }
 
-  abstract split(args: SplitArgs): Promise<void>;
+  abstract execute(args: ExecuteArgs): Promise<void>;
   abstract removeSplit(args: SplitId): Promise<void>;
+  abstract updateDesciption(): Promise<void>;
 
   static TYPE_ID = 'VideoFileObject';
   static SERIALIZE: SERIALIZER = () => ({

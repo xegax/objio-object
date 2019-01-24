@@ -1,6 +1,6 @@
-import { parseFile, encodeFile } from '../task/ffmpeg';
+import { parseFile, encodeFile, parseStream, EncodeArgs } from '../task/ffmpeg';
 import { lstatSync, mkdirSync, existsSync, unlinkSync } from 'fs';
-import { VideoFileBase, SplitArgs, SplitId, Subfile } from '../base/video-file';
+import { VideoFileBase, ExecuteArgs, SplitId, Subfile } from '../base/video-file';
 import { getTimeFromSeconds, getString } from '../common/time';
 import { FileObject } from './file-object';
 
@@ -13,11 +13,15 @@ export class VideoFileObject extends VideoFileBase {
     this.holder.setMethodsToInvoke({
       ...this.holder.getMethodsToInvoke(),
       split: {
-        method: (args: SplitArgs) => this.split(args),
+        method: (args: ExecuteArgs) => this.execute(args),
         rights: 'write'
       },
       removeSplit: {
         method: (args: SplitId) => this.removeSplit(args),
+        rights: 'write'
+      },
+      updateDescription: {
+        method: () => this.updateDesciption(),
         rights: 'write'
       }
     });
@@ -28,6 +32,14 @@ export class VideoFileObject extends VideoFileBase {
     if (!existsSync(f))
       mkdirSync(f);
     return f;
+  }
+
+  updateDesciption(): Promise<void> {
+    return parseFile(this.getPath())
+    .then(info => {
+      this.desc.streamArr = info.stream.map(parseStream);
+      this.holder.save();
+    });
   }
 
   removeSplit(args: SplitId): Promise<void> {
@@ -43,32 +55,41 @@ export class VideoFileObject extends VideoFileBase {
     return Promise.resolve();
   }
 
-  split(args: SplitArgs): Promise<void> {
-    const from = getTimeFromSeconds(args.startSec);
-    const to = getTimeFromSeconds(args.endSec);
+  execute(args: ExecuteArgs): Promise<void> {
     let newFile: Subfile = {
-      name: 'crop-(' + getString(from) + '-' + getString(to) + ')',
+      name: 'cut-' + Date.now(),
       id: '' + Date.now(),
-      desc: {},
-      split: { ...args }
+      desc: { streamArr: [] },
+      execArgs: { ...args }
+    };
+    const outFile = this.getSubfilePath(newFile);
+
+    const encArgs: EncodeArgs = {
+      inFile: this.getPath(),
+      outFile,
+      onProgress: (p: number) => {
+        try {
+          this.size = this.loadSize = lstatSync(this.getPath()).size;
+        } catch (e) {
+          console.log(e);
+        }
+        this.setProgress(p);
+      }
     };
 
-    const outFile = this.getSubfilePath(newFile);
+    if (args.timeCut) {
+      encArgs.range = {
+        from: getTimeFromSeconds(args.timeCut.startSec),
+        to: getTimeFromSeconds(args.timeCut.endSec)
+      };
+    }
+
+    if (args.frameCut)
+      encArgs.crop = { ...args.frameCut };
+
     this.setStatus('in progress');
     return (
-      encodeFile({
-        inFile: this.getPath(),
-        outFile,
-        range: { from, to },
-        onProgress: (p: number) => {
-          try {
-            this.size = this.loadSize = lstatSync(this.getPath()).size;
-          } catch (e) {
-            console.log(e);
-          }
-          this.setProgress(p);
-        }
-      }).then(() => {
+      encodeFile(encArgs).then(() => {
         this.size = this.loadSize = lstatSync(this.getPath()).size;
         return parseFile(this.getPath());
       }).then(info => {
@@ -85,6 +106,7 @@ export class VideoFileObject extends VideoFileBase {
     return (
       parseFile(this.getPath())
       .then(info => {
+        this.desc.streamArr = info.stream.map(parseStream);
         this.desc.duration = info.duration;
         this.holder.save();
       })
