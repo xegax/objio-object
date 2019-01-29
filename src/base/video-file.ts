@@ -15,7 +15,7 @@ export interface Subfile {
   name: string;
   id: string;
   desc: Partial<MediaFileDesc>;
-  execArgs?: ExecuteArgs;
+  filter?: FilterArgs;
 }
 
 export interface TimeCutRange {
@@ -23,12 +23,17 @@ export interface TimeCutRange {
   endSec: number;
 }
 
-export interface ExecuteArgs {
-  timeCut?: TimeCutRange;
-  frameCut?: Rect;
+export interface FilterArgs {
+  cut?: TimeCutRange;
+  crop?: Rect;
 }
 
-export interface SplitId {
+export interface ExecuteArgs {
+  filter: FilterArgs;
+  id?: string;
+}
+
+export interface CutId {
   id: string;
 }
 
@@ -60,8 +65,10 @@ export abstract class VideoFileBase extends FileObjectBase {
     return this.subfiles.find(item => item.id == id);
   }
 
+  abstract save(args: ExecuteArgs): Promise<void>;
+  abstract append(args: ExecuteArgs): Promise<void>;
   abstract execute(args: ExecuteArgs): Promise<void>;
-  abstract removeSplit(args: SplitId): Promise<void>;
+  abstract removeSplit(args: CutId): Promise<void>;
   abstract updateDesciption(): Promise<void>;
 
   static TYPE_ID = 'VideoFileObject';

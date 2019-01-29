@@ -1,6 +1,6 @@
 import { parseFile, encodeFile, parseStream, EncodeArgs } from '../task/ffmpeg';
 import { lstatSync, mkdirSync, existsSync, unlinkSync } from 'fs';
-import { VideoFileBase, ExecuteArgs, SplitId, Subfile } from '../base/video-file';
+import { VideoFileBase, ExecuteArgs, FilterArgs, CutId, Subfile } from '../base/video-file';
 import { getTimeFromSeconds, getString } from '../common/time';
 import { FileObject } from './file-object';
 
@@ -12,19 +12,50 @@ export class VideoFileObject extends VideoFileBase {
 
     this.holder.setMethodsToInvoke({
       ...this.holder.getMethodsToInvoke(),
-      split: {
+      execute: {
         method: (args: ExecuteArgs) => this.execute(args),
         rights: 'write'
       },
       removeSplit: {
-        method: (args: SplitId) => this.removeSplit(args),
+        method: (args: CutId) => this.removeSplit(args),
         rights: 'write'
       },
       updateDescription: {
         method: () => this.updateDesciption(),
         rights: 'write'
+      },
+      append: {
+        method: (args: ExecuteArgs) => this.append(args),
+        rights: 'write'
+      },
+      save: {
+        method: (args: ExecuteArgs) => this.save(args),
+        rights: 'write'
       }
     });
+  }
+
+  save(args: ExecuteArgs) {
+    const cut = this.findCutById(args.id);
+    if (!cut)
+      return Promise.reject('invalid cut');
+
+    cut.filter = args.filter;
+    this.holder.save();
+    return Promise.resolve();
+  }
+
+  append(args: ExecuteArgs) {
+    let newFile: Subfile = {
+      name: 'cut-' + Date.now(),
+      id: '' + Date.now(),
+      desc: { streamArr: [] },
+      filter: { ...args.filter }
+    };
+
+    this.subfiles.push(newFile);
+    this.holder.save();
+    return Promise.resolve();
   }
 
   getSubfilesFolder() {
@@ -42,7 +73,7 @@ export class VideoFileObject extends VideoFileBase {
     });
   }
 
-  removeSplit(args: SplitId): Promise<void> {
+  removeSplit(args: CutId): Promise<void> {
     try {
       const cut = this.findCutById(args.id);
       if (!cut)
@@ -60,7 +91,7 @@ export class VideoFileObject extends VideoFileBase {
       name: 'cut-' + Date.now(),
       id: '' + Date.now(),
       desc: { streamArr: [] },
-      execArgs: { ...args }
+      filter: { ...args.filter }
     };
     const outFile = this.getSubfilePath(newFile);
 
@@ -77,15 +108,15 @@ export class VideoFileObject extends VideoFileBase {
       }
     };
 
-    if (args.timeCut) {
+    if (args.filter.cut) {
       encArgs.range = {
-        from: getTimeFromSeconds(args.timeCut.startSec),
-        to: getTimeFromSeconds(args.timeCut.endSec)
+        from: getTimeFromSeconds(args.filter.cut.startSec),
+        to: getTimeFromSeconds(args.filter.cut.endSec)
       };
     }
 
-    if (args.frameCut)
-      encArgs.crop = { ...args.frameCut };
+    if (args.filter.crop)
+      encArgs.crop = { ...args.filter.crop };
 
     this.setStatus('in progress');
     return (
