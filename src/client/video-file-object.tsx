@@ -8,7 +8,7 @@ import { MediaStream } from '../task/media-desc';
 import { Rect } from '../common/point';
 
 function fmtSec(s: number) {
-  return Math.floor(s * 1000)/1000; 
+  return Math.floor(s * 1000) / 1000;
 }
 
 export class VideoFileObject extends VideoFileBase {
@@ -16,6 +16,7 @@ export class VideoFileObject extends VideoFileBase {
   protected playCutId: string;
   protected filter: FilterArgs = {};
   protected currTime: number = 0;
+  protected editNameCutId: string;
 
   append(args: ExecuteArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'append', args });
@@ -30,7 +31,7 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   removeSplit(args: CutId): Promise<void> {
-    return this.holder.invokeMethod({ method: 'removeSplit', args});
+    return this.holder.invokeMethod({ method: 'removeSplit', args });
   }
 
   updateDesciption(): Promise<void> {
@@ -86,6 +87,9 @@ export class VideoFileObject extends VideoFileBase {
     if (id == this.selectCutId)
       return;
 
+    if (this.editNameCutId != id)
+      this.editNameCutId = null;
+
     this.selectCutId = id;
     this.playCutId = null;
     const cut = this.getSelectCut();
@@ -99,8 +103,13 @@ export class VideoFileObject extends VideoFileBase {
     if (id == this.playCutId)
       return;
 
-    if (id)
+    const cut = this.getSelectCut();
+    if (id) {
       this.selectCutId = id;
+      this.filter.cut = null;
+    } else if (cut) {
+      this.filter = JSON.parse(JSON.stringify(cut.filter));
+    }
 
     this.playCutId = id;
     this.holder.delayedNotify();
@@ -122,52 +131,41 @@ export class VideoFileObject extends VideoFileBase {
     if (s.video) {
       return (
         <>
-          <PropItem label='codec' value={s.video.codec}/>
-          <PropItem label='size' value={[s.video.width, s.video.height].join('x')}/>
-          <PropItem label='bitrate' value={s.video.bitrate + ' kb/s'}/>
-          <PropItem label='fps' value={s.video.fps}/>
-          <PropItem label='pixel format' value={s.video.pixelFmt}/>
+          <PropItem label='codec' value={s.video.codec} />
+          <PropItem label='size' value={[s.video.width, s.video.height].join('x')} />
+          <PropItem label='bitrate' value={s.video.bitrate + ' kb/s'} />
+          <PropItem label='fps' value={s.video.fps} />
+          <PropItem label='pixel format' value={s.video.pixelFmt} />
         </>
       );
     } else if (s.audio) {
       return (
         <>
-          <PropItem label='codec' value={s.audio.codec}/>
-          <PropItem label='frequency' value={s.audio.freq}/>
-          <PropItem label='bitrate' value={s.audio.bitrate}/>
-          <PropItem label='channels' value={s.audio.channels}/>
+          <PropItem label='codec' value={s.audio.codec} />
+          <PropItem label='frequency' value={s.audio.freq} />
+          <PropItem label='bitrate' value={s.audio.bitrate} />
+          <PropItem label='channels' value={s.audio.channels} />
         </>
       );
     }
   }
 
-  getObjPropGroups() {
-    const selectCut = this.getSelectCut();
+  renderDeatails() {
     return (
-      <>
-        <PropsGroup defaultOpen={false} label='description'>
-          {(this.desc.streamArr || []).map(s => {
-            return (
-              <PropsGroup defaultOpen={false} label={(s.video && 'video' || s.audio && 'audio') + ' ' + s.id }>
-                {this.renderStreamDesc(s)}
-              </PropsGroup>
-            );
-          })}
-        </PropsGroup>
-        <PropsGroup label='info'>
-          <PropItem
-            label='duration'
-            value={getString(this.desc.duration)}
-          />
-          <TextPropItem
-            label='time (sec)'
-            value={fmtSec(this.currTime)}
-            onEnter={t => {
-              this.setCurrTime(+t);
-              this.holder.delayedNotify({ type: 'time' });
-            }}
-          />
-          {this.filter.cut &&
+      <PropsGroup label='details'>
+        <PropItem
+          label='duration'
+          value={getString(this.desc.duration)}
+        />
+        <TextPropItem
+          label='time (sec)'
+          value={fmtSec(this.currTime)}
+          onEnter={t => {
+            this.setCurrTime(+t);
+            this.holder.delayedNotify({ type: 'time' });
+          }}
+        />
+        {this.filter.cut &&
           <TextPropItem
             label='cut start (sec)'
             value={fmtSec(this.filter.cut.startSec)}
@@ -176,16 +174,16 @@ export class VideoFileObject extends VideoFileBase {
               this.holder.delayedNotify({ type: 'cut-start' });
             }}
           />}
-          {this.filter.cut &&
+        {this.filter.cut &&
           <TextPropItem
             label='cut end (sec)'
             value={fmtSec(this.filter.cut.endSec)}
             onEnter={t => {
-              this.setCut({ startSec: this.filter.cut.startSec, endSec: +t});
+              this.setCut({ startSec: this.filter.cut.startSec, endSec: +t });
               this.holder.delayedNotify({ type: 'cut-end' });
             }}
           />}
-          {this.filter.cut &&
+        {this.filter.cut &&
           <TextPropItem
             label='cut duration (sec)'
             value={fmtSec(this.filter.cut.endSec - this.filter.cut.startSec)}
@@ -197,47 +195,98 @@ export class VideoFileObject extends VideoFileBase {
               this.holder.delayedNotify({ type: 'cut-duration' });
             }}
           />}
-        </PropsGroup>
-        <PropsGroup label='cuts'>
-          <ListView
-            value={selectCut ? { value: selectCut.id } : null}
-            values={this.subfiles.map(file => {
-              return {
-                value: file.id,
-                render: () => (
-                  <div className='horz-panel-1' style={{display: 'flex'}}>
-                    <CheckIcon
-                      faIcon='fa fa-play'
-                      value={this.playCutId == file.id}
-                      onChange={() => {
-                        if (this.playCutId == file.id ) {
-                          this.setPlayCut(null);
-                        } else {
-                          this.setPlayCut(file.id);
-                          this.holder.delayedNotify({ type: 'cut-select' });
-                        }
-                      }}
-                    />
-                    <div
-                      style={{flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis'}}
-                      onClick={() => {
-                        this.setSelectCut(file.id);
+      </PropsGroup>
+    );
+  }
+
+  renderCuts() {
+    const selectCut = this.getSelectCut();
+    return (
+      <PropsGroup label='cuts'>
+        <ListView
+          value={selectCut ? { value: selectCut.id } : null}
+          values={this.subfiles.map(file => {
+            return {
+              value: file.id,
+              render: () => (
+                <div className='horz-panel-1' style={{ display: 'flex' }}>
+                  <CheckIcon
+                    faIcon={this.playCutId == file.id ? 'fa fa-stop' : 'fa fa-play'}
+                    value={file.executed}
+                    onChange={() => {
+                      if (!file.executed)
+                        return;
+
+                      if (this.playCutId == file.id) {
+                        this.setPlayCut(null);
+                      } else {
+                        this.setPlayCut(file.id);
                         this.holder.delayedNotify({ type: 'cut-select' });
-                      }}
-                    >
-                      {file.name}
-                    </div>
-                    <CheckIcon
-                      faIcon='fa fa-trash'
-                      value={false}
-                      onChange={() => this.removeSplit({id: file.id})}
-                    />
+                      }
+                    }}
+                  />
+                  <CheckIcon
+                    faIcon={file.progress >= 0 ? 'fa fa-spinner fa-spin' : 'fa fa-rocket'}
+                    value={file.progress == null}
+                    onChange={() => {
+                      if (file.progress != null)
+                        return;
+
+                      this.execute({ id: file.id, filter: file.filter });
+                    }}
+                  />
+                  <div
+                    style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    onClick={() => {
+                      this.setSelectCut(file.id);
+                      this.holder.delayedNotify({ type: 'cut-select' });
+                    }}
+                    onDoubleClick={() => {
+                      this.editNameCutId = file.id;
+                      this.holder.delayedNotify();
+                    }}
+                  >
+                    {
+                      this.editNameCutId == file.id ?
+                      <TextPropItem
+                        value={file.name}
+                        onEnter={name => {
+                          this.save({ id: this.editNameCutId, name });
+                          this.editNameCutId = null;
+                          this.holder.delayedNotify();
+                        }}
+                      /> :
+                      (file.progress != null ? file.progress * 100 + '% ' : '') + file.name
+                    }
                   </div>
-                )
-              };
-            })}
-          />
+                  <CheckIcon
+                    faIcon='fa fa-trash'
+                    value={false}
+                    onChange={() => this.removeSplit({ id: file.id })}
+                  />
+                </div>
+              )
+            };
+          })}
+        />
+      </PropsGroup>
+    );
+  }
+
+  getObjPropGroups() {
+    return (
+      <>
+        <PropsGroup defaultOpen={false} label='description'>
+          {(this.desc.streamArr || []).map(s => {
+            return (
+              <PropsGroup defaultOpen={false} label={(s.video && 'video' || s.audio && 'audio') + ' ' + s.id}>
+                {this.renderStreamDesc(s)}
+              </PropsGroup>
+            );
+          })}
         </PropsGroup>
+        {this.renderCuts()}
+        {this.renderDeatails()}
       </>
     );
   }

@@ -11,6 +11,7 @@ export { VideoFileObject };
 interface VideoCtrlProps {
   src: string;
   filter: FilterArgs;
+  edit?: boolean;
 
   save?(): void;
   append(): void;
@@ -91,6 +92,9 @@ class VideoCtrl extends React.Component<VideoCtrlProps, VideoCtrlState> {
   }
 
   renderTools() {
+    if (!this.props.edit)
+      return null;
+
     return (
       <div className='horz-panel-1'>
         <CheckIcon
@@ -161,7 +165,7 @@ class VideoCtrl extends React.Component<VideoCtrlProps, VideoCtrlState> {
       this.video.current.currentTime = min;
     else if (el == 'right')
       this.video.current.currentTime = max;
-  };
+  }
 
   onPlay = () => {
     const v = this.video.current;
@@ -174,7 +178,7 @@ class VideoCtrl extends React.Component<VideoCtrlProps, VideoCtrlState> {
       v.play();
       this.setState({ play: 'file' });
     }
-  };
+  }
 
   onPlayCut = () => {
     const v = this.video.current;
@@ -186,7 +190,7 @@ class VideoCtrl extends React.Component<VideoCtrlProps, VideoCtrlState> {
       v.play();
       this.setState({ play: 'cut' });
     }
-  };
+  }
 
   getRangeMin() {
     if (this.state.zoom)
@@ -253,7 +257,6 @@ class VideoCtrl extends React.Component<VideoCtrlProps, VideoCtrlState> {
   renderVideo = (width: number, height: number) => {
     return (
       <video
-        muted={true}
         ref={this.video}
         width={width}
         height={height}
@@ -430,7 +433,7 @@ export interface State {
 
 export class VideoFileView extends React.Component<Props, Partial<State>> {
   state: Partial<State> = {};
-  ref = React.createRef<VideoCtrl>();
+  private ref = React.createRef<VideoCtrl>();
 
   subscriber = () => {
     this.setState({});
@@ -457,19 +460,19 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
   onCutSelect = () => {
     const filter = this.props.model.getFilter();
     this.ref.current.setTime(filter.cut ? filter.cut.startSec : 0);
-  };
+  }
 
   onTime = () => {
     this.ref.current.setTime(this.props.model.getCurrTime());
-  };
+  }
 
   onCutStart = () => {
     this.ref.current.setTime(this.props.model.getFilter().cut.startSec);
-  };
+  }
 
   onCutEnd = () => {
     this.ref.current.setTime(this.props.model.getFilter().cut.endSec);
-  };
+  }
 
   renderVideo(): JSX.Element {
     let file = this.getPath();
@@ -479,6 +482,7 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
 
     return (
       <VideoCtrl
+        edit={playCut == null}
         ref={this.ref}
         key={file}
         filter={this.props.model.getFilter()}
@@ -500,7 +504,7 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
             filter: this.props.model.getFilter()
           });
         }}
-        src={`${file}?${this.props.model.holder.getVersion()}`}
+        src={`${file}`}
       />
     );
   }

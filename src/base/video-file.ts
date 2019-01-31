@@ -16,6 +16,8 @@ export interface Subfile {
   id: string;
   desc: Partial<MediaFileDesc>;
   filter?: FilterArgs;
+  executed?: boolean;
+  progress?: number;  // > 0 in progress
 }
 
 export interface TimeCutRange {
@@ -29,8 +31,9 @@ export interface FilterArgs {
 }
 
 export interface ExecuteArgs {
-  filter: FilterArgs;
+  filter?: FilterArgs;
   id?: string;
+  name?: string;
 }
 
 export interface CutId {

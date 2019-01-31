@@ -1,8 +1,42 @@
 import { parseFile, encodeFile, parseStream, EncodeArgs } from '../task/ffmpeg';
 import { lstatSync, mkdirSync, existsSync, unlinkSync } from 'fs';
-import { VideoFileBase, ExecuteArgs, FilterArgs, CutId, Subfile } from '../base/video-file';
-import { getTimeFromSeconds, getString } from '../common/time';
+import { VideoFileBase, ExecuteArgs, CutId, Subfile } from '../base/video-file';
+import { getTimeFromSeconds } from '../common/time';
 import { FileObject } from './file-object';
+
+let parallelTasks = Array< Promise<any> >();
+let taskQueue: Array<{
+  runner: () => Promise<void>,
+  resolve: (res: any) => void,
+  reject: (res: any) => void
+}> = [];
+
+function pushTask<T>(runner: () => Promise<any>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    taskQueue.push({ runner, resolve, reject });
+    runParallel();
+  });
+}
+
+function runParallel() {
+  if (!taskQueue.length)
+    return;
+
+  while (taskQueue.length && parallelTasks.length < 3) {
+    let taskArr = taskQueue.splice(0, 1);
+    let p = taskArr[0].runner();
+    p.then(taskArr[0].resolve);
+    p.catch(taskArr[0].reject);
+    p.finally(() => {
+      parallelTasks.splice(parallelTasks.indexOf(p), 1);
+      runParallel();
+    });
+
+    parallelTasks.push(p);
+  }
+
+  console.log('parallel tasks', parallelTasks.length);
+}
 
 export class VideoFileObject extends VideoFileBase {
   constructor() {
@@ -40,7 +74,8 @@ export class VideoFileObject extends VideoFileBase {
     if (!cut)
       return Promise.reject('invalid cut');
 
-    cut.filter = args.filter;
+    cut.filter = args.filter || cut.filter;
+    cut.name = args.name || cut.name;
     this.holder.save();
     return Promise.resolve();
   }
@@ -76,9 +111,13 @@ export class VideoFileObject extends VideoFileBase {
   removeSplit(args: CutId): Promise<void> {
     try {
       const cut = this.findCutById(args.id);
+      if (cut.progress)
+        return Promise.reject('please wait to finish execute');
+
       if (!cut)
-        return Promise.reject(new Error(`file ${args.id} not found`));
-      unlinkSync(this.getSubfilePath(cut));
+        return Promise.reject(`file ${args.id} not found`);
+      const path = this.getSubfilePath(cut);
+      existsSync(path) && unlinkSync(path);
     } catch (e) {
     }
     this.subfiles = this.subfiles.filter(cut => cut.id != args.id);
@@ -87,13 +126,18 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   execute(args: ExecuteArgs): Promise<void> {
-    let newFile: Subfile = {
-      name: 'cut-' + Date.now(),
-      id: '' + Date.now(),
-      desc: { streamArr: [] },
-      filter: { ...args.filter }
-    };
-    const outFile = this.getSubfilePath(newFile);
+    const cut = this.findCutById(args.id);
+    if (!cut)
+      return Promise.reject('cut id is invalid');
+
+    if (cut.progress != null)
+      return Promise.reject('cut already in progress');
+
+    const outFile = this.getSubfilePath(cut);
+    existsSync(outFile) && unlinkSync(outFile);
+
+    cut.progress = 0;
+    this.holder.save();
 
     const encArgs: EncodeArgs = {
       inFile: this.getPath(),
@@ -104,7 +148,13 @@ export class VideoFileObject extends VideoFileBase {
         } catch (e) {
           console.log(e);
         }
-        this.setProgress(p);
+
+        p = Math.floor(p * 10) / 10;
+        if (p == cut.progress)
+          return;
+
+        cut.progress = p;
+        this.holder.save();
       }
     };
 
@@ -118,15 +168,14 @@ export class VideoFileObject extends VideoFileBase {
     if (args.filter.crop)
       encArgs.crop = { ...args.filter.crop };
 
-    this.setStatus('in progress');
     return (
-      encodeFile(encArgs).then(() => {
+      pushTask(() => encodeFile(encArgs))
+      .then(() => {
         this.size = this.loadSize = lstatSync(this.getPath()).size;
         return parseFile(this.getPath());
       }).then(info => {
-        this.subfiles.push(newFile);
-        this.setProgress(1);
-        this.setStatus('ok');
+        delete cut.progress;
+        cut.executed = true;
         this.desc.duration = info.duration;
         this.holder.save();
       })
