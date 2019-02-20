@@ -1,37 +1,29 @@
 import * as React from 'react';
-import { VideoFileBase, ExecuteArgs, SendFileArgs, Subfile, CutId, FilterArgs, TimeCutRange } from '../base/video-file';
+import { VideoFileBase, ExecuteArgs, SendFileArgs, Subfile, FileId, FilterArgs, Range } from '../base/video-file';
 import { PropsGroup, PropItem, TextPropItem } from 'ts-react-ui/prop-sheet';
 import { ListView } from 'ts-react-ui/list-view';
-import { getString } from '../common/time';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { MediaStream } from '../task/media-desc';
-import { Rect } from '../common/point';
-
-function fmtSec(s: number) {
-  return Math.floor(s * 1000) / 1000;
-}
 
 export class VideoFileObject extends VideoFileBase {
-  protected selectCutId: string;
-  protected playCutId: string;
-  protected filter: FilterArgs = {};
-  protected currTime: number = 0;
+  protected selectFileId: string;
   protected editNameCutId: string;
+  protected playResultId: string;
 
-  append(args: ExecuteArgs): Promise<void> {
+  append(args: FilterArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'append', args });
   }
 
-  save(args: ExecuteArgs) {
+  save(args: FilterArgs) {
     return this.holder.invokeMethod({ method: 'save', args });
   }
 
-  execute(args: ExecuteArgs): Promise<void> {
+  execute(args: FileId): Promise<void> {
     return this.holder.invokeMethod({ method: 'execute', args });
   }
 
-  removeSplit(args: CutId): Promise<void> {
-    return this.holder.invokeMethod({ method: 'removeSplit', args });
+  remove(args: FileId): Promise<void> {
+    return this.holder.invokeMethod({ method: 'remove', args });
   }
 
   updateDesciption(): Promise<void> {
@@ -54,77 +46,32 @@ export class VideoFileObject extends VideoFileBase {
     return this.filter;
   }
 
-  setCut(range: TimeCutRange) {
-    if (!range) {
-      delete this.filter.cut;
-    } else {
-      this.filter.cut = { ...range };
-    }
-
-    this.holder.delayedNotify();
-  }
-
-  setCrop(rect: Rect) {
-    if (!rect) {
-      delete this.filter.crop;
-    } else {
-      this.filter.crop = rect;
-    }
-
-    this.holder.delayedNotify();
-  }
-
-  setCurrTime(time: number) {
-    this.currTime = time;
-    this.holder.delayedNotify({});
-  }
-
-  getCurrTime(): number {
-    return this.currTime;
-  }
-
-  setSelectCut(id: string) {
-    if (id == this.selectCutId)
+  setSelectFile(id: string) {
+    if (id == this.selectFileId)
       return;
 
     if (this.editNameCutId != id)
       this.editNameCutId = null;
 
-    this.selectCutId = id;
-    this.playCutId = null;
-    const cut = this.getSelectCut();
-    if (cut) {
-      this.filter = JSON.parse(JSON.stringify(cut.filter));
-    }
+    this.selectFileId = id;
+    this.playResultId = null;
     this.holder.delayedNotify();
   }
 
-  setPlayCut(id: string) {
-    if (id == this.playCutId)
+  getSelectFile(): VideoFileBase | null {
+    return this.selectFileId ? this.findFile(this.selectFileId) : null;
+  }
+
+  setPlayResultFile(id: string) {
+    if (this.playResultId == id)
       return;
 
-    const cut = this.getSelectCut();
-    if (id) {
-      this.selectCutId = id;
-      this.filter.cut = null;
-    } else if (cut) {
-      this.filter = JSON.parse(JSON.stringify(cut.filter));
-    }
-
-    this.playCutId = id;
+    this.playResultId = id;
     this.holder.delayedNotify();
   }
 
-  getPlayCut() {
-    return this.findCutById(this.playCutId);
-  }
-
-  getSelectCut(): Subfile | null {
-    return this.selectCutId ? this.findCutById(this.selectCutId) : null;
-  }
-
-  getSelectCutId() {
-    return this.selectCutId;
+  getPlayResultFile(): VideoFileBase {
+    return this.playResultId ? this.findFile(this.playResultId) : null;
   }
 
   renderStreamDesc(s: MediaStream) {
@@ -150,124 +97,81 @@ export class VideoFileObject extends VideoFileBase {
     }
   }
 
-  renderDeatails() {
-    return (
-      <PropsGroup label='details'>
-        <PropItem
-          label='duration'
-          value={getString(this.desc.duration)}
-        />
-        <TextPropItem
-          label='time (sec)'
-          value={fmtSec(this.currTime)}
-          onEnter={t => {
-            this.setCurrTime(+t);
-            this.holder.delayedNotify({ type: 'time' });
-          }}
-        />
-        {this.filter.cut &&
-          <TextPropItem
-            label='cut start (sec)'
-            value={fmtSec(this.filter.cut.startSec)}
-            onEnter={t => {
-              this.setCut({ startSec: +t, endSec: this.filter.cut.endSec });
-              this.holder.delayedNotify({ type: 'cut-start' });
+  renderCut(file: VideoFileBase) {
+    const fileID = file.holder.getID();
+    return {
+      value: fileID,
+      title: file.getName(),
+      render: () => (
+        <div className='horz-panel-1' style={{ display: 'flex' }}>
+          <CheckIcon
+            title='Result'
+            faIcon={fileID != this.playResultId ? 'fa fa-play-circle' : 'fa fa-stop-circle'}
+            value={file.getSize() != 0}
+            onChange={() => {
+              if (file.getSize() == 0)
+                return;
+
+              if (fileID == this.playResultId)
+                this.setPlayResultFile(null);
+              else
+                this.setPlayResultFile(fileID);
             }}
-          />}
-        {this.filter.cut &&
-          <TextPropItem
-            label='cut end (sec)'
-            value={fmtSec(this.filter.cut.endSec)}
-            onEnter={t => {
-              this.setCut({ startSec: this.filter.cut.startSec, endSec: +t });
-              this.holder.delayedNotify({ type: 'cut-end' });
+          />
+          <CheckIcon
+            title='Execute'
+            faIcon={file.isStatusInProgess() ? 'fa fa-spinner fa-spin' : 'fa fa-rocket'}
+            value={file.getStatus() == 'ok'}
+            onChange={() => {
+              if (file.isStatusInProgess())
+                return;
+
+              this.execute({ id: fileID });
             }}
-          />}
-        {this.filter.cut &&
-          <TextPropItem
-            label='cut duration (sec)'
-            value={fmtSec(this.filter.cut.endSec - this.filter.cut.startSec)}
-            onEnter={t => {
-              this.setCut({
-                startSec: this.filter.cut.startSec,
-                endSec: this.filter.cut.startSec + (+t)
-              });
-              this.holder.delayedNotify({ type: 'cut-duration' });
+          />
+          <div
+            style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
+            onClick={() => {
+              this.setSelectFile(fileID);
+              this.holder.delayedNotify({ type: 'cut-select' });
             }}
-          />}
-      </PropsGroup>
-    );
+            onDoubleClick={() => {
+              this.editNameCutId = fileID;
+              this.holder.delayedNotify();
+            }}
+          >
+            {
+              this.editNameCutId == fileID ?
+                <TextPropItem
+                  value={file.getName()}
+                  onEnter={name => {
+                    file.setName(name);
+                    this.editNameCutId = null;
+                    this.holder.delayedNotify();
+                  }}
+                /> :
+                (file.isStatusInProgess() ? file.getProgress() * 100 + '% ' : '') + file.getName()
+            }
+          </div>
+          <CheckIcon
+            title='Remove'
+            faIcon='fa fa-trash'
+            value={false}
+            onChange={() => this.remove({ id: fileID })}
+          />
+        </div>
+      )
+    };
   }
 
   renderCuts() {
-    const selectCut = this.getSelectCut();
+    const selectFile = this.getSelectFile();
+    const files = this.getFiles();
     return (
       <PropsGroup label='cuts'>
         <ListView
-          value={selectCut ? { value: selectCut.id } : null}
-          values={this.subfiles.map(file => {
-            return {
-              value: file.id,
-              render: () => (
-                <div className='horz-panel-1' style={{ display: 'flex' }}>
-                  <CheckIcon
-                    faIcon={this.playCutId == file.id ? 'fa fa-stop' : 'fa fa-play'}
-                    value={file.executed}
-                    onChange={() => {
-                      if (!file.executed)
-                        return;
-
-                      if (this.playCutId == file.id) {
-                        this.setPlayCut(null);
-                      } else {
-                        this.setPlayCut(file.id);
-                        this.holder.delayedNotify({ type: 'cut-select' });
-                      }
-                    }}
-                  />
-                  <CheckIcon
-                    faIcon={file.progress >= 0 ? 'fa fa-spinner fa-spin' : 'fa fa-rocket'}
-                    value={file.progress == null}
-                    onChange={() => {
-                      if (file.progress != null)
-                        return;
-
-                      this.execute({ id: file.id, filter: file.filter });
-                    }}
-                  />
-                  <div
-                    style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
-                    onClick={() => {
-                      this.setSelectCut(file.id);
-                      this.holder.delayedNotify({ type: 'cut-select' });
-                    }}
-                    onDoubleClick={() => {
-                      this.editNameCutId = file.id;
-                      this.holder.delayedNotify();
-                    }}
-                  >
-                    {
-                      this.editNameCutId == file.id ?
-                      <TextPropItem
-                        value={file.name}
-                        onEnter={name => {
-                          this.save({ id: this.editNameCutId, name });
-                          this.editNameCutId = null;
-                          this.holder.delayedNotify();
-                        }}
-                      /> :
-                      (file.progress != null ? file.progress * 100 + '% ' : '') + file.name
-                    }
-                  </div>
-                  <CheckIcon
-                    faIcon='fa fa-trash'
-                    value={false}
-                    onChange={() => this.removeSplit({ id: file.id })}
-                  />
-                </div>
-              )
-            };
-          })}
+          value={selectFile ? { value: selectFile.holder.getID() } : null}
+          values={files.map(file => this.renderCut(file))}
         />
       </PropsGroup>
     );
@@ -286,7 +190,6 @@ export class VideoFileObject extends VideoFileBase {
           })}
         </PropsGroup>
         {this.renderCuts()}
-        {this.renderDeatails()}
       </>
     );
   }

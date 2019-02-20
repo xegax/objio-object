@@ -1,6 +1,6 @@
 import { parseFile, encodeFile, parseStream, EncodeArgs } from '../task/ffmpeg';
 import { lstatSync, mkdirSync, existsSync, unlinkSync } from 'fs';
-import { VideoFileBase, ExecuteArgs, CutId, Subfile } from '../base/video-file';
+import { VideoFileBase, FilterArgs, ExecuteArgs, FileId, Subfile } from '../base/video-file';
 import { getTimeFromSeconds } from '../common/time';
 import { FileObject } from './file-object';
 
@@ -39,7 +39,7 @@ function runParallel() {
 }
 
 export class VideoFileObject extends VideoFileBase {
-  constructor() {
+  constructor(filter?: FilterArgs) {
     super();
 
     FileObject.initFileObj(this);
@@ -47,11 +47,11 @@ export class VideoFileObject extends VideoFileBase {
     this.holder.setMethodsToInvoke({
       ...this.holder.getMethodsToInvoke(),
       execute: {
-        method: (args: ExecuteArgs) => this.execute(args),
+        method: (args: FileId) => this.execute(args),
         rights: 'write'
       },
-      removeSplit: {
-        method: (args: CutId) => this.removeSplit(args),
+      remove: {
+        method: (args: FileId) => this.remove(args),
         rights: 'write'
       },
       updateDescription: {
@@ -59,45 +59,35 @@ export class VideoFileObject extends VideoFileBase {
         rights: 'write'
       },
       append: {
-        method: (args: ExecuteArgs) => this.append(args),
+        method: (args: FilterArgs) => this.append(args),
         rights: 'write'
       },
       save: {
-        method: (args: ExecuteArgs) => this.save(args),
+        method: (args: FilterArgs) => this.save(args),
         rights: 'write'
       }
     });
+
+    this.filter = filter || {};
   }
 
-  save(args: ExecuteArgs) {
-    const cut = this.findCutById(args.id);
-    if (!cut)
-      return Promise.reject('invalid cut');
-
-    cut.filter = args.filter || cut.filter;
-    cut.name = args.name || cut.name;
+  save(args: FilterArgs) {
+    this.filter = {...args};
     this.holder.save();
     return Promise.resolve();
   }
 
-  append(args: ExecuteArgs) {
-    let newFile: Subfile = {
-      name: 'cut-' + Date.now(),
-      id: '' + Date.now(),
-      desc: { streamArr: [] },
-      filter: { ...args.filter }
-    };
-
-    this.subfiles.push(newFile);
-    this.holder.save();
-    return Promise.resolve();
-  }
-
-  getSubfilesFolder() {
-    const f = super.getSubfilesFolder();
-    if (!existsSync(f))
-      mkdirSync(f);
-    return f;
+  append(args: FilterArgs) {
+    let obj = new VideoFileObject({...args});
+    return this.holder.createObject(obj)
+    .then(() => {
+      obj.origName = this.origName;
+      obj.mime = this.mime;
+      obj.setName(`cut-${Date.now()}`);
+      this.files.push(obj);
+      this.files.holder.save();
+      this.holder.save();
+    });
   }
 
   updateDesciption(): Promise<void> {
@@ -108,76 +98,80 @@ export class VideoFileObject extends VideoFileBase {
     });
   }
 
-  removeSplit(args: CutId): Promise<void> {
-    try {
-      const cut = this.findCutById(args.id);
-      if (cut.progress)
-        return Promise.reject('please wait to finish execute');
+  remove(args: FileId): Promise<void> {
+    const idx = this.files.find(item => item.holder.getID() == args.id);
+    if (idx == -1)
+      return Promise.reject(`file id=${args.id} not found`);
 
-      if (!cut)
-        return Promise.reject(`file ${args.id} not found`);
-      const path = this.getSubfilePath(cut);
-      existsSync(path) && unlinkSync(path);
-    } catch (e) {
-    }
-    this.subfiles = this.subfiles.filter(cut => cut.id != args.id);
-    this.holder.save();
+    this.files.remove(idx);
+    this.files.holder.save();
     return Promise.resolve();
   }
 
-  execute(args: ExecuteArgs): Promise<void> {
-    const cut = this.findCutById(args.id);
-    if (!cut)
-      return Promise.reject('cut id is invalid');
+  execute(args: FileId): Promise<void> {
+    const file = this.findFile(args.id) as VideoFileObject;
+    if (!file)
+      return Promise.reject(`file id=${args.id} not found!`);
 
-    if (cut.progress != null)
-      return Promise.reject('cut already in progress');
+    if (file.isStatusInProgess())
+      return Promise.reject('execute in progress');
 
-    const outFile = this.getSubfilePath(cut);
+    const outFile = file.getPath();
     existsSync(outFile) && unlinkSync(outFile);
 
-    cut.progress = 0;
-    this.holder.save();
+    file.setProgress(0);
+    file.setStatus('in progress');
+    file.executeStartTime = Date.now();
+    file.executeTime = 0;
+    file.holder.save();
 
     const encArgs: EncodeArgs = {
       inFile: this.getPath(),
       outFile,
       onProgress: (p: number) => {
         try {
-          this.size = this.loadSize = lstatSync(this.getPath()).size;
+          file.size = file.loadSize = lstatSync(file.getPath()).size;
         } catch (e) {
           console.log(e);
         }
 
         p = Math.floor(p * 10) / 10;
-        if (p == cut.progress)
+        if (p == file.progress)
           return;
 
-        cut.progress = p;
-        this.holder.save();
+        file.progress = p;
+        file.holder.save();
       }
     };
 
-    if (args.filter.cut) {
+    if (file.filter.trim) {
       encArgs.range = {
-        from: getTimeFromSeconds(args.filter.cut.startSec),
-        to: getTimeFromSeconds(args.filter.cut.endSec)
+        from: getTimeFromSeconds(file.filter.trim.from),
+        to: getTimeFromSeconds(file.filter.trim.to)
       };
     }
 
-    if (args.filter.crop)
-      encArgs.crop = { ...args.filter.crop };
+    if (file.filter.crop)
+      encArgs.crop = { ...file.filter.crop };
 
     return (
       pushTask(() => encodeFile(encArgs))
       .then(() => {
-        this.size = this.loadSize = lstatSync(this.getPath()).size;
-        return parseFile(this.getPath());
+        file.size = file.loadSize = lstatSync(outFile).size;
+        file.holder.save();
+        return parseFile(outFile);
       }).then(info => {
-        delete cut.progress;
-        cut.executed = true;
-        this.desc.duration = info.duration;
-        this.holder.save();
+        file.executeTime = Date.now() - file.executeStartTime;
+        file.progress = 0;
+        file.setStatus('ok');
+        file.desc.streamArr = info.stream.map(parseStream);
+        file.desc.duration = info.duration;
+        file.holder.save();
+      }).catch(e => {
+        file.executeTime = Date.now() - file.executeStartTime;
+        file.progress = 0;
+        file.setStatus('error');
+        file.holder.save();
       })
     );
   }

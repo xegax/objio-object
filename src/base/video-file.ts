@@ -1,6 +1,6 @@
 import { Time } from '../common/time';
 import { FileObjectBase, SendFileArgs } from './file-object';
-import { SERIALIZER } from 'objio';
+import { SERIALIZER, OBJIOArray } from 'objio';
 import { MediaStream } from '../task/media-desc';
 import { Rect } from '../common/point';
 
@@ -20,13 +20,13 @@ export interface Subfile {
   progress?: number;  // > 0 in progress
 }
 
-export interface TimeCutRange {
-  startSec: number;
-  endSec: number;
+export interface Range {
+  from: number;
+  to: number;
 }
 
 export interface FilterArgs {
-  cut?: TimeCutRange;
+  trim?: Range;
   crop?: Rect;
 }
 
@@ -36,48 +36,53 @@ export interface ExecuteArgs {
   name?: string;
 }
 
-export interface CutId {
+export interface FileId {
   id: string;
 }
 
 export abstract class VideoFileBase extends FileObjectBase {
   protected desc: Partial<MediaFileDesc> = {};
-  protected subfiles = Array<Subfile>();
+  protected files = new OBJIOArray<VideoFileBase>();
+  protected filter: FilterArgs = {};
+  protected executeStartTime: number;
+  protected executeTime: number;
+
+  getFilter(): FilterArgs {
+    return this.filter;
+  }
 
   getDesc(): Partial<MediaFileDesc> {
     return this.desc;
   }
 
-  getSubfiles() {
-    return this.subfiles;
+  getFiles() {
+    return this.files.getArray();
   }
 
   getObjFolder() {
     return `obj_${this.holder.getID()}`;
   }
 
-  getSubfilesFolder() {
-    return this.holder.getPublicPath(this.getObjFolder());
+  findFile(id: string): VideoFileBase {
+    const idx = this.files.find(item => item.holder.getID() == id);
+    return this.files.get(idx);
   }
 
-  getSubfilePath(file: Subfile) {
-    return this.getSubfilesFolder() + '/' + file.id + '.mp4';
-  }
+  abstract save(args: FilterArgs): Promise<void>;
+  abstract append(args: FilterArgs): Promise<void>;
+  abstract execute(args: FileId): Promise<void>;
 
-  findCutById(id: string): Subfile {
-    return this.subfiles.find(item => item.id == id);
-  }
-
-  abstract save(args: ExecuteArgs): Promise<void>;
-  abstract append(args: ExecuteArgs): Promise<void>;
-  abstract execute(args: ExecuteArgs): Promise<void>;
-  abstract removeSplit(args: CutId): Promise<void>;
+  abstract remove(args: FileId): Promise<void>;
   abstract updateDesciption(): Promise<void>;
 
   static TYPE_ID = 'VideoFileObject';
   static SERIALIZE: SERIALIZER = () => ({
     ...FileObjectBase.SERIALIZE(),
     desc:     { type: 'json', const: true },
-    subfiles: { type: 'json', const: true }
+    subfiles: { type: 'json', const: true },
+    files:    { type: 'object', const: true },
+    filter:   { type: 'json', const: true },
+    executeStartTime: { type: 'integer', const: true },
+    executeTime: { type: 'integer', const: true }
   })
 }
