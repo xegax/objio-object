@@ -97,7 +97,7 @@ export function parseMedia(file: string): Promise<FileInfo> {
   return (
     runTask({
       cmd: process.env['FFMPEG'] || 'ffmpeg.exe',
-      args: ['-i', normalize(file)],
+      args: ['-i', `"${normalize(file)}"`],
       handleOutput: args => {
         bufs.push(args.data);
       }
@@ -115,10 +115,13 @@ export interface Range {
 export interface EncodeArgs {
   inFile: string;
   outFile: string;
+  overwrite?: boolean;
+
   range?: Partial<Range>;
   crop?: Rect;
   reverse?: boolean;
-  overwrite?: boolean;
+  codecA?: string;
+  codecV?: string;
   onProgress?(t: number): void;
 }
 
@@ -179,6 +182,9 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
 
       if (filterComplexArr.length)
         argsArr.push('-filter_complex', filterComplexArr.join(','));
+
+      if (args.codecA == 'copy' && args.codecV == 'copy')
+        argsArr.push('-codec copy');
 
       argsArr.push(normalize(args.outFile));
       return runTask({

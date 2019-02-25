@@ -1,42 +1,8 @@
 import { parseMedia, encodeFile, parseStream, EncodeArgs } from '../task/ffmpeg';
-import { lstatSync, mkdirSync, existsSync, unlinkSync } from 'fs';
-import { VideoFileBase, FilterArgs, ExecuteArgs, FileId, Subfile } from '../base/video-file';
+import { lstatSync, existsSync, unlinkSync, promises} from 'fs';
+import { VideoFileBase, FilterArgs, FileId } from '../base/video-file';
 import { getTimeFromSeconds } from '../common/time';
 import { FileObject } from './file-object';
-
-let parallelTasks = Array< Promise<any> >();
-let taskQueue: Array<{
-  runner: () => Promise<void>,
-  resolve: (res: any) => void,
-  reject: (res: any) => void
-}> = [];
-
-function pushTask<T>(runner: () => Promise<any>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    taskQueue.push({ runner, resolve, reject });
-    runParallel();
-  });
-}
-
-function runParallel() {
-  if (!taskQueue.length)
-    return;
-
-  while (taskQueue.length && parallelTasks.length < 3) {
-    let taskArr = taskQueue.splice(0, 1);
-    let p = taskArr[0].runner();
-    p.then(taskArr[0].resolve);
-    p.catch(taskArr[0].reject);
-    p.finally(() => {
-      parallelTasks.splice(parallelTasks.indexOf(p), 1);
-      runParallel();
-    });
-
-    parallelTasks.push(p);
-  }
-
-  console.log('parallel tasks', parallelTasks.length);
-}
 
 export class VideoFileObject extends VideoFileBase {
   constructor(filter?: FilterArgs) {
@@ -47,7 +13,7 @@ export class VideoFileObject extends VideoFileBase {
     this.holder.setMethodsToInvoke({
       ...this.holder.getMethodsToInvoke(),
       execute: {
-        method: (args: FileId) => this.execute(args),
+        method: (args: FileId, userId: string) => this.execute(args, userId),
         rights: 'write'
       },
       remove: {
@@ -108,7 +74,7 @@ export class VideoFileObject extends VideoFileBase {
     return Promise.resolve();
   }
 
-  execute(args: FileId): Promise<void> {
+  execute(args: FileId, userId?: string): Promise<void> {
     const file = this.findFile(args.id) as VideoFileObject;
     if (!file)
       return Promise.reject(`file id=${args.id} not found!`);
@@ -128,6 +94,7 @@ export class VideoFileObject extends VideoFileBase {
     const encArgs: EncodeArgs = {
       inFile: this.getPath(),
       outFile,
+      overwrite: true,
       onProgress: (p: number) => {
         try {
           file.size = file.loadSize = lstatSync(file.getPath()).size;
@@ -158,7 +125,7 @@ export class VideoFileObject extends VideoFileBase {
       encArgs.reverse = file.filter.reverse;
 
     return (
-      pushTask(() => encodeFile(encArgs))
+      this.holder.pushTask(() => encodeFile(encArgs), userId)
       .then(() => {
         file.size = file.loadSize = lstatSync(outFile).size;
         file.holder.save();
@@ -175,17 +142,52 @@ export class VideoFileObject extends VideoFileBase {
         file.progress = 0;
         file.setStatus('error');
         file.holder.save();
+
+        return Promise.reject(e);
       })
     );
   }
 
-  onFileUploaded(): Promise<void> {
+  onFileUploaded(userId: string): Promise<void> {
     return (
       parseMedia(this.getPath())
       .then(info => {
         this.desc.streamArr = info.stream.map(parseStream);
         this.desc.duration = info.duration;
         this.holder.save();
+
+        if (['.avi', '.mkv'].indexOf(this.getExt().toLocaleLowerCase()) != -1) {
+          const v = this.desc.streamArr.find(s => s.video != null);
+          const a = this.desc.streamArr.find(s => s.audio != null); 
+          this.setProgress(0);
+          let args: EncodeArgs = {
+            inFile: this.getPath(),
+            outFile: this.getPath('.mp4'),
+            overwrite: true,
+            codecV: v && v.video.codec.startsWith('h264') ? 'copy' : 'h264',
+            codecA: a && ['mp3', 'aac'].some(codec => a.audio.codec.startsWith(codec)) ? 'copy' : 'mp3',
+            onProgress: (p: number) => {
+              this.setProgress(Math.floor(p * 10) / 10);
+            }
+          };
+
+          return (
+            this.holder.pushTask( () => encodeFile(args), userId )
+            .then(() => {
+              this.setProgress(1);
+              this.origName = this.getOriginName('.mp4');
+              this.holder.save();
+              return parseMedia(this.getPath());
+            })
+            .then(info => {
+              this.desc.streamArr = info.stream.map(parseStream);
+              this.desc.duration = info.duration;
+              this.holder.save();
+
+              unlinkSync(args.inFile);
+            })
+          );
+        }
       })
       .catch((err: string) => {
         this.addError(err);

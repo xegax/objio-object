@@ -112,7 +112,7 @@ export class DocTable extends DocTableBase {
                 fileObjId: this.getFileObjId()
               };
 
-              this.holder.getObject<FileObject>(args.fileObjId)
+              this.holder.getObject<TableFile>(args.fileObjId)
               .then((file: TableFile) => {
                 args.columns = file.getColumns();
                 this.execute(args);

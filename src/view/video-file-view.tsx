@@ -20,7 +20,15 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
   ref = React.createRef<Video>();
 
   subscriber = () => {
-    this.setState({});
+    const state: State = {};
+
+    const file = this.props.model.getSelectFile();
+    if (file) {
+      const filter = file.getFilter();
+      state.reverse = filter.reverse;
+    }
+
+    this.setState(state);
   }
 
   componentDidMount() {
@@ -31,31 +39,43 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
     this.props.model.holder.unsubscribe(this.subscriber);
   }
 
+  getCurrentFilter(): FilterArgs {
+    const s = this.ref.current.state;
+    return {
+      trim: s.trim ? {...s.trim} : null,
+      reverse: this.state.reverse
+    };
+  }
+
   renderVideo(): JSX.Element {
-    let file = this.getPath();
-    let result = this.props.model.getPlayResultFile();
+    const src = this.getPath();
+    const result = this.props.model.getPlayResultFile();
     if (result) {
       return (
-        <Video src={[result.getPath(),result.holder.getVersion()].join('?')} key={'res-' + result.holder.getID()}/>
+        <Video
+          src={[result.getPath(), result.holder.getVersion()].join('?')}
+          key={'res-' + result.holder.getID()}
+          autoPlay
+        />
       );
     }
 
-    let cut = this.props.model.getSelectFile();
-    let filter: FilterArgs;
+    const cut = this.props.model.getSelectFile();
+    let filter: FilterArgs = {};
     if (cut)
       filter = cut.getFilter();
 
-    const trim = filter && filter.trim && {...filter.trim} || null;
+    const trim = filter.trim ? {...filter.trim} : null;
     return (
       <Video
         ref={this.ref}
         key={cut && cut.holder.getID() || null}
-        src={file}
+        src={src}
         defaultTrim={trim}
         defaultTime={trim && trim.from || 0}
         tags={[
           this.state.reverse && (
-            <Tag onRemove={() => { this.setState({ reverse: false }); }}>
+            <Tag color='#DEFFDD' onRemove={() => { this.setState({ reverse: false }); }}>
               reverse
             </Tag>
           )
@@ -69,13 +89,7 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
               if (!cut)
                 return;
 
-              const s = this.ref.current.state;
-              let filter: FilterArgs = {
-                trim: s.trim ? {...s.trim} : null,
-                reverse: this.state.reverse
-              };
-
-              cut.save(filter);
+              cut.save(this.getCurrentFilter());
             }}
           />,
           <CheckIcon
@@ -83,12 +97,7 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
             value
             faIcon='fa fa-plus'
             onChange={() => {
-              const s = this.ref.current.state;
-              let filter: FilterArgs = {
-                trim: s.trim ? {...s.trim} : null
-              };
-
-              this.props.model.append(filter);
+              this.props.model.append(this.getCurrentFilter());
             }}
           />,
           <CheckIcon

@@ -1,7 +1,7 @@
 import { TableFileBase } from '../../base/table-file';
 import { pushStat, StatMap } from 'objio/common/reader/statistics';
 
-export function onFileUpload(obj: TableFileBase) {
+export function onFileUpload(obj: TableFileBase, userId: string) {
   let statMap: StatMap = {};
 
   obj.setStatMap({});

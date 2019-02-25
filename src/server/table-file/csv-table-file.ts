@@ -71,8 +71,8 @@ export class CSVTableFile extends Base {
     return this;
   }
 
-  onFileUploaded(): Promise<void> {
-    return onFileUpload(this);
+  onFileUploaded(userId: string): Promise<void> {
+    return onFileUpload(this, userId);
   }
 
   static SERIALIZE: SERIALIZER = () => ({

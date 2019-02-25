@@ -8,7 +8,7 @@ import { Animation, SpriteSheet } from './sprite-sheet';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
-  if (ext == '.mp4')
+  if (['.mp4', '.mkv', '.avi', '.mov'].indexOf(ext) != -1)
     return new VideoFileObject(args);
 
   if (ext == '.csv')

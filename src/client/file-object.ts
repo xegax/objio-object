@@ -7,7 +7,7 @@ export class FileObject extends FileObjectBase {
     return this.holder.invokeMethod({ method: 'sendFile', args: args.file, onProgress: args.onProgress });
   }
 
-  onFileUploaded(): Promise<void> {
+  onFileUploaded(userId: string): Promise<void> {
     return Promise.resolve();
   }
 }

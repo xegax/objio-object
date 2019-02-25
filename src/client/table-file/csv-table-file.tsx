@@ -17,7 +17,7 @@ export class CSVTableFile extends Base {
     return null;
   }
 
-  onFileUploaded() {
+  onFileUploaded(userId: string) {
     return Promise.resolve();
   }
 

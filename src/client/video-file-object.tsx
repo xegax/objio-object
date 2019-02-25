@@ -168,7 +168,7 @@ export class VideoFileObject extends VideoFileBase {
     const selectFile = this.getSelectFile();
     const files = this.getFiles();
     return (
-      <PropsGroup label='cuts'>
+      <PropsGroup label='cuts' itemWrap={false} defaultHeight={200}>
         <ListView
           value={selectFile ? { value: selectFile.holder.getID() } : null}
           values={files.map(file => this.renderCut(file))}

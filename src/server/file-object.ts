@@ -56,7 +56,7 @@ export class FileObject extends FileObjectBase {
   }
 
   static getUploadFileImpl(obj: FileObject) {
-    return (args: ServerSendFileArgs) => {
+    return (args: ServerSendFileArgs, userId: string) => {
       obj.setProgress(0);
       obj.setStatus('in progress');
 
@@ -79,7 +79,7 @@ export class FileObject extends FileObjectBase {
           obj.setProgress(obj.loadSize / obj.size);
         });
         args.data.on('end', () => {
-          obj.onFileUploaded().then(() => {
+          obj.onFileUploaded(userId).then(() => {
             obj.setStatus('ok');
             obj.setProgress(1);
             obj.holder.save();
@@ -90,15 +90,15 @@ export class FileObject extends FileObjectBase {
     };
   }
 
-  static getPath(obj: FileObject) {
-    return obj.holder.getPublicPath(obj.getFileName());
+  static getPath(obj: FileObject, ext?: string) {
+    return obj.holder.getPublicPath(obj.getFileName(ext));
   }
 
-  onFileUploaded() {
+  onFileUploaded(userId: string) {
     return Promise.resolve();
   }
 
-  getPath(): string {
+  getPath(ext?: string): string {
     return FileObject.getPath(this);
   }
 }

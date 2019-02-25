@@ -36,16 +36,23 @@ export abstract class FileObjectBase extends ObjectBase {
     this.mime = args.mime;
   }
 
-  getOriginName() {
-    return this.origName;
+  getOriginName(ext?: string) {
+    if (ext == null)
+      return this.origName;
+
+    const i = this.origName.lastIndexOf('.');
+    if (i == -1)
+      return this.origName + ext;
+
+    return this.origName.substr(0, i) + ext;
   }
 
-  getFileName(): string {
-    return `file_${this.holder.getID()}${this.getExt()}`;
+  getFileName(ext?: string): string {
+    return `file_${this.holder.getID()}${ ext || this.getExt()}`;
   }
 
-  getPath(): string {
-    return this.holder.getPublicPath(this.getFileName());
+  getPath(ext?: string): string {
+    return this.holder.getPublicPath(this.getFileName(ext));
   }
 
   getSize(): number {
@@ -65,7 +72,7 @@ export abstract class FileObjectBase extends ObjectBase {
     return this.loadSize;
   }
 
-  abstract onFileUploaded(): Promise<void>;
+  abstract onFileUploaded(userId: string): Promise<void>;
   abstract sendFile(args: SendFileArgs): Promise<any>;
 
   static TYPE_ID: string = 'FileObject';
