@@ -22,9 +22,11 @@ export function runTask(args: TaskArgs): Promise<TaskResult> {
   };
 
   let totalOutBytes = 0;
+  let cmd = [args.cmd, ...args.args].join(' ');
+  console.log(cmd);
 
   return new Promise((resolve, reject) => {
-    const task = exec([args.cmd, ...args.args].join(' '), err => {
+    const task = exec(cmd, err => {
       if (err)
         return reject(err);
 

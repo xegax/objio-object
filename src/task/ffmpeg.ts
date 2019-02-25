@@ -41,8 +41,8 @@ export function parseStream(strm: string): MediaStream {
     m.video = {
       codec: props[0],
       pixelFmt: props[1],
-      width: +size[0],
-      height: +size[1],
+      width: parseInt(size[0], 10),
+      height: parseInt(size[1], 10),
       bitrate: parseFloat(props[3]),
       fps: parseFloat(props[5])
     };
@@ -82,21 +82,29 @@ function getFileInfo(input: InputInfo): FileInfo {
   };
 }
 
-export function parseFile(file: string): Promise<FileInfo> {
+export function parseMedia(file: string): Promise<FileInfo> {
   let bufs = Array<Buffer>();
-  return runTask({
-    cmd: process.env['FFMPEG'] || 'ffmpeg.exe',
-    args: ['-i', normalize(file)],
-    handleOutput: args => {
-      bufs.push(args.data);
-    }
-  })
-  .then(() => null)
-  .catch(() => {
+
+  const parse = (): FileInfo | Promise<any> => {
     const buff = Buffer.concat(bufs);
     const inputs = parseInputDetails(buff.toString().split('\n'));
-    return getFileInfo(inputs[0]);
-  });
+    if (inputs && inputs.length)
+      return getFileInfo(inputs[0]);
+
+    return Promise.reject('parse media is failed');
+  };
+
+  return (
+    runTask({
+      cmd: process.env['FFMPEG'] || 'ffmpeg.exe',
+      args: ['-i', normalize(file)],
+      handleOutput: args => {
+        bufs.push(args.data);
+      }
+    })
+    .then(parse)
+    .catch(parse)
+  );
 }
 
 export interface Range {
@@ -109,6 +117,7 @@ export interface EncodeArgs {
   outFile: string;
   range?: Partial<Range>;
   crop?: Rect;
+  reverse?: boolean;
   overwrite?: boolean;
   onProgress?(t: number): void;
 }
@@ -122,20 +131,20 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
   }
 
   return (
-    parseFile(args.inFile)
+    parseMedia(args.inFile)
     .then(info => {
-      const argsArr = [
+      const argsArr = [];
+      if (args.range && args.range.from)
+        argsArr.push('-ss', getString(args.range.from));
+
+      argsArr.push(
         '-i',
         normalize(args.inFile)
-      ];
+      );
 
       let duration = getSeconds(info.duration);
       if (args.range) {
         const { from, to } = args.range;
-        if (from)
-          argsArr.push('-ss', getString(from));
-        if (to)
-          argsArr.push('-to', getString(to));
 
         if (from && to) {
           duration = getSeconds(to) - getSeconds(from);
@@ -144,6 +153,9 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
         } else if (to) {
           duration = getSeconds(to);
         }
+
+        if (to)
+          argsArr.push('-t', duration);
       }
 
       let filterComplexArr = [];
@@ -157,6 +169,12 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
         .map(v => Math.floor(v))
         .join(':');
         filterComplexArr.push(`crop=${crop}`);
+      }
+
+      if (args.reverse) {
+        filterComplexArr.push(`trim=duration=${duration}`);
+        filterComplexArr.push('setpts=PTS-STARTPTS');
+        filterComplexArr.push('reverse');
       }
 
       if (filterComplexArr.length)

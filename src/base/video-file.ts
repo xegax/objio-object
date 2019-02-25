@@ -28,6 +28,7 @@ export interface Range {
 export interface FilterArgs {
   trim?: Range;
   crop?: Rect;
+  reverse?: boolean;
 }
 
 export interface ExecuteArgs {

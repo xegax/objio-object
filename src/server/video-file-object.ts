@@ -1,4 +1,4 @@
-import { parseFile, encodeFile, parseStream, EncodeArgs } from '../task/ffmpeg';
+import { parseMedia, encodeFile, parseStream, EncodeArgs } from '../task/ffmpeg';
 import { lstatSync, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { VideoFileBase, FilterArgs, ExecuteArgs, FileId, Subfile } from '../base/video-file';
 import { getTimeFromSeconds } from '../common/time';
@@ -91,7 +91,7 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   updateDesciption(): Promise<void> {
-    return parseFile(this.getPath())
+    return parseMedia(this.getPath())
     .then(info => {
       this.desc.streamArr = info.stream.map(parseStream);
       this.holder.save();
@@ -154,12 +154,15 @@ export class VideoFileObject extends VideoFileBase {
     if (file.filter.crop)
       encArgs.crop = { ...file.filter.crop };
 
+    if (file.filter.reverse)
+      encArgs.reverse = file.filter.reverse;
+
     return (
       pushTask(() => encodeFile(encArgs))
       .then(() => {
         file.size = file.loadSize = lstatSync(outFile).size;
         file.holder.save();
-        return parseFile(outFile);
+        return parseMedia(outFile);
       }).then(info => {
         file.executeTime = Date.now() - file.executeStartTime;
         file.progress = 0;
@@ -178,11 +181,14 @@ export class VideoFileObject extends VideoFileBase {
 
   onFileUploaded(): Promise<void> {
     return (
-      parseFile(this.getPath())
+      parseMedia(this.getPath())
       .then(info => {
         this.desc.streamArr = info.stream.map(parseStream);
         this.desc.duration = info.duration;
         this.holder.save();
+      })
+      .catch((err: string) => {
+        this.addError(err);
       })
     );
   }

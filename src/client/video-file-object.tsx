@@ -109,6 +109,7 @@ export class VideoFileObject extends VideoFileBase {
             faIcon={fileID != this.playResultId ? 'fa fa-play-circle' : 'fa fa-stop-circle'}
             value={file.getSize() != 0}
             onChange={() => {
+              this.setSelectFile(fileID);
               if (file.getSize() == 0)
                 return;
 
@@ -133,7 +134,6 @@ export class VideoFileObject extends VideoFileBase {
             style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
             onClick={() => {
               this.setSelectFile(fileID);
-              this.holder.delayedNotify({ type: 'cut-select' });
             }}
             onDoubleClick={() => {
               this.editNameCutId = fileID;

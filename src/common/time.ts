@@ -21,7 +21,7 @@ export function getString(t: Partial<Time>): string {
 export function getTimeFromSeconds(secs: number): Time {
   const t: Time = { hour: 0, minute: 0, second: 0 };
   t.hour = Math.floor(secs / SECS_PER_HOUR);
-  t.minute = Math.floor(secs / SECS_PER_MINUTE);
+  t.minute = Math.floor((secs - t.hour * SECS_PER_HOUR) / SECS_PER_MINUTE);
   t.second = secs - (t.hour * SECS_PER_HOUR + t.minute * SECS_PER_MINUTE);
   return t;
 }

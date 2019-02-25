@@ -2,7 +2,7 @@ import * as React from 'react';
 import { VideoFileObject } from '../client/video-file-object';
 import { Video } from 'ts-react-ui/video';
 import { FilterArgs } from '../base/video-file';
-import { CheckBox } from 'ts-react-ui/checkbox';
+import { Tag } from 'ts-react-ui/timeline';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 
 export { VideoFileObject };
@@ -12,6 +12,7 @@ export interface Props {
 }
 
 export interface State {
+  reverse?: boolean;
 }
 
 export class VideoFileView extends React.Component<Props, Partial<State>> {
@@ -35,7 +36,7 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
     let result = this.props.model.getPlayResultFile();
     if (result) {
       return (
-        <Video src={result.getPath()} key={result.holder.getID()}/>
+        <Video src={[result.getPath(),result.holder.getVersion()].join('?')} key={'res-' + result.holder.getID()}/>
       );
     }
 
@@ -52,6 +53,13 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
         src={file}
         defaultTrim={trim}
         defaultTime={trim && trim.from || 0}
+        tags={[
+          this.state.reverse && (
+            <Tag onRemove={() => { this.setState({ reverse: false }); }}>
+              reverse
+            </Tag>
+          )
+        ].filter(v => v)}
         toolbar={[
           <CheckIcon
             title='Save'
@@ -63,7 +71,8 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
 
               const s = this.ref.current.state;
               let filter: FilterArgs = {
-                trim: s.trim ? {...s.trim} : null
+                trim: s.trim ? {...s.trim} : null,
+                reverse: this.state.reverse
               };
 
               cut.save(filter);
@@ -80,6 +89,14 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
               };
 
               this.props.model.append(filter);
+            }}
+          />,
+          <CheckIcon
+            title='Revert'
+            value
+            faIcon='fa fa-exchange'
+            onChange={() => {
+              this.setState({ reverse: !this.state.reverse });
             }}
           />
         ]}
