@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { VideoFileBase, ExecuteArgs, SendFileArgs, Subfile, FileId, FilterArgs, Range } from '../base/video-file';
+import { VideoFileBase, SendFileArgs, FileId, FilterArgs } from '../base/video-file';
 import { PropsGroup, PropItem, TextPropItem } from 'ts-react-ui/prop-sheet';
 import { ListView } from 'ts-react-ui/list-view';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { MediaStream } from '../task/media-desc';
+import { ObjectsFolder, ObjectBase } from '../base/object-base';
 
 export class VideoFileObject extends VideoFileBase {
   protected selectFileId: string;
@@ -28,6 +29,14 @@ export class VideoFileObject extends VideoFileBase {
 
   updateDesciption(): Promise<void> {
     return this.holder.invokeMethod({ method: 'updateDescription', args: {} });
+  }
+
+  getChildren(): Array<ObjectsFolder> {
+    const objects = this.files.getArray().filter(obj => obj.getSize());
+    if (!objects.length)
+      return [];
+
+    return [ { objects } ];
   }
 
   sendFile(args: SendFileArgs): Promise<any> {

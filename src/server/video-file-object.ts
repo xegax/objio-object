@@ -149,7 +149,7 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   onFileUploaded(userId: string): Promise<void> {
-    return (
+    let p = (
       parseMedia(this.getPath())
       .then(info => {
         this.desc.streamArr = info.stream.map(parseStream);
@@ -159,7 +159,7 @@ export class VideoFileObject extends VideoFileBase {
         if (['.avi', '.mkv'].indexOf(this.getExt().toLocaleLowerCase()) != -1) {
           const v = this.desc.streamArr.find(s => s.video != null);
           const a = this.desc.streamArr.find(s => s.audio != null); 
-          this.setProgress(0);
+
           let args: EncodeArgs = {
             inFile: this.getPath(),
             outFile: this.getPath('.mp4'),
@@ -167,13 +167,16 @@ export class VideoFileObject extends VideoFileBase {
             codecV: v && v.video.codec.startsWith('h264') ? 'copy' : 'h264',
             codecA: a && ['mp3', 'aac'].some(codec => a.audio.codec.startsWith(codec)) ? 'copy' : 'mp3',
             onProgress: (p: number) => {
-              this.setProgress(Math.floor(p * 10) / 10);
+              this.setProgress(p);
             }
           };
 
+          this.setProgress(0);
+          this.setStatus('in progress');
           return (
             this.holder.pushTask( () => encodeFile(args), userId )
             .then(() => {
+              this.setStatus('ok');
               this.setProgress(1);
               this.origName = this.getOriginName('.mp4');
               this.holder.save();
@@ -193,6 +196,8 @@ export class VideoFileObject extends VideoFileBase {
         this.addError(err);
       })
     );
+
+    return Promise.resolve();
   }
 
   sendFile() {

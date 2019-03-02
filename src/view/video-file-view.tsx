@@ -8,6 +8,7 @@ import { CheckIcon } from 'ts-react-ui/checkicon';
 export { VideoFileObject };
 
 export interface Props {
+  onlyContent?: boolean;
   model: VideoFileObject;
 }
 
@@ -49,6 +50,16 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
 
   renderVideo(): JSX.Element {
     const src = this.getPath();
+
+    if (this.props.onlyContent) {
+      return (
+        <Video
+          src={[src, this.props.model.holder.getVersion()].join('?')}
+          key={'video-' + this.props.model.holder.getID()}
+        />
+      );
+    }
+
     const result = this.props.model.getPlayResultFile();
     if (result) {
       return (
@@ -119,7 +130,7 @@ export class VideoFileView extends React.Component<Props, Partial<State>> {
 
   renderContent(): JSX.Element | string {
     const state = this.props.model;
-    if (!state.isStatusValid() || state.getProgress() < 1)
+    if (!state.isStatusValid()) //|| state.getProgress() < 1)
       return null;
 
     return this.renderVideo();

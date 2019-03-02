@@ -27,6 +27,12 @@ export interface ViewDesc {
   sources: Array<Array<OBJIOItemClass>>;
 }
 
+export interface ObjectsFolder {
+  name?: string;
+  icon?: string;
+  objects: Array<ObjectBase>;
+}
+
 export class ObjectBase extends OBJIOItem {
   protected name: string;
   protected progress: number = 0;
@@ -40,6 +46,10 @@ export class ObjectBase extends OBJIOItem {
       this.status = args.status || this.status;
       this.progress = args.progress || this.progress;
     }
+  }
+
+  getChildren(): Array<ObjectsFolder> {
+    return [];
   }
 
   getName(): string {

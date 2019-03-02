@@ -183,8 +183,11 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
       if (filterComplexArr.length)
         argsArr.push('-filter_complex', filterComplexArr.join(','));
 
-      if (args.codecA == 'copy' && args.codecV == 'copy')
-        argsArr.push('-codec copy');
+      if (args.codecV)
+        argsArr.push(`-c:v ${args.codecV}`);
+
+      if (args.codecA)
+        argsArr.push(`-c:a ${args.codecA}`);
 
       argsArr.push(normalize(args.outFile));
       return runTask({

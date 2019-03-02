@@ -11,15 +11,6 @@ export interface MediaFileDesc {
   streamArr: Array<MediaStream>;
 }
 
-export interface Subfile {
-  name: string;
-  id: string;
-  desc: Partial<MediaFileDesc>;
-  filter?: FilterArgs;
-  executed?: boolean;
-  progress?: number;  // > 0 in progress
-}
-
 export interface Range {
   from: number;
   to: number;
