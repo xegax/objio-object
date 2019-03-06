@@ -1,10 +1,14 @@
 import * as React from 'react';
 import { VideoFileBase, SendFileArgs, FileId, FilterArgs } from '../base/video-file';
 import { PropsGroup, PropItem, TextPropItem } from 'ts-react-ui/prop-sheet';
-import { ListView } from 'ts-react-ui/list-view';
+import { ListView, Item } from 'ts-react-ui/list-view';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { MediaStream } from '../task/media-desc';
 import { ObjectsFolder, ObjectBase } from '../base/object-base';
+
+interface CutItem extends Item {
+  file: VideoFileBase;
+}
 
 export class VideoFileObject extends VideoFileBase {
   protected selectFileId: string;
@@ -106,70 +110,77 @@ export class VideoFileObject extends VideoFileBase {
     }
   }
 
-  renderCut(file: VideoFileBase) {
+  private renderCut = (item: CutItem) => {
+    const fileID = item.value;
+    const file = item.file;
+    return (
+      <div className='horz-panel-1' style={{ display: 'flex' }}>
+        <CheckIcon
+          title='Result'
+          faIcon={fileID != this.playResultId ? 'fa fa-play-circle' : 'fa fa-stop-circle'}
+          value={file.getSize() != 0}
+          onChange={() => {
+            this.setSelectFile(fileID);
+            if (file.getSize() == 0)
+              return;
+
+            if (fileID == this.playResultId)
+              this.setPlayResultFile(null);
+            else
+              this.setPlayResultFile(fileID);
+          }}
+        />
+        <CheckIcon
+          title='Execute'
+          faIcon={file.isStatusInProgess() ? 'fa fa-spinner fa-spin' : 'fa fa-rocket'}
+          value={file.getStatus() == 'ok'}
+          onChange={() => {
+            if (file.isStatusInProgess())
+              return;
+
+            this.execute({ id: fileID });
+          }}
+        />
+        <div
+          style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
+          /*onClick={() => {
+            this.setSelectFile(fileID);
+          }}*/
+          onDoubleClick={() => {
+            this.editNameCutId = fileID;
+            this.holder.delayedNotify();
+          }}
+        >
+          {
+            this.editNameCutId == fileID ?
+              <TextPropItem
+                value={file.getName()}
+                onEnter={name => {
+                  file.setName(name);
+                  this.editNameCutId = null;
+                  this.holder.delayedNotify();
+                }}
+              /> :
+              (file.isStatusInProgess() ? file.getProgress() * 100 + '% ' : '') + file.getName()
+          }
+        </div>
+        <CheckIcon
+          title='Remove'
+          faIcon='fa fa-trash'
+          value={false}
+          onChange={() => this.remove({ id: fileID })}
+        />
+      </div>
+    )
+  };
+
+  private makeCutItem = (file: VideoFileBase): CutItem => {
     const fileID = file.holder.getID();
     return {
+      file,
       value: fileID,
       title: file.getName(),
-      render: () => (
-        <div className='horz-panel-1' style={{ display: 'flex' }}>
-          <CheckIcon
-            title='Result'
-            faIcon={fileID != this.playResultId ? 'fa fa-play-circle' : 'fa fa-stop-circle'}
-            value={file.getSize() != 0}
-            onChange={() => {
-              this.setSelectFile(fileID);
-              if (file.getSize() == 0)
-                return;
-
-              if (fileID == this.playResultId)
-                this.setPlayResultFile(null);
-              else
-                this.setPlayResultFile(fileID);
-            }}
-          />
-          <CheckIcon
-            title='Execute'
-            faIcon={file.isStatusInProgess() ? 'fa fa-spinner fa-spin' : 'fa fa-rocket'}
-            value={file.getStatus() == 'ok'}
-            onChange={() => {
-              if (file.isStatusInProgess())
-                return;
-
-              this.execute({ id: fileID });
-            }}
-          />
-          <div
-            style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
-            onClick={() => {
-              this.setSelectFile(fileID);
-            }}
-            onDoubleClick={() => {
-              this.editNameCutId = fileID;
-              this.holder.delayedNotify();
-            }}
-          >
-            {
-              this.editNameCutId == fileID ?
-                <TextPropItem
-                  value={file.getName()}
-                  onEnter={name => {
-                    file.setName(name);
-                    this.editNameCutId = null;
-                    this.holder.delayedNotify();
-                  }}
-                /> :
-                (file.isStatusInProgess() ? file.getProgress() * 100 + '% ' : '') + file.getName()
-            }
-          </div>
-          <CheckIcon
-            title='Remove'
-            faIcon='fa fa-trash'
-            value={false}
-            onChange={() => this.remove({ id: fileID })}
-          />
-        </div>
-      )
+      render: this.renderCut
     };
   }
 
@@ -180,7 +191,10 @@ export class VideoFileObject extends VideoFileBase {
       <PropsGroup label='cuts' itemWrap={false} defaultHeight={200}>
         <ListView
           value={selectFile ? { value: selectFile.holder.getID() } : null}
-          values={files.map(file => this.renderCut(file))}
+          values={files.map(this.makeCutItem)}
+          onSelect={(item: CutItem) => {
+            this.setSelectFile(item.value);
+          }}
         />
       </PropsGroup>
     );
@@ -190,9 +204,9 @@ export class VideoFileObject extends VideoFileBase {
     return (
       <>
         <PropsGroup defaultOpen={false} label='description'>
-          {(this.desc.streamArr || []).map(s => {
+          {(this.desc.streamArr || []).map((s, i) => {
             return (
-              <PropsGroup defaultOpen={false} label={(s.video && 'video' || s.audio && 'audio') + ' ' + s.id}>
+              <PropsGroup key={i} defaultOpen={false} label={(s.video && 'video' || s.audio && 'audio') + ' ' + s.id}>
                 {this.renderStreamDesc(s)}
               </PropsGroup>
             );
