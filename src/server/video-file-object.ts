@@ -124,6 +124,9 @@ export class VideoFileObject extends VideoFileBase {
     if (file.filter.reverse)
       encArgs.reverse = file.filter.reverse;
 
+    if (file.filter.resize)
+      encArgs.resize = {...file.filter.resize};
+
     return (
       this.holder.pushTask(() => encodeFile(encArgs), userId)
       .then(() => {

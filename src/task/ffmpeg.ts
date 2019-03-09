@@ -4,6 +4,7 @@ import { normalize } from 'path';
 import { Time, parseTime, getString, getSeconds } from '../common/time';
 import { MediaStream } from './media-desc';
 import { Rect } from '../common/point';
+import { Size } from 'ts-react-ui/common/point';
 
 function parseDuration(info: InputInfo): Time {
   const t = info.duration.split(', ')[0];
@@ -120,6 +121,7 @@ export interface EncodeArgs {
   range?: Partial<Range>;
   crop?: Rect;
   reverse?: boolean;
+  resize?: Size;
   codecA?: string;
   codecV?: string;
   onProgress?(t: number): void;
@@ -188,6 +190,9 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
 
       if (args.codecA)
         argsArr.push(`-c:a ${args.codecA}`);
+
+      if (args.resize)
+        argsArr.push(`-s ${args.resize.width}x${args.resize.height}`);
 
       argsArr.push(normalize(args.outFile));
       return runTask({

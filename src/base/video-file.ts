@@ -2,7 +2,7 @@ import { Time } from '../common/time';
 import { FileObjectBase, SendFileArgs } from './file-object';
 import { SERIALIZER, OBJIOArray } from 'objio';
 import { MediaStream } from '../task/media-desc';
-import { Rect } from '../common/point';
+import { Rect, Size } from '../common/point';
 
 export { SendFileArgs };
 
@@ -19,6 +19,7 @@ export interface Range {
 export interface FilterArgs {
   trim?: Range;
   crop?: Rect;
+  resize?: Size;
   reverse?: boolean;
 }
 
@@ -53,6 +54,20 @@ export abstract class VideoFileBase extends FileObjectBase {
 
   getObjFolder() {
     return `obj_${this.holder.getID()}`;
+  }
+
+  getFrameSize(): Size {
+    const size: Size = { width: 0, height: 0 };
+    this.desc.streamArr && this.desc.streamArr.some(desc => {
+      if (!desc.video)
+        return false;
+
+      size.width = desc.video.width;
+      size.height = desc.video.height;
+      return true;
+    });
+
+    return size;
   }
 
   findFile(id: string): VideoFileBase {
