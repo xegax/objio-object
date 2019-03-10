@@ -5,6 +5,7 @@ import { VideoFileObject } from './video-file-object';
 import { DocTable, Table } from './database';
 import { FilesContainer } from './files-container';
 import { SpriteSheet, Animation } from './sprite-sheet';
+import { VideoConcat } from './video-concat';
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
@@ -16,6 +17,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     JSONTableFile,
     VideoFileObject,
     Table,
-    FilesContainer
+    FilesContainer,
+    VideoConcat
   ];
 }

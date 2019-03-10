@@ -5,6 +5,7 @@ import { Table, DocTable } from './database';
 import { OBJIOItemClass } from 'objio';
 import { FilesContainer } from './files-container';
 import { Animation, SpriteSheet } from './sprite-sheet';
+import { VideoConcat } from './video-concat';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
@@ -30,6 +31,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     CSVTableFile,
     JSONTableFile,
     VideoFileObject,
-    FilesContainer
+    FilesContainer,
+    VideoConcat
   ];
 }

@@ -114,7 +114,7 @@ export interface Range {
 }
 
 export interface EncodeArgs {
-  inFile: string;
+  inFile: Array<string>;
   outFile: string;
   overwrite?: boolean;
 
@@ -136,18 +136,24 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
   }
 
   return (
-    parseMedia(args.inFile)
-    .then(info => {
+    Promise.all( args.inFile.map(file => parseMedia(file)) )
+    .then(infoArr => {
       const argsArr = [];
       if (args.range && args.range.from)
         argsArr.push('-ss', getString(args.range.from));
 
-      argsArr.push(
-        '-i',
-        normalize(args.inFile)
-      );
+      args.inFile.forEach(file => {
+        argsArr.push(
+          '-i',
+          normalize(file)
+        );
+      });
 
-      let duration = getSeconds(info.duration);
+      let duration = 0;
+      infoArr.forEach(info => {
+        duration += getSeconds(info.duration);
+      });
+      
       if (args.range) {
         const { from, to } = args.range;
 
@@ -164,6 +170,10 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
       }
 
       let filterComplexArr = [];
+      if (args.inFile.length > 1) {
+        filterComplexArr.push(`concat=n=${args.inFile.length}:v=1:a=1`);
+      }
+
       if (args.crop) {
         const crop = [
           args.crop.width,
@@ -208,7 +218,7 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
           }
         }
       })
-      .then(() => info);
+      .then(() => infoArr[0]);
     })
   );
 }

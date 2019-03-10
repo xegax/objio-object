@@ -20,6 +20,7 @@ import * as TableIcon from '../images/table-icon.png';
 import { FileObjectBase } from '../base/file-object';
 import { Project, ProjectView } from './project';
 import { ServerInstanceView, ServerInstance } from './server-view';
+import { VideoConcatView, VideoConcat, Props as VideoConcatProps } from './video-concat-view';
 
 export { registerViews };
 
@@ -48,6 +49,15 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     views: [{
       view: (props: VideoViewProps) => <VideoFileView {...props}/>
     }]
+  });
+
+  registerViews({
+    classObj: VideoConcat,
+    views: [{
+      view: (props: VideoConcatProps) => <VideoConcatView {...props}/>
+    }],
+    flags: ['create-wizard'],
+    desc: 'Video concatenation'
   });
 
   registerViews({
@@ -106,6 +116,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     JSONTableFile,
     VideoFileObject,
     DocTable,
-    SpriteSheet
+    SpriteSheet,
+    VideoConcat
   ];
 }

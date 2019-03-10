@@ -92,7 +92,7 @@ export class VideoFileObject extends VideoFileBase {
     file.holder.save();
 
     const encArgs: EncodeArgs = {
-      inFile: this.getPath(),
+      inFile: [this.getPath()],
       outFile,
       overwrite: true,
       onProgress: (p: number) => {
@@ -164,7 +164,7 @@ export class VideoFileObject extends VideoFileBase {
           const a = this.desc.streamArr.find(s => s.audio != null); 
 
           let args: EncodeArgs = {
-            inFile: this.getPath(),
+            inFile: [this.getPath()],
             outFile: this.getPath('.mp4'),
             overwrite: true,
             codecV: v && v.video.codec.startsWith('h264') ? 'copy' : 'h264',
@@ -190,7 +190,7 @@ export class VideoFileObject extends VideoFileBase {
               this.desc.duration = info.duration;
               this.holder.save();
 
-              unlinkSync(args.inFile);
+              unlinkSync(args.inFile[0]);
             })
           );
         }
