@@ -1,14 +1,33 @@
-import { parseMedia, encodeFile, parseStream, EncodeArgs } from '../task/ffmpeg';
-import { lstatSync, existsSync, unlinkSync, promises} from 'fs';
-import { VideoFileBase, FilterArgs, FileId } from '../base/video-file';
+import { parseMedia, encodeFile, parseStream, EncodeArgs, FileInfo } from '../task/ffmpeg';
+import { lstatSync, existsSync, unlinkSync } from 'fs';
+import { VideoFileBase, FilterArgs, FileId, AppendImageArgs } from '../base/video-file';
 import { getTimeFromSeconds } from '../common/time';
 import { FileObject } from './file-object';
+import { ImageFile, ImageFileBase } from './image-file';
+import { OBJIOArray, OBJIOItem } from 'objio';
 
 export class VideoFileObject extends VideoFileBase {
   constructor(filter?: FilterArgs) {
     super();
 
     FileObject.initFileObj(this);
+
+    this.holder.addEventHandler({
+      onLoad: () => {
+        this.setStatus('ok');
+        if (this.images)
+          return Promise.resolve();
+
+        let images = new OBJIOArray<ImageFileBase>();
+        return (
+          this.holder.createObject(images)
+          .then(() => {
+            this.images = images;
+            this.holder.save();
+          })
+        );
+      }
+    });
 
     this.holder.setMethodsToInvoke({
       ...this.holder.getMethodsToInvoke(),
@@ -26,6 +45,10 @@ export class VideoFileObject extends VideoFileBase {
       },
       append: {
         method: (args: FilterArgs) => this.append(args),
+        rights: 'write'
+      },
+      appendImage: {
+        method: (args: AppendImageArgs, userId) => this.appendImage(args, userId),
         rights: 'write'
       },
       save: {
@@ -56,6 +79,54 @@ export class VideoFileObject extends VideoFileBase {
     });
   }
 
+  appendImage(args: AppendImageArgs, userId?: string) {
+    let obj = new ImageFile({
+      name: this.origName + '.jpg',
+      mime: 'image/jpeg',
+      size: 0
+    });
+
+    return this.holder.createObject(obj)
+    .then(() => {
+      const outFile = obj.getPath();
+      const encArgs: EncodeArgs = {
+        inFile: [ this.getPath() ],
+        outFile,
+        overwrite: true
+      };
+
+      encArgs.range = { from: getTimeFromSeconds(args.time) };
+      encArgs.resize = args.resize;
+      encArgs.crop = args.crop;
+      encArgs.vframes = 1;
+
+      return this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId);
+    })
+    .then(() => parseMedia(obj.getPath()))
+    .then(info => {
+      const strm = info.stream.map(parseStream);
+      const v = strm.find(v => !!v.video);
+      if (!v)
+        return Promise.reject('parse failed');
+
+      obj.setDesc({
+        width: v.video.width,
+        height: v.video.height,
+        codec: v.video.codec,
+        pixelFmt: v.video.pixelFmt
+      });
+
+      obj.setName(`image-${args.time}`);
+      obj.holder.save();
+
+      this.images.push(obj);
+      this.images.holder.save();
+      this.holder.save();
+    }).catch(e => {
+      return Promise.reject(e);
+    });
+  }
+
   updateDesciption(): Promise<void> {
     return parseMedia(this.getPath())
     .then(info => {
@@ -65,12 +136,17 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   remove(args: FileId): Promise<void> {
-    const idx = this.files.find(item => item.holder.getID() == args.id);
-    if (idx == -1)
+    if (![this.files, this.images].some((arr: OBJIOArray<OBJIOItem>) => {
+      const idx = arr.find(item => item.holder.getID() == args.id);
+      if (idx != -1) {
+        arr.remove(idx);
+        arr.holder.save();
+      }
+      return idx != -1;
+    })) {
       return Promise.reject(`file id=${args.id} not found`);
+    }
 
-    this.files.remove(idx);
-    this.files.holder.save();
     return Promise.resolve();
   }
 
@@ -161,7 +237,7 @@ export class VideoFileObject extends VideoFileBase {
 
         if (['.avi', '.mkv'].indexOf(this.getExt().toLocaleLowerCase()) != -1) {
           const v = this.desc.streamArr.find(s => s.video != null);
-          const a = this.desc.streamArr.find(s => s.audio != null); 
+          const a = this.desc.streamArr.find(s => s.audio != null);
 
           let args: EncodeArgs = {
             inFile: [this.getPath()],

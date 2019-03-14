@@ -2,9 +2,9 @@ export interface VideoStream {
   codec: string;
   width: number;
   height: number;
-  fps: number;
+  fps?: number;
   pixelFmt: string;
-  bitrate: number;
+  bitrate?: number;
 }
 
 export interface AudioStream {

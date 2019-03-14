@@ -6,6 +6,7 @@ import { DocTable, Table } from './database';
 import { FilesContainer } from './files-container';
 import { SpriteSheet, Animation } from './sprite-sheet';
 import { VideoConcat } from './video-concat';
+import { ImageFile } from './image-file';
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
@@ -18,6 +19,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     VideoFileObject,
     Table,
     FilesContainer,
-    VideoConcat
+    VideoConcat,
+    ImageFile
   ];
 }

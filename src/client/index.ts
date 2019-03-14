@@ -6,9 +6,13 @@ import { OBJIOItemClass } from 'objio';
 import { FilesContainer } from './files-container';
 import { Animation, SpriteSheet } from './sprite-sheet';
 import { VideoConcat } from './video-concat';
+import { ImageFile } from './image-file';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
+  if (['.png', '.jpg', '.jpeg', '.gif'].indexOf(ext) != -1)
+    return new ImageFile(args);
+
   if (['.mp4', '.mkv', '.avi', '.mov'].indexOf(ext) != -1)
     return new VideoFileObject(args);
 
@@ -32,6 +36,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     JSONTableFile,
     VideoFileObject,
     FilesContainer,
-    VideoConcat
+    VideoConcat,
+    ImageFile
   ];
 }

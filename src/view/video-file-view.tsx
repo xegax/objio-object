@@ -1,14 +1,16 @@
 import * as React from 'react';
 import { VideoFileObject } from '../client/video-file-object';
 import { Video, VideoData } from 'ts-react-ui/video';
-import { FilterArgs } from '../base/video-file';
+import { FilterArgs, VideoFileBase } from '../base/video-file';
 import { Tag, EditValue } from 'ts-react-ui/timeline';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { Size } from '../common/point';
+import { ImageFile } from '../client/image-file';
+import { FitToParent } from 'ts-react-ui/fittoparent';
 
 export { VideoFileObject };
 
-interface VideoDataExt extends VideoData {
+export interface VideoDataExt extends VideoData {
   reverse?: boolean;
   resize?: Size;
 }
@@ -34,7 +36,7 @@ export class VideoFileView extends React.Component<Props, State> {
     const state: State = {};
 
     const file = this.props.model.getSelectFile();
-    if (file) {
+    if (file && file instanceof VideoFileBase) {
       const filter = file.getFilter();
       if (file.holder.getID() != this.state.fileId) {
         state.fileId = file.holder.getID();
@@ -77,11 +79,15 @@ export class VideoFileView extends React.Component<Props, State> {
   getCurrentFilter(): FilterArgs {
     const video = this.ref.current;
     const data = this.state.data;
-    return {
-      ...video.getData(),
+
+    const { src, ...other } = video.getData();
+    const filter: FilterArgs = {
+      ...other,
       reverse: data.reverse,
       resize: data.resize ? {...data.resize} : null
     };
+
+    return filter;
   }
 
   renderTags() {
@@ -172,7 +178,7 @@ export class VideoFileView extends React.Component<Props, State> {
         value={cut != null}
         faIcon='fa fa-save'
         onChange={() => {
-          if (!cut)
+          if (!cut || !(cut instanceof VideoFileBase))
             return;
 
           cut.save(this.getCurrentFilter());
@@ -209,6 +215,16 @@ export class VideoFileView extends React.Component<Props, State> {
           }
           this.setState({});
         }}
+      />,
+      <CheckIcon
+        title='preview'
+        faIcon='fa fa-image'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          const {trim, ...other} = this.getCurrentFilter();
+          this.props.model.appendImage({time: this.ref.current.state.time, ...other});
+        }}
       />
     ];
   }
@@ -236,6 +252,19 @@ export class VideoFileView extends React.Component<Props, State> {
       );
     }
 
+    const file = this.props.model.getSelectFile();
+    if (file instanceof ImageFile) {
+      return (
+        <div style={{
+          flexGrow: 1,
+          backgroundImage: `url(${file.getPath()})`,
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}/>
+      );
+    }
+
     return (
       <Video
         ref={this.ref}
@@ -252,7 +281,7 @@ export class VideoFileView extends React.Component<Props, State> {
 
   renderContent(): JSX.Element | string {
     const state = this.props.model;
-    if (!state.isStatusValid()) //|| state.getProgress() < 1)
+    if (!state.isStatusValid()) // || state.getProgress() < 1)
       return null;
 
     return this.renderVideo();

@@ -5,6 +5,7 @@ import { Time, parseTime, getString, getSeconds } from '../common/time';
 import { MediaStream } from './media-desc';
 import { Rect } from '../common/point';
 import { Size } from 'ts-react-ui/common/point';
+import * as p from './parser';
 
 function parseDuration(info: InputInfo): Time {
   const t = info.duration.split(', ')[0];
@@ -26,33 +27,47 @@ export interface FileInfo {
 }
 
 export function parseStream(strm: string): MediaStream {
-  let idPos = strm.indexOf(': ');
-  if (idPos == -1)
-    return null;
-
-  const m: MediaStream = { id: strm.substr(0, idPos) };
-  let typePos = strm.indexOf(': ', idPos + 2);
-  if (typePos == -1)
-    return m;
-
-  let type = strm.substr(idPos + 2, typePos - idPos - 2).trim();
-  const props = strm.substr(typePos + 2).split(', ');
+  let ctx = { str: strm, pos: 0 };
+  // p.readNext('Stream ', ctx);
+  const id = p.readStreamID(ctx);
+  if (strm[ctx.pos] == '(')
+    p.readBracet(ctx, '(', ')');
+  p.readNext(': ', ctx);
+  const type = p.readOneOf(['Video', 'Audio'], ctx);
+  p.readNext(': ', ctx);
+  
+  const m: MediaStream = { id };
   if (type == 'Video') {
-    const size = props[2].split('x');
+    const codec = p.readUntil(',', ctx);
+    const fmt = p.readUntil(',', ctx);
+    const size = p.readSize(ctx);
+    let other = new Array<string>();
+    try {
+      while (other.length < 5) {
+        other.push(p.readUntil(',', ctx));
+      }
+    } catch (e) {
+    }
+
     m.video = {
-      codec: props[0],
-      pixelFmt: props[1],
-      width: parseInt(size[0], 10),
-      height: parseInt(size[1], 10),
-      bitrate: parseFloat(props[3]),
-      fps: parseFloat(props[5])
+      codec,
+      pixelFmt: fmt,
+      width: size.width,
+      height: size.height
     };
+    const fps = other.find(v => v.endsWith('fps'));
+    fps && (m.video.fps = +fps.trim().split(' ')[0]);
   } else if (type == 'Audio') {
+    const codec = p.readUntil(',', ctx);
+    const freq = p.readUntil(',', ctx);
+    const channels = p.readUntil(',', ctx).trim();
+    p.readUntil(',', ctx);
+    const bitrate = p.readUntil(',', ctx);
     m.audio = {
-      codec: props[0],
-      freq: parseFloat(props[1]),
-      channels: { 'stereo': 2, 'mono': 1 }[props[2]],
-      bitrate: parseFloat(props[4])
+      codec,
+      freq: parseInt(freq, 10),
+      channels: { '5.1(side)': 5, 'stereo': 2, 'mono': 1 }[channels],
+      bitrate: parseFloat(bitrate)
     };
   }
 
@@ -118,6 +133,7 @@ export interface EncodeArgs {
   outFile: string;
   overwrite?: boolean;
 
+  vframes?: number;
   range?: Partial<Range>;
   crop?: Rect;
   reverse?: boolean;
@@ -153,7 +169,7 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
       infoArr.forEach(info => {
         duration += getSeconds(info.duration);
       });
-      
+
       if (args.range) {
         const { from, to } = args.range;
 
@@ -203,6 +219,9 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
 
       if (args.resize)
         argsArr.push(`-s ${args.resize.width}x${args.resize.height}`);
+
+      if (args.vframes)
+        argsArr.push(`-vframes ${args.vframes}`);
 
       argsArr.push(normalize(args.outFile));
       return runTask({

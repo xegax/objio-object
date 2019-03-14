@@ -3,6 +3,7 @@ import { FileObjectBase, SendFileArgs } from './file-object';
 import { SERIALIZER, OBJIOArray } from 'objio';
 import { MediaStream } from '../task/media-desc';
 import { Rect, Size } from '../common/point';
+import { ImageFileBase } from './image-file';
 
 export { SendFileArgs };
 
@@ -23,6 +24,13 @@ export interface FilterArgs {
   reverse?: boolean;
 }
 
+export interface AppendImageArgs {
+  time?: number;
+  trim?: Range;
+  crop?: Rect;
+  resize?: Size;
+}
+
 export interface ExecuteArgs {
   filter?: FilterArgs;
   id?: string;
@@ -36,6 +44,7 @@ export interface FileId {
 export abstract class VideoFileBase extends FileObjectBase {
   protected desc: Partial<MediaFileDesc> = {};
   protected files = new OBJIOArray<VideoFileBase>();
+  protected images: OBJIOArray<ImageFileBase>;
   protected filter: FilterArgs = {};
   protected executeStartTime: number;
   protected executeTime: number;
@@ -50,6 +59,10 @@ export abstract class VideoFileBase extends FileObjectBase {
 
   getFiles() {
     return this.files.getArray();
+  }
+
+  getImages() {
+    return this.images ? this.images.getArray() : [];
   }
 
   getObjFolder() {
@@ -70,13 +83,18 @@ export abstract class VideoFileBase extends FileObjectBase {
     return size;
   }
 
-  findFile(id: string): VideoFileBase {
-    const idx = this.files.find(item => item.holder.getID() == id);
-    return this.files.get(idx);
+  findFile(id: string): VideoFileBase | ImageFileBase {
+    let idx = this.files.find(item => item.holder.getID() == id);
+    if (idx != -1)
+      return this.files.get(idx);
+
+    idx = this.images.find(item => item.holder.getID() == id);
+    return this.images.get(idx);
   }
 
   abstract save(args: FilterArgs): Promise<void>;
   abstract append(args: FilterArgs): Promise<void>;
+  abstract appendImage(args: AppendImageArgs): Promise<void>;
   abstract execute(args: FileId): Promise<void>;
 
   abstract remove(args: FileId): Promise<void>;
@@ -88,6 +106,7 @@ export abstract class VideoFileBase extends FileObjectBase {
     desc:     { type: 'json', const: true },
     subfiles: { type: 'json', const: true },
     files:    { type: 'object', const: true },
+    images:   { type: 'object', const: true },
     filter:   { type: 'json', const: true },
     executeStartTime: { type: 'integer', const: true },
     executeTime: { type: 'integer', const: true }

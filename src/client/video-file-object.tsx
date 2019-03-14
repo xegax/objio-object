@@ -1,19 +1,28 @@
 import * as React from 'react';
-import { VideoFileBase, SendFileArgs, FileId, FilterArgs } from '../base/video-file';
+import { VideoFileBase, SendFileArgs, FileId, FilterArgs, AppendImageArgs } from '../base/video-file';
 import { PropsGroup, PropItem, TextPropItem } from 'ts-react-ui/prop-sheet';
 import { ListView, Item } from 'ts-react-ui/list-view';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { MediaStream } from '../task/media-desc';
-import { ObjectsFolder, ObjectBase } from '../base/object-base';
+import { ObjectsFolder } from '../base/object-base';
+import { ImageFileBase } from '../base/image-file';
 
 interface CutItem extends Item {
   file: VideoFileBase;
+}
+
+interface ImageItem extends Item {
+  file: ImageFileBase;
 }
 
 export class VideoFileObject extends VideoFileBase {
   protected selectFileId: string;
   protected editNameCutId: string;
   protected playResultId: string;
+
+  appendImage(args: AppendImageArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'appendImage', args });
+  }
 
   append(args: FilterArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'append', args });
@@ -71,7 +80,7 @@ export class VideoFileObject extends VideoFileBase {
     this.holder.delayedNotify();
   }
 
-  getSelectFile(): VideoFileBase | null {
+  getSelectFile(): VideoFileBase | ImageFileBase | null {
     return this.selectFileId ? this.findFile(this.selectFileId) : null;
   }
 
@@ -84,7 +93,7 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   getPlayResultFile(): VideoFileBase {
-    return this.playResultId ? this.findFile(this.playResultId) : null;
+    return this.playResultId ? (this.findFile(this.playResultId) as VideoFileBase) : null;
   }
 
   renderStreamDesc(s: MediaStream) {
@@ -108,6 +117,44 @@ export class VideoFileObject extends VideoFileBase {
         </>
       );
     }
+  }
+
+  private renderImage = (item: ImageItem) => {
+    const fileID = item.value;
+    const file = item.file;
+    return (
+      <div className='horz-panel-1' style={{ display: 'flex' }}>
+        <div
+          style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
+          /*onClick={() => {
+            this.setSelectFile(fileID);
+          }}*/
+          onDoubleClick={() => {
+            this.editNameCutId = fileID;
+            this.holder.delayedNotify();
+          }}
+        >
+          {
+            this.editNameCutId == fileID ?
+              <TextPropItem
+                value={file.getName()}
+                onEnter={name => {
+                  file.setName(name);
+                  this.editNameCutId = null;
+                  this.holder.delayedNotify();
+                }}
+              /> :
+              (file.isStatusInProgess() ? file.getProgress() * 100 + '% ' : '') + file.getName()
+          }
+        </div>
+        <CheckIcon
+          title='Remove'
+          faIcon='fa fa-trash'
+          value={false}
+          onChange={() => this.remove({ id: fileID })}
+        />
+      </div>
+    );
   }
 
   private renderCut = (item: CutItem) => {
@@ -171,8 +218,8 @@ export class VideoFileObject extends VideoFileBase {
           onChange={() => this.remove({ id: fileID })}
         />
       </div>
-    )
-  };
+    );
+  }
 
   private makeCutItem = (file: VideoFileBase): CutItem => {
     const fileID = file.holder.getID();
@@ -181,6 +228,16 @@ export class VideoFileObject extends VideoFileBase {
       value: fileID,
       title: file.getName(),
       render: this.renderCut
+    };
+  }
+
+  private makeImageItem = (file: ImageFileBase): ImageItem => {
+    const value = file.holder.getID();
+    return {
+      file,
+      value,
+      title: file.getName(),
+      render: this.renderImage
     };
   }
 
@@ -193,6 +250,22 @@ export class VideoFileObject extends VideoFileBase {
           value={selectFile ? { value: selectFile.holder.getID() } : null}
           values={files.map(this.makeCutItem)}
           onSelect={(item: CutItem) => {
+            this.setSelectFile(item.value);
+          }}
+        />
+      </PropsGroup>
+    );
+  }
+
+  renderImages() {
+    const selectFile = this.getSelectFile();
+    const images = this.getImages();
+    return (
+      <PropsGroup label='images' itemWrap={false} defaultHeight={200}>
+        <ListView
+          value={selectFile ? { value: selectFile.holder.getID() } : null}
+          values={images.map(this.makeImageItem)}
+          onSelect={(item: ImageItem) => {
             this.setSelectFile(item.value);
           }}
         />
@@ -213,6 +286,7 @@ export class VideoFileObject extends VideoFileBase {
           })}
         </PropsGroup>
         {this.renderCuts()}
+        {this.renderImages()}
       </>
     );
   }

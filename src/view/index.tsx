@@ -21,12 +21,20 @@ import { FileObjectBase } from '../base/file-object';
 import { Project, ProjectView } from './project';
 import { ServerInstanceView, ServerInstance } from './server-view';
 import { VideoConcatView, VideoConcat, Props as VideoConcatProps } from './video-concat-view';
+import { ImageFile } from '../client/image-file';
 
 export { registerViews };
 
 export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
     classObj: FileObject,
+    views: [{
+      view: (props: FileViewProps) => <FileObjectView {...props}/>
+    }]
+  });
+
+  registerViews({
+    classObj: ImageFile,
     views: [{
       view: (props: FileViewProps) => <FileObjectView {...props}/>
     }]
@@ -117,6 +125,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     VideoFileObject,
     DocTable,
     SpriteSheet,
-    VideoConcat
+    VideoConcat,
+    ImageFile
   ];
 }
