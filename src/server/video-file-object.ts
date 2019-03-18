@@ -202,6 +202,9 @@ export class VideoFileObject extends VideoFileBase {
 
     if (file.filter.resize)
       encArgs.resize = {...file.filter.resize};
+    
+    if (file.filter.fps)
+      encArgs.fps = file.filter.fps;
 
     return (
       this.holder.pushTask(() => encodeFile(encArgs), userId)

@@ -33,7 +33,7 @@ export function parseStream(strm: string): MediaStream {
   if (strm[ctx.pos] == '(')
     p.readBracet(ctx, '(', ')');
   p.readNext(': ', ctx);
-  const type = p.readOneOf(['Video', 'Audio'], ctx);
+  const type = p.readOneOf(['Video', 'Audio', 'Subtitle', 'Data'], ctx);
   p.readNext(': ', ctx);
   
   const m: MediaStream = { id };
@@ -138,6 +138,7 @@ export interface EncodeArgs {
   crop?: Rect;
   reverse?: boolean;
   resize?: Size;
+  fps?: number;
   codecA?: string;
   codecV?: string;
   onProgress?(t: number): void;
@@ -222,6 +223,9 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
 
       if (args.vframes)
         argsArr.push(`-vframes ${args.vframes}`);
+
+      if (args.fps)
+        argsArr.push(`-r ${args.fps}`);
 
       argsArr.push(normalize(args.outFile));
       return runTask({

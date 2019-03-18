@@ -6,13 +6,13 @@ import { Tag, EditValue } from 'ts-react-ui/timeline';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { Size } from '../common/point';
 import { ImageFile } from '../client/image-file';
-import { FitToParent } from 'ts-react-ui/fittoparent';
 
 export { VideoFileObject };
 
 export interface VideoDataExt extends VideoData {
   reverse?: boolean;
   resize?: Size;
+  fps?: number;
 }
 
 export interface Props {
@@ -45,7 +45,8 @@ export class VideoFileView extends React.Component<Props, State> {
           trim: filter.trim,
           reverse: filter.reverse,
           crop: filter.crop,
-          resize: filter.resize
+          resize: filter.resize,
+          fps: filter.fps
         };
       }
     } else {
@@ -84,7 +85,8 @@ export class VideoFileView extends React.Component<Props, State> {
     const filter: FilterArgs = {
       ...other,
       reverse: data.reverse,
-      resize: data.resize ? {...data.resize} : null
+      resize: data.resize ? {...data.resize} : null,
+      fps: data.fps
     };
 
     return filter;
@@ -165,7 +167,27 @@ export class VideoFileView extends React.Component<Props, State> {
             }}
           />
         </Tag>
-      )
+      ),
+      data.fps && (
+        <Tag
+          icon='fa fa-film'
+          color='#DEFFDD'
+          onRemove={() => {
+            data.fps = null;
+            this.setState({});
+          }}
+        >
+          <EditValue
+            value={'' + data.fps}
+            onChange={value => {
+              const fps = +value;
+              if (!Number.isNaN(fps))
+                data.fps = fps;
+              this.setState({});
+            }}
+          />
+        </Tag>
+      ),
     ];
   }
 
@@ -224,6 +246,22 @@ export class VideoFileView extends React.Component<Props, State> {
           e.stopPropagation();
           const {trim, ...other} = this.getCurrentFilter();
           this.props.model.appendImage({time: this.ref.current.state.time, ...other});
+        }}
+      />,
+      <CheckIcon
+        title='fps'
+        faIcon='fa fa-film'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          if (!data.fps) {
+            const v = this.props.model.getDesc().streamArr.find(s => !!s.video);
+            const origFps = v && v.video.fps ? v.video.fps : 25;
+            data.fps = origFps;
+          } else {
+            data.fps = null;
+          }
+          this.setState({});
         }}
       />
     ];

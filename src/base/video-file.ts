@@ -22,6 +22,7 @@ export interface FilterArgs {
   crop?: Rect;
   resize?: Size;
   reverse?: boolean;
+  fps?: number;
 }
 
 export interface AppendImageArgs {
