@@ -206,6 +206,16 @@ export class VideoFileObject extends VideoFileBase {
     if (file.filter.fps)
       encArgs.fps = file.filter.fps;
 
+    file.filter.vflip && (encArgs.vflip = true);
+    file.filter.hflip && (encArgs.hflip = true);
+    
+    const v = this.desc.streamArr.find(s => !!s.video);
+    if (v) {
+      const inputFPS = file.filter.speed * v.video.fps;
+      if (!Number.isNaN(inputFPS) && Number.isFinite(inputFPS))
+        encArgs.inputFPS = inputFPS;
+    }
+
     return (
       this.holder.pushTask(() => encodeFile(encArgs), userId)
       .then(() => {

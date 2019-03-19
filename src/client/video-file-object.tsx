@@ -278,12 +278,15 @@ export class VideoFileObject extends VideoFileBase {
       <>
         <PropsGroup defaultOpen={false} label='description'>
           {(this.desc.streamArr || []).map((s, i) => {
+            if (!s.video && !s.audio)
+              return null;
+
             return (
               <PropsGroup key={i} defaultOpen={false} label={(s.video && 'video' || s.audio && 'audio') + ' ' + s.id}>
                 {this.renderStreamDesc(s)}
               </PropsGroup>
             );
-          })}
+          }).filter(s => s)}
         </PropsGroup>
         {this.renderCuts()}
         {this.renderImages()}

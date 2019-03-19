@@ -23,6 +23,9 @@ export interface FilterArgs {
   resize?: Size;
   reverse?: boolean;
   fps?: number;
+  speed?: number;
+  hflip?: boolean;
+  vflip?: boolean;
 }
 
 export interface AppendImageArgs {

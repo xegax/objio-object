@@ -18,8 +18,8 @@ export class VideoConcatView extends React.Component<Props> {
     return (
       <Droppable onDrop={this.onDrop}>
         <div style={{display: 'flex', flexGrow: 1, flexDirection: 'column'}}>
-          <div style={{ position: 'relative', flexGrow: 1}}>
-            <FitToParent>
+          <div style={{ position: 'relative', flexGrow: 1, display: 'flex'}}>
+            <FitToParent wrapToFlex>
               {this.props.model.isStatusValid() && (
                 <video
                   controls

@@ -55,7 +55,7 @@ export class VideoConcat extends VideoConcatBase {
 
   renderList() {
     return (
-      <PropsGroup label='list' itemWrap={false} defaultHeight={200}>
+      <PropsGroup label='list' itemWrap={false} defaultHeight={200} defaultOpen>
         <ListView
           values={this.getList().map(this.makeListItem)}
         />

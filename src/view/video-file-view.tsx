@@ -13,6 +13,9 @@ export interface VideoDataExt extends VideoData {
   reverse?: boolean;
   resize?: Size;
   fps?: number;
+  hflip?: boolean;
+  vflip?: boolean;
+  speed?: number;
 }
 
 export interface Props {
@@ -46,7 +49,10 @@ export class VideoFileView extends React.Component<Props, State> {
           reverse: filter.reverse,
           crop: filter.crop,
           resize: filter.resize,
-          fps: filter.fps
+          fps: filter.fps,
+          hflip: filter.hflip,
+          vflip: filter.vflip,
+          speed: filter.speed
         };
       }
     } else {
@@ -86,7 +92,10 @@ export class VideoFileView extends React.Component<Props, State> {
       ...other,
       reverse: data.reverse,
       resize: data.resize ? {...data.resize} : null,
-      fps: data.fps
+      fps: data.fps,
+      speed: data.speed,
+      hflip: data.hflip,
+      vflip: data.vflip
     };
 
     return filter;
@@ -188,6 +197,46 @@ export class VideoFileView extends React.Component<Props, State> {
           />
         </Tag>
       ),
+      data.speed && (
+        <Tag
+          icon='fa fa-clock-o'
+          color='#DEFFDD'
+          onRemove={() => {
+            data.speed = null;
+            this.setState({});
+          }}
+        >
+          <EditValue
+            value={'' + data.speed}
+            onChange={value => {
+              const speed = +value;
+              if (!Number.isNaN(speed))
+                data.speed = speed;
+              this.setState({});
+            }}
+          />
+        </Tag>
+      ),
+      data.vflip && (
+        <Tag
+          icon='fa fa-arrows-v'
+          color='#DEFFDD'
+          onRemove={() => {
+            data.vflip = null;
+            this.setState({});
+          }}
+        />
+      ),
+      data.hflip && (
+        <Tag
+          icon='fa fa-arrows-h'
+          color='#DEFFDD'
+          onRemove={() => {
+            data.hflip = null;
+            this.setState({});
+          }}
+        />
+      )
     ];
   }
 
@@ -260,6 +309,48 @@ export class VideoFileView extends React.Component<Props, State> {
             data.fps = origFps;
           } else {
             data.fps = null;
+          }
+          this.setState({});
+        }}
+      />,
+      <CheckIcon
+        title='vertical flip'
+        faIcon='fa fa-arrows-v'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          if (!data.vflip) {
+            data.vflip = true;
+          } else {
+            data.vflip = null;
+          }
+          this.setState({});
+        }}
+      />,
+      <CheckIcon
+        title='horizontal flip'
+        faIcon='fa fa-arrows-h'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          if (!data.hflip) {
+            data.hflip = true;
+          } else {
+            data.hflip = null;
+          }
+          this.setState({});
+        }}
+      />,
+      <CheckIcon
+        title='speed'
+        faIcon='fa fa-clock'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          if (!data.speed) {
+            data.speed = 1;
+          } else {
+            data.speed = null;
           }
           this.setState({});
         }}

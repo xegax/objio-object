@@ -139,6 +139,9 @@ export interface EncodeArgs {
   reverse?: boolean;
   resize?: Size;
   fps?: number;
+  inputFPS?: number;
+  hflip?: boolean;
+  vflip?: boolean;
   codecA?: string;
   codecV?: string;
   onProgress?(t: number): void;
@@ -158,6 +161,9 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
       const argsArr = [];
       if (args.range && args.range.from)
         argsArr.push('-ss', getString(args.range.from));
+
+      if (args.inputFPS)
+        argsArr.push('-r', args.inputFPS);
 
       args.inFile.forEach(file => {
         argsArr.push(
@@ -208,6 +214,12 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
         filterComplexArr.push('setpts=PTS-STARTPTS');
         filterComplexArr.push('reverse');
       }
+
+      if (args.hflip)
+        filterComplexArr.push('hflip');
+
+      if (args.vflip)
+        filterComplexArr.push('vflip');
 
       if (filterComplexArr.length)
         argsArr.push('-filter_complex', filterComplexArr.join(','));
