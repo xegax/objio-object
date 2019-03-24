@@ -49,7 +49,7 @@ export class ProjectView extends React.Component<Props, Partial<State>> {
           <div style={{ flexGrow: 0, minHeight: 32 }}>
             { this.state.user && this.state.user.login }
           </div>
-          <div style={{ display: 'flex', flexGrow: 1 }}>
+          <div style={{ display: 'flex', flexGrow: 1, position: 'relative' }}>
             {children}
           </div>
         </div>

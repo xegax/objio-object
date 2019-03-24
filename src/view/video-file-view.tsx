@@ -357,7 +357,7 @@ export class VideoFileView extends React.Component<Props, State> {
       />,
       <CheckIcon
         title='export'
-        faIcon='fa fa-download'
+        faIcon='fa fa-upload'
         value
         onClick={e => {
           e.stopPropagation();
@@ -371,7 +371,7 @@ export class VideoFileView extends React.Component<Props, State> {
       />,
       <CheckIcon
         title='import'
-        faIcon='fa fa-upload'
+        faIcon='fa fa-download'
         value
         onClick={e => {
           e.stopPropagation();
