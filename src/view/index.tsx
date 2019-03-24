@@ -44,13 +44,17 @@ export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
     classObj: CSVTableFile,
     icons: { item: <Icon src={CSVIcon}/> },
-    views: []
+    views: [{
+      view: () => null
+    }]
   });
 
   registerViews({
     classObj: JSONTableFile,
     icons: { item: <Icon src={JSONIcon}/> },
-    views: []
+    views: [{
+      view: () => null
+    }]
   });
 
   registerViews({

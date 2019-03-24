@@ -119,18 +119,8 @@ export interface CfgState {
 export class DocTableConfig extends ConfigBase<DocTableArgs, CfgState> {
   componentDidMount() {
     this.config.tableName = 'table';
-    const dbs = this.props.objects().map(obj => {
-      if (obj instanceof Database || obj instanceof RemoteDatabase)
-        return obj;
-
-      return null;
-    }).filter(obj => obj);
-
-    const csvs = this.props.objects().map((obj: TableFileBase) => {
-      if (obj instanceof TableFile)
-        return obj;
-      return null;
-    }).filter(obj => obj);
+    const dbs = this.props.objects([Database, RemoteDatabase]) as Array< Database | RemoteDatabase>;
+    const csvs = this.props.objects([TableFile]) as Array<TableFile>;
 
     this.config.dest = dbs[0];
     this.config.source = csvs[0];

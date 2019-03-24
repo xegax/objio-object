@@ -173,12 +173,7 @@ export interface CfgState {
 
 export class FilesContainerConfig extends ConfigBase<FilesContainerArgs, CfgState> {
   componentDidMount() {
-    const dbs = this.props.objects().map(obj => {
-      if (obj instanceof Database)
-        return obj;
-
-      return null;
-    }).filter(obj => obj != null);
+    const dbs = this.props.objects([ Database ]) as Array<Database>;
 
     this.config.source = dbs[0];
     this.setState({ dbs, dbId: dbs[0].holder.getID()});

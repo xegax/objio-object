@@ -2,7 +2,7 @@ import { OBJIOItem, OBJIOItemClass } from 'objio';
 import { ObjectBase } from '../base/object-base';
 
 export interface ConfigProps {
-  objects(): Array<ObjectBase>;
+  objects(filter?: Array<OBJIOItemClass>): Array<ObjectBase>;
   source?: ObjectBase;
 }
 
