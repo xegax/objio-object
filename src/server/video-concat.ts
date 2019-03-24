@@ -26,10 +26,6 @@ export class VideoConcat extends VideoConcatBase {
     return Promise.reject('not implemented');
   }
 
-  sendFile(): Promise<any> {
-    return Promise.reject('not implemented');
-  }
-
   append(args: OBJIDArgs): Promise<void> {
     return (
       this.holder.getObject<VideoFileBase>(args.id)

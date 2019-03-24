@@ -36,6 +36,14 @@ export class VideoFileObject extends VideoFileBase {
     return this.holder.invokeMethod({ method: 'execute', args });
   }
 
+  export() {
+    return this.holder.invokeMethod({ method: 'export', args: {}});
+  }
+
+  import(file: File) {
+    return this.sendFile({ file, fileId: '.import' });
+  }
+
   remove(args: FileId): Promise<void> {
     return this.holder.invokeMethod({ method: 'remove', args });
   }
@@ -50,14 +58,6 @@ export class VideoFileObject extends VideoFileBase {
       return [];
 
     return [ { objects } ];
-  }
-
-  sendFile(args: SendFileArgs): Promise<any> {
-    return this.holder.invokeMethod({
-      method: 'sendFile',
-      args: args.file,
-      onProgress: args.onProgress
-    });
   }
 
   onFileUploaded() {

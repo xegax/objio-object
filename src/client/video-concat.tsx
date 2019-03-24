@@ -10,10 +10,6 @@ export class VideoConcat extends VideoConcatBase {
     return Promise.reject('not implemented');
   }
 
-  sendFile(): Promise<any> {
-    return Promise.reject('not implemented');
-  }
-
   append(args: OBJIDArgs) {
     return this.holder.invokeMethod({ method: 'append', args });
   };

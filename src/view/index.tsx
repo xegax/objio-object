@@ -17,6 +17,7 @@ import { Icon } from 'ts-react-ui/icon';
 import * as CSVIcon from '../images/csv-icon.png';
 import * as JSONIcon from '../images/json-icon.png';
 import * as TableIcon from '../images/table-icon.png';
+import * as MP4Icon from '../images/mp4-icon.png';
 import { FileObjectBase } from '../base/file-object';
 import { Project, ProjectView } from './project';
 import { ServerInstanceView, ServerInstance } from './server-view';
@@ -54,6 +55,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: VideoFileObject,
+    icons: { item: <Icon src={MP4Icon}/> },
     views: [{
       view: (props: VideoViewProps) => <VideoFileView {...props}/>
     }]

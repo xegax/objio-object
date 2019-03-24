@@ -5,14 +5,6 @@ import { TableFileView } from '../../view/table-file-view';
 import { SwitchPropItem, PropItem, PropsGroup } from 'ts-react-ui/prop-sheet';
 
 export class CSVTableFile extends Base {
-  sendFile(args: SendFileArgs): Promise<any> {
-    return this.holder.invokeMethod({
-      method: 'sendFile',
-      args: args.file,
-      onProgress: args.onProgress
-    });
-  }
-
   getDataReading() {
     return null;
   }

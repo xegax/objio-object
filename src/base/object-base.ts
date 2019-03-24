@@ -3,6 +3,12 @@ import { Flag, ConfigProps } from '../common/view-factory';
 
 export type Status = 'ok' | 'error' | 'not configured' | 'in progress';
 
+export interface SendFileArgs {
+  file: File;
+  fileId?: string;
+  onProgress?(value: number): void;
+}
+
 export interface ObjectBaseArgs {
   status: Status;
   progress: number;
@@ -50,6 +56,30 @@ export class ObjectBase extends OBJIOItem {
 
   getChildren(): Array<ObjectsFolder> {
     return [];
+  }
+
+  getChildNum() {
+    return this.getChildren().length;
+  }
+
+  subscribe(handler: () => void) {
+    this.holder.subscribe(handler);
+  }
+
+  unsubscribe(handler: () => void) {
+    this.holder.unsubscribe(handler);
+  }
+
+  getObjType(): string {
+    return OBJIOItem.getClass(this).TYPE_ID;
+  }
+
+  getID() {
+    return this.holder.getID();
+  }
+
+  getVersion(): string {
+    return this.holder.getVersion();
   }
 
   getName(): string {
@@ -128,6 +158,14 @@ export class ObjectBase extends OBJIOItem {
 
   getObjPropGroups(): JSX.Element {
     return null;
+  }
+
+  sendFile(args: SendFileArgs): Promise<any> {
+    return this.holder.invokeMethod({
+      method: 'sendFile',
+      args: { file: args.file, fileId: args.fileId },
+      onProgress: args.onProgress
+    });
   }
 
   static getViewDesc(): Partial<ViewDesc> {

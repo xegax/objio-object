@@ -1,6 +1,6 @@
 import { parseMedia, encodeFile, parseStream, EncodeArgs, FileInfo } from '../task/ffmpeg';
-import { lstatSync, existsSync, unlinkSync } from 'fs';
-import { VideoFileBase, FilterArgs, FileId, AppendImageArgs } from '../base/video-file';
+import { lstatSync, existsSync, unlinkSync, readFileSync } from 'fs';
+import { VideoFileBase, FilterArgs, FileId, AppendImageArgs, VideoFileExportData } from '../base/video-file';
 import { getTimeFromSeconds } from '../common/time';
 import { FileObject } from './file-object';
 import { ImageFile, ImageFileBase } from './image-file';
@@ -54,10 +54,29 @@ export class VideoFileObject extends VideoFileBase {
       save: {
         method: (args: FilterArgs) => this.save(args),
         rights: 'write'
+      },
+      export: {
+        method: () => this.export(),
+        rights: 'read'
       }
     });
 
     this.filter = filter || {};
+  }
+
+  export(): Promise<VideoFileExportData> {
+    const data: VideoFileExportData = {
+      cuts: []
+    };
+
+    this.files.getArray().forEach(file => {
+      data.cuts.push({
+        filter: {...file.getFilter()},
+        name: file.getName()
+      });
+    });
+
+    return Promise.resolve( data );
   }
 
   save(args: FilterArgs) {
@@ -75,7 +94,7 @@ export class VideoFileObject extends VideoFileBase {
       obj.setName(`cut-${Date.now()}`);
       this.files.push(obj);
       this.files.holder.save();
-      this.holder.save();
+      this.holder.save(true);
     });
   }
 
@@ -147,6 +166,7 @@ export class VideoFileObject extends VideoFileBase {
       return Promise.reject(`file id=${args.id} not found`);
     }
 
+    this.holder.save(true);
     return Promise.resolve();
   }
 
@@ -229,18 +249,58 @@ export class VideoFileObject extends VideoFileBase {
         file.desc.streamArr = info.stream.map(parseStream);
         file.desc.duration = info.duration;
         file.holder.save();
+        this.holder.save(true);
       }).catch(e => {
         file.executeTime = Date.now() - file.executeStartTime;
         file.progress = 0;
         file.setStatus('error');
         file.holder.save();
+        this.holder.save(true);
 
         return Promise.reject(e);
       })
     );
   }
 
-  onFileUploaded(userId: string): Promise<void> {
+  onFileUploaded(userId: string, fileId?: string): Promise<void> {
+    if (!fileId)
+      return this.onVideoUploaded(userId, fileId);
+
+    if (fileId == '.import') {
+      this.onImportUploaded(userId, fileId);
+
+      return Promise.resolve();
+    }
+
+    return Promise.reject(`invalid fileId = ${fileId}`);
+  }
+
+  private onImportUploaded(userId: string, fileId: string): Promise<void> {
+    const json = readFileSync(this.getPath('.import')).toString();
+    const filter: VideoFileExportData = JSON.parse(json);
+    const cuts = filter.cuts.map(cut => {
+      const video = new VideoFileObject(cut.filter);
+      video.origName = this.origName;
+      video.mime = this.mime;
+      video.setName(cut.name);
+      return video;
+    });
+
+    
+    Promise.all( cuts.map(cut => this.holder.createObject<VideoFileBase>(cut)) )
+    .then(() => {
+      while(this.files.getLength())
+        this.files.remove(0);
+
+      cuts.forEach(v => this.files.push(v));
+      this.files.holder.save();
+      this.holder.save();
+    });
+
+    return Promise.resolve();
+  }
+
+  private onVideoUploaded(userId: string, fileId?: string): Promise<void> {
     let p = (
       parseMedia(this.getPath())
       .then(info => {
@@ -290,9 +350,5 @@ export class VideoFileObject extends VideoFileBase {
     );
 
     return Promise.resolve();
-  }
-
-  sendFile() {
-    return Promise.reject('not implemented');
   }
 }

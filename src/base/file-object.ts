@@ -1,5 +1,5 @@
 import { SERIALIZER } from 'objio';
-import { ObjectBase } from './object-base';
+import { ObjectBase, SendFileArgs } from './object-base';
 
 export interface FileArgs {
   name: string;
@@ -7,10 +7,7 @@ export interface FileArgs {
   mime: string;
 }
 
-export interface SendFileArgs {
-  file: File;
-  onProgress?(value: number): void;
-}
+export { SendFileArgs };
 
 export function getExt(fileName: string): string {
   const i = fileName.lastIndexOf('.');
@@ -72,8 +69,7 @@ export abstract class FileObjectBase extends ObjectBase {
     return this.loadSize;
   }
 
-  abstract onFileUploaded(userId: string): Promise<void>;
-  abstract sendFile(args: SendFileArgs): Promise<any>;
+  abstract onFileUploaded(userId: string, fileId?: string): Promise<void>;
 
   static TYPE_ID: string = 'FileObject';
   static SERIALIZE: SERIALIZER = () => ({

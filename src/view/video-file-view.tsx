@@ -293,7 +293,7 @@ export class VideoFileView extends React.Component<Props, State> {
         value
         onClick={e => {
           e.stopPropagation();
-          const {trim, ...other} = this.getCurrentFilter();
+          const {trim, reverse, fps, speed, ...other} = this.getCurrentFilter();
           this.props.model.appendImage({time: this.ref.current.state.time, ...other});
         }}
       />,
@@ -352,6 +352,30 @@ export class VideoFileView extends React.Component<Props, State> {
           } else {
             data.speed = null;
           }
+          this.setState({});
+        }}
+      />,
+      <CheckIcon
+        title='export'
+        faIcon='fa fa-download'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          this.props.model.export()
+          .then((data: Object) => {
+            let w = window.open();
+            w.document.write(JSON.stringify(data, null, ' '));
+          });
+          this.setState({});
+        }}
+      />,
+      <CheckIcon
+        title='import'
+        faIcon='fa fa-upload'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          this.import.current.click();
           this.setState({});
         }}
       />
@@ -416,12 +440,23 @@ export class VideoFileView extends React.Component<Props, State> {
     return this.renderVideo();
   }
 
+  import = React.createRef<HTMLInputElement>();
+  onImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    this.props.model.import(e.currentTarget.files.item(0));
+  };
+
   render() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
         <div style={{ flexGrow: 1, display: 'flex', position: 'relative' }}>
           {this.renderContent()}
         </div>
+        <input
+          ref={this.import}
+          type='file'
+          onChange={this.onImport}
+          style={{position: 'absolute', visibility: 'hidden', width: 0, height: 0}}
+        />
       </div>
     );
   }

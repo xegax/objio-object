@@ -52,10 +52,6 @@ export class CSVTableFile extends Base {
     return CSVReader.read(readArgs);
   }
 
-  sendFile() {
-    return Promise.reject('not implemented');
-  }
-
   getDataReading() {
     return this;
   }

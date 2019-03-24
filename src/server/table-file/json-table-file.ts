@@ -62,10 +62,6 @@ export class JSONTableFile extends Base {
     return onFileUpload(this, userId);
   }
 
-  sendFile() {
-    return Promise.reject('not implemented');
-  }
-
   static SERIALIZE: SERIALIZER = () => ({
     ...Base.SERIALIZE()
   })

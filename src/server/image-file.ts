@@ -31,8 +31,4 @@ export class ImageFile extends ImageFileBase {
 
     return Promise.resolve();
   }
-
-  sendFile() {
-    return Promise.reject('not implemented');
-  }
 }

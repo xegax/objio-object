@@ -87,14 +87,6 @@ export class FilesContainer extends ObjectBase {
     });
   }
 
-  sendFile(args: SendFileArgs): Promise<any> {
-    return this.holder.invokeMethod({
-      method: 'sendFile',
-      args: args.file,
-      onProgress: args.onProgress
-    });
-  }
-
   getDirPath(): string {
     return 'files_container_' + this.holder.getID();
   }

@@ -137,10 +137,6 @@ export class FilesContainer extends Base {
     );
   }
 
-  sendFile(args: SendFileArgs): Promise<any> {
-    return Promise.reject(null);
-  }
-
   static TYPE_ID = 'FilesContainer';
   static SERIALIZE: SERIALIZER = () => ({
     ...Base.SERIALIZE(),

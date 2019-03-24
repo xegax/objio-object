@@ -7,6 +7,10 @@ import { ImageFileBase } from './image-file';
 
 export { SendFileArgs };
 
+export interface VideoFileExportData {
+  cuts: Array<{ name: string, filter: FilterArgs }>;
+}
+
 export interface MediaFileDesc {
   duration: Time;
   streamArr: Array<MediaStream>;
@@ -32,6 +36,8 @@ export interface AppendImageArgs {
   time?: number;
   trim?: Range;
   crop?: Rect;
+  vflip?: boolean;
+  hflip?: boolean;
   resize?: Size;
 }
 
@@ -100,6 +106,8 @@ export abstract class VideoFileBase extends FileObjectBase {
   abstract append(args: FilterArgs): Promise<void>;
   abstract appendImage(args: AppendImageArgs): Promise<void>;
   abstract execute(args: FileId): Promise<void>;
+  
+  abstract export(): Promise<VideoFileExportData>;
 
   abstract remove(args: FileId): Promise<void>;
   abstract updateDesciption(): Promise<void>;

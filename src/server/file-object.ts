@@ -6,6 +6,7 @@ export interface ServerSendFileArgs {
   name: string;
   size: number;
   mime: string;
+  fileId?: string;
   data: Readable;
 }
 
@@ -14,10 +15,6 @@ export class FileObject extends FileObjectBase {
     super(args);
 
     FileObject.initFileObj(this);
-  }
-
-  sendFile(args: SendFileArgs): Promise<any> {
-    return Promise.reject('not implemented');
   }
 
   static initFileObj(obj: FileObject) {
@@ -60,26 +57,35 @@ export class FileObject extends FileObjectBase {
       obj.setProgress(0);
       obj.setStatus('in progress');
 
-      obj.origName = args.name;
-      obj.size = args.size;
-      obj.mime = args.mime;
-      obj.loadSize = 0;
-      obj.holder.save();
+      if (!args.fileId) {
+        obj.origName = args.name;
+        obj.size = args.size;
+        obj.mime = args.mime;
+        obj.loadSize = 0;
+        obj.holder.save();
+      }
 
+      let loadSize = 0;
       let received = 0;
+      let ws = createWriteStream(obj.getPath(args.fileId));
+
       return new Promise(resolve => {
-        args.data.pipe(createWriteStream(obj.getPath()));
+        args.data.pipe(ws);
         args.data.on('data', chunk => {
           received += chunk.length;
           if (typeof chunk == 'string')
-            obj.loadSize += chunk.length;
+            loadSize += chunk.length;
           else
-            obj.loadSize += chunk.byteLength;
+            loadSize += chunk.byteLength;
 
-          obj.setProgress(obj.loadSize / obj.size);
+          obj.setProgress(loadSize / args.size);
         });
-        args.data.on('end', () => {
-          obj.onFileUploaded(userId).then(() => {
+        ws.on('close', () => {
+          obj.onFileUploaded(userId, args.fileId)
+          .then(() => {
+            if (!args.fileId)
+              obj.loadSize = loadSize;
+
             obj.setStatus('ok');
             obj.setProgress(1);
             obj.holder.save();
@@ -94,7 +100,7 @@ export class FileObject extends FileObjectBase {
     return obj.holder.getPublicPath(obj.getFileName(ext));
   }
 
-  onFileUploaded(userId: string) {
+  onFileUploaded(userId: string, fileId?: string) {
     return Promise.resolve();
   }
 
