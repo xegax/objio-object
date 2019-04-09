@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { CSVTableFile as Base } from '../../base/table-file/csv-table-file';
-import { SendFileArgs } from '../../base/file-object';
 import { TableFileView } from '../../view/table-file-view';
 import { SwitchPropItem, PropItem, PropsGroup } from 'ts-react-ui/prop-sheet';
 

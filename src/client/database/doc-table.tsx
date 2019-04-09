@@ -12,7 +12,6 @@ import { Table } from './table';
 import { Database } from './database';
 import { TableFileBase } from '../../base/table-file';
 import { TableFile } from '../table-file';
-import { FileObject } from '../file-object';
 
 export interface DocTableArgs {
   source: TableFileBase;

@@ -24,6 +24,7 @@ export interface State {
 
 const allColumTypes = [
   'TEXT',
+  'LONGTEXT',
   'INTEGER',
   'REAL',
   'DATE',

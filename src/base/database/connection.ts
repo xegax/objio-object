@@ -5,7 +5,6 @@ export abstract class ConnectionBase extends ObjectBase {
   protected host: string;
   protected port: number;
   protected user: string;
-  protected initialPwd: string;
   protected connected: boolean = false;
 
   abstract setPassword(args: { password: string }): Promise<boolean>;
@@ -65,7 +64,6 @@ export abstract class ConnectionBase extends ObjectBase {
     host: { type: 'string' },
     port: { type: 'integer' },
     user: { type: 'string' },
-    initialPwd: { type: 'string', const: true },
     connected: { type: 'integer', const: true }
   })
 }

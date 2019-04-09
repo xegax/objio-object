@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { JSONTableFile as Base } from '../../base/table-file/json-table-file';
-import { SendFileArgs } from '../../base/file-object';
 import { PropsGroup, PropItem } from 'ts-react-ui/prop-sheet';
 import { TableFileView } from '../../view/table-file-view';
 

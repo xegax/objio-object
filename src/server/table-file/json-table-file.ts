@@ -38,10 +38,13 @@ export class JSONTableFile extends Base {
   }
 
   readRows(args: ReadLinesArgs): Promise<any> {
+    const discardCols = this.columns.filter(c => c.discard).map(col => col.name);
+    const exclude = discardCols.length ? new Set(discardCols) : null;
     return (
       readJSONArray({
         file: this.getPath(),
         itemsPerBunch: args.linesPerBunch,
+        exclude,
         onBunch: bunch => {
           return (
             args.onRows({ rows: bunch.items as any, progress: bunch.progress })

@@ -50,8 +50,10 @@ export function onFileUpload(obj: TableFileBase, userId: string) {
               col.type = 'VARCHAR(128)';
             else if (stat.maxSize < 256)
               col.type = 'VARCHAR(256)';
-            else
+            else if (stat.maxSize < 65536)
               col.type = 'TEXT';
+            else
+              col.type = 'LONGTEXT';
           }
         });
         obj.holder.save();

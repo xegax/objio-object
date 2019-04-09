@@ -7,6 +7,8 @@ import { FilesContainer } from './files-container';
 import { Animation, SpriteSheet } from './sprite-sheet';
 import { VideoConcat } from './video-concat';
 import { ImageFile } from './image-file';
+import { DatabaseHolder } from './database/database-holder';
+import { Table2 } from './database/table2';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
@@ -29,6 +31,7 @@ export function getClasses(): Array<OBJIOItemClass> {
   return [
     Animation,
     SpriteSheet,
+    DatabaseHolder,
     Table,
     DocTable,
     FileObject,
@@ -37,6 +40,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     VideoFileObject,
     FilesContainer,
     VideoConcat,
-    ImageFile
+    ImageFile,
+    Table2
   ];
 }

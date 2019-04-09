@@ -11,6 +11,7 @@ import {
   FilesContainerProps
 } from './files-container-view';
 import { Database } from '../client/database/database';
+import { DatabaseHolder, DatabaseHolderView } from './database-holder-view';
 import { SpriteSheet, SpriteSheetView, SpriteConfig } from './sprite-sheet';
 import 'ts-react-ui/typings';
 import { Icon } from 'ts-react-ui/icon';
@@ -23,8 +24,23 @@ import { Project, ProjectView } from './project';
 import { ServerInstanceView, ServerInstance } from './server-view';
 import { VideoConcatView, VideoConcat, Props as VideoConcatProps } from './video-concat-view';
 import { ImageFile } from '../client/image-file';
-
+import { ObjectToCreate } from '../common/interfaces';
+import { Table2, Table2View } from '../view/table2';
 export { registerViews };
+
+export function getObjectsToCreate(): Array<ObjectToCreate> {
+  return [
+    {
+      name: 'sprite-sheet',
+      desc: 'Sprite sheet object',
+      create: () => new SpriteSheet()
+    }, {
+      name: 'table',
+      desc: 'table object',
+      create: () => new Table2()
+    }
+  ];
+}
 
 export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
@@ -122,6 +138,20 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     }]
   });
 
+  registerViews({
+    classObj: DatabaseHolder,
+    views: [{
+      view: (props: {model: DatabaseHolder}) => <DatabaseHolderView {...props}/>
+    }]
+  });
+
+  registerViews({
+    classObj: Table2,
+    views: [{
+      view: (props: {model: Table2, objects: any}) => <Table2View {...props}/>
+    }]
+  });
+
   return [
     Project,
     FilesContainer,
@@ -132,6 +162,8 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     DocTable,
     SpriteSheet,
     VideoConcat,
-    ImageFile
+    ImageFile,
+    DatabaseHolder,
+    Table2
   ];
 }

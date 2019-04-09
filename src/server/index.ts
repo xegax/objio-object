@@ -7,6 +7,8 @@ import { FilesContainer } from './files-container';
 import { SpriteSheet, Animation } from './sprite-sheet';
 import { VideoConcat } from './video-concat';
 import { ImageFile } from './image-file';
+import { DatabaseHolder } from './database/database-holder';
+import { Table2 } from './database/table2';
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
@@ -20,6 +22,8 @@ export function getClasses(): Array<OBJIOItemClass> {
     Table,
     FilesContainer,
     VideoConcat,
-    ImageFile
+    ImageFile,
+    DatabaseHolder,
+    Table2
   ];
 }

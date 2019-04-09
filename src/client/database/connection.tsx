@@ -11,17 +11,6 @@ export interface ConnectionArgs {
 }
 
 export class Connection extends ConnectionBase {
-  constructor(args?: ConnectionArgs) {
-    super();
-
-    if (args) {
-      this.host = args.host;
-      this.port = args.port;
-      this.user = args.user;
-      this.initialPwd = args.password;
-    }
-  }
-
   setPassword(args: { password: string }): Promise<boolean> {
     return this.holder.invokeMethod({ method: 'setPassword', args });
   }

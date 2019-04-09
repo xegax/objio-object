@@ -1,0 +1,29 @@
+.lvi {
+  &-row {
+    display: flex;
+    height: 2em;
+
+    &.even {
+      background-color: #ebebeb;
+    }
+  }
+
+  &-cell-wrap {
+    flex-grow: 1;
+    width: 0px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &-cell {
+    min-width: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &-header {
+    background-color: silver;
+  }
+}

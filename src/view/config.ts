@@ -13,25 +13,6 @@ export {
   ViewDesc
 };
 
-/*export interface ClientView {
-  viewType?: string;
-  view(props: {model: OBJIOItem}): JSX.Element;
-}
-
-export interface ViewDescIcon {
-  item?: JSX.Element;
-  bigDesc?: JSX.Element;
-}
-
-export interface ViewDesc {
-  desc: string;
-  icons?: ViewDescIcon;
-  flags: Set<Flag> | Array<Flag>;
-  views: Array<ClientView>;
-  config(props: ConfigProps): JSX.Element;
-  sources: Array<Array<OBJIOItemClass>>;
-}*/
-
 export interface OBJIOItemClassViewable extends OBJIOItemClass {
   getViewDesc?(): Partial<ViewDesc>;
 }

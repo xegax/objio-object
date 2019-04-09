@@ -2,6 +2,9 @@ import { OBJIOItem, SERIALIZER, OBJIOItemClass } from 'objio';
 import { Flag, ConfigProps } from '../common/view-factory';
 
 export type Status = 'ok' | 'error' | 'not configured' | 'in progress';
+export interface ObjProps {
+  objects(filter?: Array<OBJIOItemClass>): Array<ObjectBase>;
+}
 
 export interface SendFileArgs {
   file: File;
@@ -30,6 +33,7 @@ export interface ViewDesc {
   flags: Set<Flag> | Array<Flag>;
   views: Array<ClientView>;
   config(props: ConfigProps): JSX.Element;
+  create?(): ObjectBase;
   sources: Array<Array<OBJIOItemClass>>;
 }
 
@@ -156,7 +160,7 @@ export class ObjectBase extends OBJIOItem {
     return [];
   }
 
-  getObjPropGroups(): JSX.Element {
+  getObjPropGroups(props: ObjProps): JSX.Element {
     return null;
   }
 
