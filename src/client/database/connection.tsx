@@ -12,7 +12,13 @@ export interface ConnectionArgs {
 
 export class Connection extends ConnectionBase {
   setPassword(args: { password: string }): Promise<boolean> {
-    return this.holder.invokeMethod({ method: 'setPassword', args });
+    if (!args.password)
+      return Promise.reject('empty password');
+
+    return this.holder.invokeMethod({
+      method: 'setPassword',
+      args: { password: (args.password || '').trim() }
+    });
   }
 
   reconnect(): Promise<boolean> {

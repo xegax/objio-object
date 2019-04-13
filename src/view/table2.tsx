@@ -5,11 +5,11 @@ import { StrMap } from '../common/interfaces';
 
 export { Table2 };
 
-interface Props {
+export interface Props {
   model: Table2;
 }
 
-interface State {
+export interface State {
 }
 
 export class Table2View extends React.Component<Props, State> {
