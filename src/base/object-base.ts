@@ -104,7 +104,7 @@ export class ObjectBase extends OBJIOItem {
   }
 
   setStatus(value: Status): void {
-    if (this.holder.isClient() || this.status == value)
+    if (this.status == value)
       return;
 
     this.status = value;
@@ -135,9 +135,6 @@ export class ObjectBase extends OBJIOItem {
   }
 
   addError(err: string): void {
-    if (this.holder.isClient())
-      return;
-
     this.errors.push(err);
     this.holder.save();
     this.holder.delayedNotify();
@@ -187,8 +184,8 @@ export class ObjectBase extends OBJIOItem {
   static TYPE_ID = 'ObjectBase';
   static SERIALIZE: SERIALIZER = () => ({
     name:     { type: 'string' },
-    progress: { type: 'number' },
-    status:   { type: 'string' },
-    errors:   { type: 'json' }
+    progress: { type: 'number', const: true },
+    status:   { type: 'string', const: true },
+    errors:   { type: 'json', const: true }
   })
 }

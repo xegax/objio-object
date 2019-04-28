@@ -11,4 +11,8 @@ export interface IDArgs {
   id: string;
 }
 
+export interface NameArgs {
+  name: string;
+}
+
 export type StrMap = { [key: string]: string };

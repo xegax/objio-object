@@ -4,7 +4,7 @@ import {
   TableInfo,
   TableData,
   TableDataArgs,
-  DatabaseBase2,
+  DatabaseHolderBase,
   TmpTableArgs
 } from '../../base/database/table2';
 import { IDArgs } from '../../common/interfaces';
@@ -190,7 +190,7 @@ export class Table2 extends TableBase {
     return (
       this.holder.getObject(args.id)
       .then(db => {
-        if (!(db instanceof DatabaseBase2))
+        if (!(db instanceof DatabaseHolderBase))
           return Promise.reject('Object is not database');
 
         this.db = db;

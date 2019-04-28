@@ -16,10 +16,18 @@ export class Table2View extends React.Component<Props, State> {
   state: State = {};
   ref = React.createRef<GridLoadable>();
 
+  reloadData = () => {
+    const info = this.props.model.getTableInfo();
+    if (info)
+      this.ref.current.getModel().reload({ rows: info.rowsNum });
+  }
+
   componentDidMount() {
+    this.props.model.holder.subscribe(this.reloadData, 'reload');
   }
 
   componentWillUnmount() {
+    this.props.model.holder.unsubscribe(this.reloadData, 'reload');
   }
 
   renderNotConfigured() {
@@ -71,7 +79,7 @@ export class Table2View extends React.Component<Props, State> {
     let jsx: React.ReactChild;
     if (!model.getDatabase() || !model.getTableName() || !model.isTableValid())
       jsx = this.renderNotConfigured();
-    else
+    else if (!model.isStatusInProgess())
       jsx = this.renderTable();
 
     return (

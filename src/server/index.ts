@@ -9,6 +9,7 @@ import { VideoConcat } from './video-concat';
 import { ImageFile } from './image-file';
 import { DatabaseHolder } from './database/database-holder';
 import { Table2 } from './database/table2';
+import { FileStorage } from './file-storage';
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
@@ -24,6 +25,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     VideoConcat,
     ImageFile,
     DatabaseHolder,
-    Table2
+    Table2,
+    FileStorage
   ];
 }

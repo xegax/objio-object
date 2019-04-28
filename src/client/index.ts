@@ -9,6 +9,7 @@ import { VideoConcat } from './video-concat';
 import { ImageFile } from './image-file';
 import { DatabaseHolder } from './database/database-holder';
 import { Table2 } from './database/table2';
+import { FileStorage } from './file-storage';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
@@ -41,6 +42,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     FilesContainer,
     VideoConcat,
     ImageFile,
-    Table2
+    Table2,
+    FileStorage
   ];
 }

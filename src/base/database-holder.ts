@@ -136,10 +136,6 @@ export abstract class DatabaseHolderBase extends DatabaseBase2 {
     return this.impl.createTempTable(args);
   }
 
-  pushData(args: PushDataArgs): Promise<PushDataResult> {
-    return this.impl.pushData(args);
-  }
-
   getDatabaseList(): Promise<Array<string>> {
     return this.impl.getDatabaseList();
   }

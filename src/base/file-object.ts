@@ -1,5 +1,6 @@
 import { SERIALIZER } from 'objio';
 import { ObjectBase, SendFileArgs } from './object-base';
+import { getExt } from '../common/common';
 
 export interface FileArgs {
   name: string;
@@ -8,13 +9,6 @@ export interface FileArgs {
 }
 
 export { SendFileArgs };
-
-export function getExt(fileName: string): string {
-  const i = fileName.lastIndexOf('.');
-  if (i == -1)
-    return '';
-  return fileName.substring(i);
-}
 
 export abstract class FileObjectBase extends ObjectBase {
   protected origName: string = '';

@@ -27,6 +27,7 @@ import { ImageFile } from '../client/image-file';
 import { ObjectToCreate } from '../common/interfaces';
 import { Table2, Table2View } from '../view/table2';
 export { registerViews };
+import { FileStorage, FileStorageView, Props as FileStorageViewProps } from './file-storage';
 
 export function getObjectsToCreate(): Array<ObjectToCreate> {
   return [
@@ -38,11 +39,22 @@ export function getObjectsToCreate(): Array<ObjectToCreate> {
       name: 'table',
       desc: 'table object',
       create: () => new Table2()
+    }, {
+      name: 'file-storage',
+      desc: 'files storage',
+      create: () => new FileStorage()
     }
   ];
 }
 
 export function getViews(): Array<OBJIOItemClassViewable> {
+  registerViews({
+    classObj: FileStorage,
+    views: [{
+      view: (props: FileStorageViewProps) => <FileStorageView {...props}/>
+    }]
+  });
+
   registerViews({
     classObj: FileObject,
     views: [{
@@ -164,6 +176,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     VideoConcat,
     ImageFile,
     DatabaseHolder,
-    Table2
+    Table2,
+    FileStorage
   ];
 }

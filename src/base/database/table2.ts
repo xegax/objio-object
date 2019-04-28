@@ -1,7 +1,7 @@
 import { ObjectBase, ObjProps } from '../object-base';
 import { SERIALIZER } from 'objio';
 import {
-  DatabaseBase2,
+  DatabaseHolderBase,
   TableArgs,
   TableInfo,
   TableDataArgs,
@@ -18,7 +18,7 @@ export {
   TableDataArgs,
   TableData,
   TmpTableArgs,
-  DatabaseBase2,
+  DatabaseHolderBase,
   ObjectBase,
   ObjProps
 };
@@ -28,7 +28,7 @@ export interface LoadTableFileArgs {
 }
 
 export abstract class TableBase extends ObjectBase {
-  protected db: DatabaseBase2;
+  protected db: DatabaseHolderBase;
   protected tableFileId: string;
   protected tableName: string;
 
@@ -47,7 +47,7 @@ export abstract class TableBase extends ObjectBase {
     return this.tableName;
   }
 
-  getDatabase(): DatabaseBase2 {
+  getDatabase(): DatabaseHolderBase {
     return this.db;
   }
 

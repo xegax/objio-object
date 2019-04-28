@@ -1,4 +1,5 @@
-import { FileObjectBase, SendFileArgs, FileArgs, getExt } from '../base/file-object';
+import { getExt } from '../common/common';
+import { FileObjectBase, FileArgs } from '../base/file-object';
 
 export { FileArgs, getExt };
 

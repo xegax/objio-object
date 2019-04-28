@@ -3,9 +3,19 @@ import {
   DeleteTableArgs,
   DatabaseHolderArgs,
   CreateTableArgs,
-  TableInfo
+  TableInfo,
+  ColumnToCreate,
+  ColumnInfo,
+  TableData,
+  PushDataArgs
 } from '../../base/database-holder';
 import { IDArgs } from '../../common/interfaces';
+import { PushDataResult } from '../../base/database-holder';
+
+export {
+  ColumnInfo,
+  ColumnToCreate
+};
 
 export class DatabaseHolder extends DatabaseHolderBase {
   constructor(args: DatabaseHolderArgs) {
@@ -18,6 +28,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
       },
       createTable: {
         method: (args: CreateTableArgs) => this.createTable(args),
+        rights: 'write'
+      },
+      pushData: {
+        method: (args: PushDataArgs) => this.pushData(args),
         rights: 'write'
       },
       setConnection: {
@@ -44,6 +58,16 @@ export class DatabaseHolder extends DatabaseHolderBase {
   createTable(args: CreateTableArgs): Promise<TableInfo> {
     return (
       this.impl.createTable(args)
+      .then(res => {
+        this.holder.save(true);
+        return res;
+      })
+    );
+  }
+
+  pushData(args: PushDataArgs): Promise<PushDataResult> {
+    return (
+      this.impl.pushData(args)
       .then(res => {
         this.holder.save(true);
         return res;

@@ -23,6 +23,7 @@ export class Table2 extends TableBase {
   private prevDB: DatabaseBase2;
   private tables = Array<string>();
   private tableInfo: TableInfo;
+
   private dbChangeHandler = {
     onObjChange: () => this.updateDatabaseData()
   };
@@ -65,7 +66,7 @@ export class Table2 extends TableBase {
       this.db.loadTableInfo({ tableName: this.tableName })
       .then(info => {
         this.tableInfo = info;
-        this.holder.delayedNotify();
+        this.holder.delayedNotify({ type: 'reload' });
       })
       .catch(e => {
         this.tableInfo = null;
