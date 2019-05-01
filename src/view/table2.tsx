@@ -33,7 +33,7 @@ export class Table2View extends React.Component<Props, State> {
   }
 
   renderCell = (props: CellProps) => {
-    const row = this.props.model.getGrid().getRow(props.row);
+    const row = this.props.model.getGrid().getRowOrLoad(props.row);
     if (!row)
       return null;
 

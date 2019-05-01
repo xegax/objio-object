@@ -12,7 +12,10 @@ export interface Props {
 // general view of database
 export class DatabaseHolderView extends React.Component<Props> {
   renderCell = (props: CellProps) => {
-    const row = this.props.model.getGrid().getRow(props.row);
+    const row = this.props.model.getGrid().getRowOrLoad(props.row);
+    if (!row)
+      return null;
+
     return (
       <span>{row.cell[props.col]}</span>
     );
