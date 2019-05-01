@@ -18,8 +18,10 @@ import { IDArgs } from '../../common/interfaces';
 import { DatabaseBase2, PushDataArgs, PushDataResult } from '../../base/database-holder';
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
+import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 
 export class Table2 extends TableBase {
+  private grid: GridLoadableModel;
   private prevDB: DatabaseBase2;
   private tables = Array<string>();
   private tableInfo: TableInfo;
@@ -35,6 +37,10 @@ export class Table2 extends TableBase {
       onLoad: this.onChangeOrLoad,
       onObjChange: this.onChangeOrLoad
     });
+  }
+
+  getGrid(): GridLoadableModel {
+    return this.grid;
   }
 
   private onChangeOrLoad = () => {
@@ -62,11 +68,10 @@ export class Table2 extends TableBase {
         this.holder.delayedNotify();
       });
 
-    if (this.tableName) {
+    if (this.tableName && !this.tableInfo) {
       this.db.loadTableInfo({ tableName: this.tableName })
       .then(info => {
-        this.tableInfo = info;
-        this.holder.delayedNotify({ type: 'reload' });
+        this.onTableSelected(info);
       })
       .catch(e => {
         this.tableInfo = null;
@@ -74,6 +79,31 @@ export class Table2 extends TableBase {
         return Promise.reject(e);
       });
     }
+  }
+
+  private onTableSelected(table: TableInfo) {
+    this.tableInfo = table;
+    
+    this.grid = new GridLoadableModel({
+      rowsCount: table.rowsNum,
+      colsCount: table.columns.length,
+      prev: this.grid
+    });
+
+    this.grid.setLoader((from, count) => {
+      return (
+        this.loadTableData({
+          tableName: table.tableName,
+          fromRow: from,
+          rowsNum: count
+        })
+        .then(res => {
+          return res.rows.map(obj => ({ obj }));
+        })
+      );
+    });
+
+    this.holder.delayedNotify({});
   }
 
   getTableInfo(): TableInfo {

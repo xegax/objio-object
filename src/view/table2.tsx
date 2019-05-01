@@ -14,46 +14,18 @@ export interface State {
 }
 
 export class Table2View extends React.Component<Props, State> {
-  grid = new GridLoadableModel<StrMap>();
   state: State = {};
 
-  constructor(props) {
-    super(props);
-
-    this.grid.setLoader((from, count) => {
-      const model = this.props.model;
-      const info = model.getTableInfo();
-      return (
-        model.loadTableData({
-          tableName: info.tableName,
-          fromRow: from,
-          rowsNum: count
-        })
-        .then(res => {
-          return res.rows.map(obj => ({ obj }));
-        })
-      );
-    });
-    this.subscriber();
-  }
-
-  subscriber = () => {
-    const info = this.props.model.getTableInfo();
-    if (!info) {
-      this.grid.setRowsCount(0);
-      return;
-    }
-
-    this.grid.setRowsCount(info.rowsNum);
-    this.grid.setColsCount(info.columns.length);
+  notify = () => {
+    this.setState({});
   }
 
   componentDidMount() {
-    this.props.model.holder.subscribe(this.subscriber);
+    this.props.model.holder.subscribe(this.notify);
   }
 
   componentWillUnmount() {
-    this.props.model.holder.unsubscribe(this.subscriber);
+    this.props.model.holder.unsubscribe(this.notify);
   }
 
   renderNotConfigured() {
@@ -61,7 +33,7 @@ export class Table2View extends React.Component<Props, State> {
   }
 
   renderCell = (props: CellProps) => {
-    const row = this.grid.getRow(props.row);
+    const row = this.props.model.getGrid().getRow(props.row);
     if (!row)
       return null;
 
@@ -72,26 +44,27 @@ export class Table2View extends React.Component<Props, State> {
 
   renderHeader = (props: HeaderProps) => {
     const table = this.props.model.getTableInfo();
+    if (!table || !table.columns[props.col])
+      return null;
+
     return (
       <span>{table.columns[props.col].colName}</span>
     );
   }
 
   renderTable() {
-    const model = this.props.model;
-    const info = model.getTableInfo();
-    if (!info)
+    const grid = this.props.model.getGrid();
+    if (!grid)
       return null;
 
     return (
       <div style={{ position: 'relative', flexGrow: 1}}>
         <Grid
-          key={info.tableName}
-          model={this.grid}
+          model={grid}
           renderHeader={this.renderHeader}
           renderCell={this.renderCell}
           onScrollToBottom={() => {
-            this.grid.loadNext();
+            grid.loadNext();
           }}
         />
       </div>
