@@ -63,7 +63,11 @@ export class Table2 extends TableBase {
     const result = { skipRows: 0 };
     const onRows = (args: OnRowsArgs) => {
       return (
-        this.pushData({ tableName: this.tableName, rows: args.rows as any })
+        this.pushData({
+          tableName: this.tableName,
+          rows: args.rows as any,
+          updateVersion: false
+        })
         .then(res => {
           result.skipRows += args.rows.length - res.pushRows;
           this.setProgress(args.progress);
@@ -104,7 +108,7 @@ export class Table2 extends TableBase {
       .then(table => {
         if (!(table instanceof TableFileBase))
           return Promise.reject(`Object is not valid`);
-        
+
         tableFile = table;
         // drop table
         if (this.tableName) {
@@ -121,7 +125,7 @@ export class Table2 extends TableBase {
             let objName = table.getName().toLowerCase().replace(/[\?\-\,\.]/g, '_');
             let tableName = objName;
             let idx = 0;
-            while(tables.some(t => tableName == t.tableName)) {
+            while (tables.some(t => tableName == t.tableName)) {
               tableName = objName + '_' + idx++;
             }
 
@@ -142,7 +146,7 @@ export class Table2 extends TableBase {
         .then(() => {
           this.tableName = tableName;
           this.holder.save();
-          return this.pushDataFromFile(tableFile, 20)
+          return this.pushDataFromFile(tableFile, 20);
         });
       })
     );
@@ -158,7 +162,7 @@ export class Table2 extends TableBase {
   createTempTable(args: TmpTableArgs): Promise<TableInfo> {
     if (!this.db)
       return Promise.reject('Database is not selected');
-    
+
     return this.db.createTempTable(args);
   }
 
@@ -182,7 +186,7 @@ export class Table2 extends TableBase {
 
     return this.db.loadTableData(args);
   }
-  
+
   setDatabase(args: IDArgs): Promise<void> {
     if (this.db && this.db.holder.getID() == args.id)
       return Promise.resolve();
@@ -221,7 +225,7 @@ export class Table2 extends TableBase {
       .then(lst => {
         if (!lst.find(t => t.tableName == args.tableName))
           return Promise.reject(`Table "${args.tableName}" not present in database`);
-        
+
         this.tableName = args.tableName;
         this.holder.save();
       })

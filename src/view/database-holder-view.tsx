@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { DatabaseHolder } from '../client/database/database-holder';
-import { GridLoadable, HeaderProps, CellPropsExt } from 'ts-react-ui/grid-loadable';
-import { StrMap } from '../common/interfaces';
+import { HeaderProps, CellProps, Grid } from 'ts-react-ui/grid/grid';
+import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 
 export { DatabaseHolder };
 
@@ -11,22 +11,10 @@ export interface Props {
 
 // general view of database
 export class DatabaseHolderView extends React.Component<Props> {
-  ref = React.createRef<GridLoadable>();
-
-  onColumnsChanged = () => {
-  };
-
-  componentDidMount() {
-    this.props.model.holder.subscribe(this.onColumnsChanged, 'columns');
-  }
-
-  componentWillUnmount() {
-    this.props.model.holder.unsubscribe(this.onColumnsChanged, 'columns');
-  }
-
-  renderCell = (props: CellPropsExt) => {
+  renderCell = (props: CellProps) => {
+    const row = this.props.model.getGrid().getRow(props.row);
     return (
-      <span>{props.data}</span>
+      <span>{row.cell[props.col]}</span>
     );
   }
 
@@ -52,20 +40,14 @@ export class DatabaseHolderView extends React.Component<Props> {
 
     return (
       <div style={{ position: 'relative', flexGrow: 1}}>
-        <GridLoadable
-          ref={this.ref}
+        <Grid
+          model={model.getGrid()}
           key={table.tableName}
-          colsCount={table.columns.length}
-          rowsCount={table.rowsNum}
-          loader={(from, count) => {
-            let res: Promise<Array<StrMap>>;
-            res = model.loadTableData({ tableName: table.tableName, fromRow: from, rowsNum: count })
-            .then(res => res.rows.map((row, i) => row));
-
-            return res;
-          }}
           renderHeader={this.renderHeader}
           renderCell={this.renderCell}
+          onScrollToBottom={() => {
+            model.getGrid().loadNext();
+          }}
         />
       </div>
     );

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { ObjProps } from '../base/object-base';
 import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
-import { PropsGroup, DropDownPropItem } from 'ts-react-ui/prop-sheet';
+import { PropsGroup, DropDownPropItem, PropItem } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database/database-holder';
 import { LoadDataArgs, LoadDataResult, StorageInfo } from '../base/file-storage';
 
@@ -34,7 +34,7 @@ export class FileStorage extends FileStorageBase {
 
     if (!this.db || !this.fileTable)
       return;
-    
+
     this.loadInfo()
     .then(r => {
       this.holder.delayedNotify({ type: 'reload' });
@@ -75,6 +75,10 @@ export class FileStorage extends FileStorageBase {
           onSelect={db => {
             this.setDatabase({ id: db.value });
           }}
+        />
+        <PropItem
+          label='files num'
+          value={this.getFilesCount()}
         />
       </PropsGroup>
     );

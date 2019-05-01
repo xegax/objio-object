@@ -248,6 +248,7 @@ export class FileStorage extends FileStorageBase {
       })
       .then(() => {
         this.initTask = null;
+        this.setStatus('ok');
         this.holder.save(true);
       })
       .catch(e => {

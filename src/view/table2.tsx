@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Table2 } from '../client/database/table2';
-import { GridLoadable } from 'ts-react-ui/grid-loadable';
+import { Grid, CellProps, HeaderProps } from 'ts-react-ui/grid/grid';
+import { GridLoadableModel, Row } from 'ts-react-ui/grid/grid-loadable-model';
 import { StrMap } from '../common/interfaces';
 
 export { Table2 };
@@ -13,34 +14,63 @@ export interface State {
 }
 
 export class Table2View extends React.Component<Props, State> {
+  grid = new GridLoadableModel<StrMap>();
   state: State = {};
-  ref = React.createRef<GridLoadable>();
 
-  reloadData = () => {
+  constructor(props) {
+    super(props);
+
+    this.grid.setLoader((from, count) => {
+      const model = this.props.model;
+      const info = model.getTableInfo();
+      return (
+        model.loadTableData({
+          tableName: info.tableName,
+          fromRow: from,
+          rowsNum: count
+        })
+        .then(res => {
+          return res.rows.map(obj => ({ obj }));
+        })
+      );
+    });
+    this.subscriber();
+  }
+
+  subscriber = () => {
     const info = this.props.model.getTableInfo();
-    if (info)
-      this.ref.current.getModel().reload({ rows: info.rowsNum });
+    if (!info) {
+      this.grid.setRowsCount(0);
+      return;
+    }
+
+    this.grid.setRowsCount(info.rowsNum);
+    this.grid.setColsCount(info.columns.length);
   }
 
   componentDidMount() {
-    this.props.model.holder.subscribe(this.reloadData, 'reload');
+    this.props.model.holder.subscribe(this.subscriber);
   }
 
   componentWillUnmount() {
-    this.props.model.holder.unsubscribe(this.reloadData, 'reload');
+    this.props.model.holder.unsubscribe(this.subscriber);
   }
 
   renderNotConfigured() {
     return 'object not configured properly';
   }
 
-  renderCell = (props) => {
+  renderCell = (props: CellProps) => {
+    const row = this.grid.getRow(props.row);
+    if (!row)
+      return null;
+
     return (
-      <span>{props.data}</span>
+      <span>{row.cell[props.col]}</span>
     );
   }
 
-  renderHeader = (props) => {
+  renderHeader = (props: HeaderProps) => {
     const table = this.props.model.getTableInfo();
     return (
       <span>{table.columns[props.col].colName}</span>
@@ -55,20 +85,14 @@ export class Table2View extends React.Component<Props, State> {
 
     return (
       <div style={{ position: 'relative', flexGrow: 1}}>
-        <GridLoadable
-          ref={this.ref}
+        <Grid
           key={info.tableName}
-          colsCount={info.columns.length}
-          rowsCount={info.rowsNum}
-          loader={(from, count) => {
-            let res: Promise<Array<StrMap>>;
-            res = model.loadTableData({ tableName: info.tableName, fromRow: from, rowsNum: count })
-            .then(res => res.rows.map((row, i) => row));
-
-            return res;
-          }}
+          model={this.grid}
           renderHeader={this.renderHeader}
           renderCell={this.renderCell}
+          onScrollToBottom={() => {
+            this.grid.loadNext();
+          }}
         />
       </div>
     );

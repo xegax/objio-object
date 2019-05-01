@@ -69,7 +69,8 @@ export class DatabaseHolder extends DatabaseHolderBase {
     return (
       this.impl.pushData(args)
       .then(res => {
-        this.holder.save(true);
+        if (args.updateVersion != false)
+          this.holder.save(true);
         return res;
       })
     );

@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { FileStorage } from '../client/file-storage';
-import { GridLoadable, CellPropsExt, HeaderProps } from 'ts-react-ui/grid-loadable';
-import { StrMap } from '../common/interfaces';
+import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
+import { Grid, CellProps, HeaderProps } from 'ts-react-ui/grid/grid';
+import { EntryData } from '../base/file-storage';
 
 export {
   FileStorage
@@ -12,56 +13,68 @@ export interface Props {
 }
 
 export class FileStorageView extends React.Component<Props> {
-  private ref = React.createRef<GridLoadable>();
+  private grid = new GridLoadableModel<EntryData>();
+  private columns: Array<keyof EntryData> = ['name', 'type', 'size'];
+
+  constructor(props) {
+    super(props);
+
+    this.grid.setLoader((from, count) => {
+      return this.props.model.loadData({ from, count })
+      .then(res => {
+        return res.files.map(row => ({
+          obj: row,
+          cell: this.columns.map(key => row[key])
+        }));
+      });
+    });
+    this.grid.setColsCount(this.columns.length);
+    this.grid.setReverse(true);
+    this.subsciber();
+  }
+
+  subsciber = () => {
+    this.grid.setRowsCount(this.props.model.getFilesCount());
+  }
 
   reload = () => {
-    if (!this.ref.current)
-      return;
-
-    this.ref.current.getModel().reload({ rows: this.props.model.getFilesCount() });
+    this.grid.setRowsCount(this.props.model.getFilesCount());
+    this.grid.reloadCurrent();
   }
 
   componentDidMount() {
     this.props.model.holder.subscribe(this.reload, 'reload');
+    this.props.model.holder.subscribe(this.subsciber);
   }
 
   componentWillUnmount() {
     this.props.model.holder.unsubscribe(this.reload, 'reload');
+    this.props.model.holder.unsubscribe(this.subsciber);
   }
 
-  renderCell = (props: CellPropsExt) => {
+  renderCell = (props: CellProps) => {
+    const row = this.grid.getRow(props.row);
     return (
-      <span>{props.rowData['name']},{props.rowData['type']}</span>
+      <span>{row.cell[props.col]}</span>
     );
   }
 
   renderHeader = (props: HeaderProps) => {
     return (
-      <span>name</span>
+      <span>{this.columns[props.col]}</span>
     );
   }
 
   renderTable() {
-    const model = this.props.model;
-    const count = model.getFilesCount();
-
     return (
       <div style={{ position: 'relative', flexGrow: 1}}>
-        <GridLoadable
-          ref={this.ref}
-          colsCount={1}
-          rowsCount={count}
-          loader={(from, count) => {
-            let res: Promise<Array<StrMap>>;
-            res = model.loadData({ from, count })
-            .then(res => {
-              return res.files.map((row, i) => row as any)
-            });
-
-            return res;
-          }}
+        <Grid
+          model={this.grid}
           renderHeader={this.renderHeader}
           renderCell={this.renderCell}
+          onScrollToBottom={() => {
+            this.grid.loadNext();
+          }}
         />
       </div>
     );

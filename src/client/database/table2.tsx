@@ -77,6 +77,8 @@ export class Table2 extends TableBase {
   }
 
   getTableInfo(): TableInfo {
+    if (this.status != 'ok')
+      return null;
     return this.tableInfo;
   }
 

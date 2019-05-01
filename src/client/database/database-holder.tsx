@@ -15,6 +15,7 @@ import { ForwardProps } from 'ts-react-ui/forward-props';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { ObjProps } from '../../base/object-base';
 import { IDArgs } from '../../common/interfaces';
+import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 
 interface TableItem extends DDItem {
   table: TableInfo;
@@ -32,7 +33,8 @@ export class DatabaseHolder extends DatabaseHolderBase {
   private tables: Array<TableInfoExt> = null;
   private updateTask: Promise<any>;
   private selectTable: TableInfoExt;
-  private tmpTableMap: {[table: string]: Promise<TableInfo> | TableInfo} = {};
+  private tmpTableMap: { [table: string]: Promise<TableInfo> | TableInfo } = {};
+  private grid = new GridLoadableModel();
 
   constructor(args) {
     super(args);
@@ -47,6 +49,28 @@ export class DatabaseHolder extends DatabaseHolderBase {
         return Promise.resolve();
       }
     });
+
+    this.grid.setLoader((from, count) => {
+      const table = this.selectTable;
+      if (!table)
+        return Promise.reject('table not loaded');
+
+      return (
+        this.loadTableData({
+          tableName: table.tableName,
+          fromRow: from,
+          rowsNum: count
+        }).then(res => {
+          return res.rows.map(obj => {
+            return { cell: table.columnsToShow.map(c => obj[c.colName]) };
+          });
+        })
+      );
+    });
+  }
+
+  getGrid() {
+    return this.grid;
   }
 
   deleteTable(args: DeleteTableArgs): Promise<void> {
@@ -58,7 +82,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
   }
 
   setDatabase(database: string): Promise<void> {
-    return this.holder.invokeMethod({ method: 'setDatabase', args: { database }});
+    return this.holder.invokeMethod({ method: 'setDatabase', args: { database } });
   }
 
   setConnection(args: IDArgs): Promise<void> {
@@ -74,10 +98,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
       return;
 
     this.getDatabaseList()
-    .then(lst => {
-      this.dbList = lst;
-      this.holder.delayedNotify();
-    });
+      .then(lst => {
+        this.dbList = lst;
+        this.holder.delayedNotify();
+      });
   }
 
   protected updateTables() {
@@ -141,7 +165,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
 
     this.updateColumnsToShow();
     this.selectTable.changed = true;
-    this.holder.delayedNotify({});
+    this.holder.delayedNotify();
   }
 
   private getColumnValues(): Array<LVItem> {
@@ -191,7 +215,9 @@ export class DatabaseHolder extends DatabaseHolderBase {
       columns: this.selectTable.columnsToShow.map(c => c.colName)
     }).then(tmpTable => {
       this.tmpTableMap[tableName] = tmpTable;
-      this.holder.delayedNotify({ type: 'reload' });
+      this.holder.delayedNotify();
+      this.grid.setColsCount(this.selectTable.columnsToShow.length);
+      this.grid.reloadCurrent();
       return tmpTable;
     }).catch(e => {
       this.holder.delayedNotify();
@@ -213,13 +239,13 @@ export class DatabaseHolder extends DatabaseHolderBase {
               return;
 
             this.selectTable.changed = false;
-            this.holder.delayedNotify({ type: 'columns' });
+            this.holder.delayedNotify();
             this.updateTmpTable();
           }}
         />
       </div>
     );
-  };
+  }
 
   renderRemoteProps(props: ObjProps) {
     if (!this.isRemote())
@@ -234,7 +260,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
           <DropDown
             style={{ flexGrow: 1 }}
             value={conn ? { value: conn.getID() } : null}
-            values={props.objects( this.getConnClasses() ).map(c => {
+            values={props.objects(this.getConnClasses()).map(c => {
               return {
                 value: c.getID(),
                 render: c.getName()
@@ -266,6 +292,24 @@ export class DatabaseHolder extends DatabaseHolderBase {
     );
   }
 
+  private setTable(tableName: string) {
+    const table = this.tables.find(item => item.tableName == tableName);
+    if (table == this.selectTable)
+      return;
+
+    this.selectTable = table;
+    if (table) {
+      if (table.columns.length > MAX_COLUMN_TO_SHOW) {
+        table.columnsToShow = table.columns.slice(0, MAX_COLUMN_TO_SHOW);
+        this.updateTmpTable();
+      }
+      this.grid.setRowsCount(table.rowsNum);
+      this.grid.setColsCount(table.columnsToShow.length);
+      this.grid.reload();
+    }
+    this.holder.delayedNotify();
+  }
+
   getObjPropGroups(objProps: ObjProps) {
     return (
       <PropsGroup label='tables' defaultHeight={200} key={this.holder.getID()}>
@@ -274,19 +318,14 @@ export class DatabaseHolder extends DatabaseHolderBase {
             return (
               <div className='vert-panel-1 flexcol flexgrow1' style={{ height: props.height }}>
                 {this.renderRemoteProps(objProps)}
-                <div className='horz-panel-1 flexrow' style={{ alignItems: 'center'}}>
+                <div className='horz-panel-1 flexrow' style={{ alignItems: 'center' }}>
                   <div>table:</div>
                   <DropDown
-                    style={{ flexGrow: 1}}
+                    style={{ flexGrow: 1 }}
                     value={this.selectTable ? { value: this.selectTable.tableName } : null}
                     values={this.getTableValues()}
                     onSelect={sel => {
-                      this.selectTable = this.tables.find(item => item.tableName == sel.value);
-                      if (this.selectTable && this.selectTable.columns.length > MAX_COLUMN_TO_SHOW) {
-                        this.selectTable.columnsToShow = this.selectTable.columns.slice(0, MAX_COLUMN_TO_SHOW);
-                        this.updateTmpTable();
-                      }
-                      this.holder.delayedNotify();
+                      this.setTable(sel.value);
                     }}
                   />
                   <CheckIcon
@@ -298,10 +337,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
                         return;
 
                       this.deleteTable({ tableName: this.selectTable.tableName })
-                      .then(() => {
-                        this.selectTable = null;
-                        this.holder.delayedNotify();
-                      });
+                        .then(() => {
+                          this.selectTable = null;
+                          this.holder.delayedNotify();
+                        });
                     }}
                   />
                 </div>
@@ -320,7 +359,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
                         this.selectTable.columns.splice(+args.before.value, 0, drag);
                       else
                         this.selectTable.columns.splice(+args.before.value - 1, 0, drag);
-                      
+
                       this.updateColumnsToShow();
                       this.holder.delayedNotify({});
                     }

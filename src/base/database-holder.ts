@@ -47,6 +47,7 @@ export interface TableData {
 export interface PushDataArgs {
   tableName: string;
   rows: Array<StrMap>;
+  updateVersion?: boolean;
 }
 
 export interface PushDataResult {

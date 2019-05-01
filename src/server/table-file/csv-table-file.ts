@@ -33,7 +33,11 @@ export class CSVTableFile extends Base {
   }
 
   readRows(args: ReadLinesArgs): Promise<any> {
+    const discardCols = this.columns.filter(c => c.discard).map(col => col.name);
+    const exclude = discardCols.length ? new Set(discardCols) : null;
+
     const readArgs: CSVReadArgs = {
+      exclude,
       file: this.getPath(),
       rowsPerBunch: args.linesPerBunch,
       onNextBunch: (bunch: CSVBunch) => {
