@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { ObjProps } from '../base/object-base';
-import { FileStorageBase } from '../base/file-storage';
+import { FileStorageBase, DeleteArgs } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { PropsGroup, DropDownPropItem, PropItem } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database/database-holder';
@@ -8,13 +8,14 @@ import { LoadDataArgs, LoadDataResult, StorageInfo, EntryData } from '../base/fi
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 
 export class FileStorage extends FileStorageBase {
-  private columns: Array<keyof EntryData> = ['name', 'type', 'size'];
+  private columns: Array<keyof EntryData> = ['rowId', 'name', 'type', 'size'];
   private filesCount: number = 0;
   private prevDB: DatabaseHolder;
   private dbEventHandler = {
     onObjChange: () => this.onObjChanged()
   };
-  private grid: GridLoadableModel;
+  private selIds: {[row: number]: EntryData} = {}; // [rowIdx] = file entry
+  private grid: GridLoadableModel<EntryData>;
 
   constructor() {
     super();
@@ -34,14 +35,17 @@ export class FileStorage extends FileStorageBase {
   }
 
   private makeGrid() {
-    const grid = new GridLoadableModel({
+    const grid = new GridLoadableModel<EntryData>({
       rowsCount: this.filesCount,
-      colsCount: 3,
+      colsCount: this.columns.length,
       prev: this.grid
     });
 
     if (!this.grid) {
       grid.setReverse(true);
+      grid.setSelectType('rows');
+    } else {
+      this.grid.unsubscribe(this.onSelect, 'select');
     }
 
     grid.setLoader((from, count) => {
@@ -53,9 +57,24 @@ export class FileStorage extends FileStorageBase {
         }));
       });
     });
+    grid.subscribe(this.onSelect, 'select');
 
     this.grid = grid;
   }
+
+  protected onSelect = () => {
+    let selIds: {[row: number]: EntryData} = {};
+    this.grid.getSelectRows()
+    .forEach(r => {
+      const row = this.grid.getRow(r);
+      if (row)
+        selIds[r] = row.obj;
+      else
+        selIds[r] = this.selIds[r];
+    });
+    this.selIds = selIds;
+    this.holder.delayedNotify();
+  };
 
   private onObjChanged = () => {
     if (this.prevDB != this.db) {
@@ -100,10 +119,26 @@ export class FileStorage extends FileStorageBase {
     return this.holder.invokeMethod({ method: 'loadData', args });
   }
 
+  delete(args: DeleteArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'delete', args });
+  }
+
+  deleteSelected = () => {
+    if (!this.grid)
+      return;
+
+    this.delete({
+      fileIds: Object.keys(this.selIds).map(r => this.selIds[+r].fileId)
+    });
+    this.grid.clearSelect();
+    this.holder.delayedNotify();
+  }
+
   getObjPropGroups(props: ObjProps) {
     return (
       <PropsGroup label='config' defaultHeight={200} key={this.holder.getID()}>
         <DropDownPropItem
+          disabled={this.db != null}
           label='database'
           value={this.db ? { value: this.db.getID(), render: this.db.getName() } : null}
           values={props.objects([DatabaseHolder]).map(db => {
@@ -120,6 +155,12 @@ export class FileStorage extends FileStorageBase {
           label='files num'
           value={this.getFilesCount()}
         />
+        <button
+          disabled={this.grid == null || this.grid.getSelectRows().length == 0}
+          onClick={this.deleteSelected}
+        >
+          delete
+        </button>
       </PropsGroup>
     );
   }

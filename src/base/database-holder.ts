@@ -3,6 +3,19 @@ import { ObjectBase } from './object-base';
 import { StrMap, IDArgs } from '../common/interfaces';
 import { ConnectionBase } from './database/connection';
 
+export interface ValueCond {
+  column: string;
+  value: string | Array<string | number> | CompoundCond;
+  like?: boolean;
+  inverse?: boolean;
+}
+
+export interface CompoundCond {
+  values: Array<ValueCond | CompoundCond>;
+  op: 'or' | 'and';
+  table?: string;
+}
+
 export interface TableArgs {
   tableName: string;
 }
@@ -54,6 +67,11 @@ export interface PushDataResult {
   pushRows: number;
 }
 
+export interface DeleteDataArgs {
+  tableName: string;
+  cond: CompoundCond;
+}
+
 export interface CreateTableArgs {
   tableName: string;
   columns: Array<ColumnToCreate>;
@@ -78,6 +96,7 @@ export abstract class DatabaseBase2 extends ObjectBase {
   abstract createTable(args: CreateTableArgs): Promise<TableInfo>;
   abstract deleteTable(args: DeleteTableArgs): Promise<void>;
   abstract pushData(args: PushDataArgs): Promise<PushDataResult>;
+  abstract deleteData(args: DeleteDataArgs): Promise<void>;
   
   // remote db
   abstract isRemote(): boolean;

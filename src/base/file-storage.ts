@@ -27,6 +27,10 @@ export interface LoadDataResult {
   files: Array<EntryData>;
 }
 
+export interface DeleteArgs {
+  fileIds: Array<string>;
+}
+
 export abstract class FileStorageBase extends ObjectBase {
   protected db: DatabaseHolderBase;
   protected fileTable: string;
@@ -44,6 +48,7 @@ export abstract class FileStorageBase extends ObjectBase {
   abstract setDatabase(args: IDArgs): Promise<void>;
   abstract loadInfo(): Promise<StorageInfo>;
   abstract loadData(args: LoadDataArgs): Promise<LoadDataResult>;
+  abstract delete(args: DeleteArgs): Promise<void>;
 
   static TYPE_ID = 'FileContainer2';
   static SERIALIZE: SERIALIZER = () => ({

@@ -6,7 +6,8 @@ import {
   DeleteTableArgs,
   CreateTableArgs,
   PushDataArgs,
-  PushDataResult
+  PushDataResult,
+  DeleteDataArgs
 } from '../../base/database-holder';
 import { PropsGroup, DropDownPropItem } from 'ts-react-ui/prop-sheet';
 import { ListView, Item as LVItem } from 'ts-react-ui/list-view';
@@ -91,6 +92,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
 
   pushData(args: PushDataArgs): Promise<PushDataResult> {
     return this.holder.invokeMethod({ method: 'pushData', args });
+  }
+
+  deleteData(args: DeleteDataArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'deleteData', args });
   }
 
   protected updateDBList() {

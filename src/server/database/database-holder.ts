@@ -7,7 +7,8 @@ import {
   ColumnToCreate,
   ColumnInfo,
   TableData,
-  PushDataArgs
+  PushDataArgs,
+  DeleteDataArgs
 } from '../../base/database-holder';
 import { IDArgs } from '../../common/interfaces';
 import { PushDataResult } from '../../base/database-holder';
@@ -32,6 +33,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
       },
       pushData: {
         method: (args: PushDataArgs) => this.pushData(args),
+        rights: 'write'
+      },
+      deleteData: {
+        method: (args: DeleteDataArgs) => this.deleteData(args),
         rights: 'write'
       },
       setConnection: {
@@ -73,6 +78,12 @@ export class DatabaseHolder extends DatabaseHolderBase {
           this.holder.save(true);
         return res;
       })
+    );
+  }
+
+  deleteData(args: DeleteDataArgs): Promise<void> {
+    return (
+      this.impl.deleteData(args)
     );
   }
 

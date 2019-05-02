@@ -3,14 +3,16 @@ import {
   EntryData,
   StorageInfo,
   LoadDataArgs,
-  LoadDataResult
+  LoadDataResult,
+  DeleteArgs
 } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { DatabaseHolder, ColumnToCreate } from './database/database-holder';
 import { ServerSendFileArgs } from './file-object';
-import { createWriteStream, mkdirSync, existsSync } from 'fs';
+import { createWriteStream, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { genUUID, getExt } from '../common/common';
 import { Stream } from 'stream';
+import { ValueCond } from '../base/database-holder';
 
 interface SrvEntryData extends EntryData {
   userId: string;
@@ -88,6 +90,10 @@ export class FileStorage extends FileStorageBase {
       loadInfo: {
         method: () => this.loadInfo(),
         rights: 'read'
+      },
+      delete: {
+        method: (args: DeleteArgs) => this.delete(args),
+        rights: 'write'
       }
     });
 
@@ -224,6 +230,37 @@ export class FileStorage extends FileStorageBase {
         };
 
         return res;
+      })
+    );
+  }
+
+  delete(args: DeleteArgs) {
+    const cond: Array<ValueCond> = args.fileIds.map(id => {
+      return {
+        column: 'fileId',
+        value: id
+      };
+    });
+
+    args.fileIds.forEach(fileId => {
+      const path = this.getPath(fileId);
+      if (!existsSync(path)) {
+        console.log(`fileId=${fileId} does't exists`);
+      } else {
+        unlinkSync(path);
+      }
+    });
+
+    return (
+      this.db.deleteData({
+        tableName: this.fileTable,
+        cond: {
+          op: 'or',
+          values: cond
+        }
+      })
+      .then(() => {
+        this.holder.save(true);
       })
     );
   }
