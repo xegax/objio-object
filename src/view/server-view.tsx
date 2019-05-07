@@ -257,7 +257,7 @@ export class ServerInstanceView extends React.Component<Props, Partial<State>> {
   renderUsers() {
     let users = this.props.model.getUsers();
     return (
-      <PropSheet>
+      <PropSheet fitToAbs>
         <PropsGroup label='users'>
           <ListView
             style={{ maxHeight: 300 }}

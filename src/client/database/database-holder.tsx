@@ -1,15 +1,14 @@
 import * as React from 'react';
 import {
-  DatabaseHolderBase,
-  TableInfo,
-  ColumnInfo,
+  TableDesc,
   DeleteTableArgs,
   CreateTableArgs,
   PushDataArgs,
   PushDataResult,
   DeleteDataArgs
-} from '../../base/database-holder';
-import { PropsGroup, DropDownPropItem } from 'ts-react-ui/prop-sheet';
+} from '../../base/database-holder-decl';
+import { DatabaseHolderBase } from '../../base/database-holder';
+import { PropsGroup } from 'ts-react-ui/prop-sheet';
 import { ListView, Item as LVItem } from 'ts-react-ui/list-view';
 import { DropDown, Item as DDItem } from 'ts-react-ui/drop-down';
 import { ForwardProps } from 'ts-react-ui/forward-props';
@@ -19,23 +18,22 @@ import { IDArgs } from '../../common/interfaces';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 
 interface TableItem extends DDItem {
-  table: TableInfo;
 }
 
-interface TableInfoExt extends TableInfo {
-  columnsToShow?: Array<ColumnInfo>;
-  changed?: boolean;
+export interface SelectTableInfo {
+  tableName: string;
+  guid?: string;
+  desc: TableDesc;
 }
 
 const MAX_COLUMN_TO_SHOW = 10;
 
 export class DatabaseHolder extends DatabaseHolderBase {
   private dbList: Array<string> = [];
-  private tables: Array<TableInfoExt> = null;
+  private tables: Array<TableDesc> = null;
   private updateTask: Promise<any>;
-  private selectTable: TableInfoExt;
-  private tmpTableMap: { [table: string]: Promise<TableInfo> | TableInfo } = {};
-  private grid = new GridLoadableModel();
+  private selectTable: SelectTableInfo;
+  private grid: GridLoadableModel;
 
   constructor(args) {
     super(args);
@@ -50,24 +48,6 @@ export class DatabaseHolder extends DatabaseHolderBase {
         return Promise.resolve();
       }
     });
-
-    this.grid.setLoader((from, count) => {
-      const table = this.selectTable;
-      if (!table)
-        return Promise.reject('table not loaded');
-
-      return (
-        this.loadTableData({
-          tableName: table.tableName,
-          fromRow: from,
-          rowsNum: count
-        }).then(res => {
-          return res.rows.map(obj => {
-            return { cell: table.columnsToShow.map(c => obj[c.colName]) };
-          });
-        })
-      );
-    });
   }
 
   getGrid() {
@@ -78,7 +58,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
     return this.holder.invokeMethod({ method: 'deleteTable', args });
   }
 
-  createTable(args: CreateTableArgs): Promise<TableInfo> {
+  createTable(args: CreateTableArgs): Promise<TableDesc> {
     return this.holder.invokeMethod({ method: 'createTable', args });
   }
 
@@ -117,14 +97,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
       this.impl.loadTableList()
         .then(tables => {
           this.updateTask = null;
-          this.tables = tables;
-          this.tables.forEach(table => {
-            if (!table.columnsToShow)
-              table.columnsToShow = table.columns.slice(0, MAX_COLUMN_TO_SHOW);
-          });
+          this.tables = tables || [];
 
           if (this.selectTable) {
-            this.selectTable = this.tables.find(table => {
+            this.tables.find(table => {
               return table.tableName == this.selectTable.tableName;
             });
           }
@@ -154,46 +130,23 @@ export class DatabaseHolder extends DatabaseHolderBase {
     );
   }
 
-  private updateColumnsToShow() {
-    const s = new Set<ColumnInfo>(this.selectTable.columnsToShow);
-    this.selectTable.columnsToShow = this.selectTable.columns.filter(col => {
-      return s.has(col);
-    });
-  }
-
-  private toggleColumn(col: ColumnInfo) {
-    const idx = this.selectTable.columnsToShow.indexOf(col);
-    if (idx != -1)
-      this.selectTable.columnsToShow.splice(idx, 1);
-    else
-      this.selectTable.columnsToShow.push(col);
-
-    this.updateColumnsToShow();
-    this.selectTable.changed = true;
-    this.holder.delayedNotify();
-  }
-
   private getColumnValues(): Array<LVItem> {
     if (!this.selectTable)
       return [];
 
     return (
-      this.selectTable.columns.map((col, i) => {
+      this.selectTable.desc.columns.map((col, i) => {
         return {
           value: '' + i,
           title: col.colName,
           render: () => {
-            let shown = false;
-            if (this.selectTable && this.selectTable.columnsToShow)
-              shown = this.selectTable.columnsToShow.indexOf(col) != -1;
-
+            let shown = true;
             return (
               <div className='horz-panel-1'>
                 <CheckIcon
                   faIcon={shown ? 'fa fa-check-square-o' : 'fa fa-square-o'}
                   value
                   showOnHover
-                  onClick={() => this.toggleColumn(col)}
                 />
                 <span style={{ color: shown ? undefined : 'gray' }}>
                   {col.colName}
@@ -206,30 +159,8 @@ export class DatabaseHolder extends DatabaseHolderBase {
     );
   }
 
-  getSelectTable(): TableInfo | Promise<TableInfo> {
-    if (!this.selectTable)
-      return null;
-
-    return this.tmpTableMap[this.selectTable.tableName] || this.selectTable;
-  }
-
-  private updateTmpTable(): Promise<TableInfo> {
-    const tableName = this.selectTable.tableName;
-    const task = this.tmpTableMap[tableName] = this.createTempTable({
-      tableName,
-      columns: this.selectTable.columnsToShow.map(c => c.colName)
-    }).then(tmpTable => {
-      this.tmpTableMap[tableName] = tmpTable;
-      this.holder.delayedNotify();
-      this.grid.setColsCount(this.selectTable.columnsToShow.length);
-      this.grid.reloadCurrent();
-      return tmpTable;
-    }).catch(e => {
-      this.holder.delayedNotify();
-      return Promise.reject(e);
-    });
-
-    return task;
+  getSelectTable(): SelectTableInfo {
+    return this.selectTable;
   }
 
   renderHeader = (props: LVItem) => {
@@ -238,15 +169,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
         <span>{props.value}</span>
         <CheckIcon
           faIcon='fa fa-thumbs-o-up'
-          value={this.selectTable ? this.selectTable.changed : false}
-          onClick={() => {
-            if (!this.selectTable)
-              return;
-
-            this.selectTable.changed = false;
-            this.holder.delayedNotify();
-            this.updateTmpTable();
-          }}
+          value={true}
         />
       </div>
     );
@@ -297,21 +220,57 @@ export class DatabaseHolder extends DatabaseHolderBase {
     );
   }
 
-  private setTable(tableName: string) {
+  private setTable(tableName: string): boolean {
     const table = this.tables.find(item => item.tableName == tableName);
-    if (table == this.selectTable)
-      return;
+    // nothing changed
+    if (this.selectTable && this.selectTable.tableName == table.tableName)
+      return false;
 
-    this.selectTable = table;
-    if (table) {
-      if (table.columns.length > MAX_COLUMN_TO_SHOW) {
-        table.columnsToShow = table.columns.slice(0, MAX_COLUMN_TO_SHOW);
-        this.updateTmpTable();
-      }
-      this.grid.setRowsCount(table.rowsNum);
-      this.grid.setColsCount(table.columnsToShow.length);
-      this.grid.reload();
+    if (!table) {
+      this.selectTable = null;
+      this.holder.delayedNotify();
+      return true;
     }
+
+    this.selectTable = {
+      tableName: table.tableName,
+      guid: null,
+      desc: table
+    };
+
+    this.loadTableGuid({ tableName: table.tableName, desc: true })
+    .then(res => {
+      this.selectTable.guid = res.guid;
+      this.createGrid();
+    });
+  }
+
+  private createGrid() {
+    const table = this.selectTable.desc;
+    this.grid = new GridLoadableModel({
+      rowsCount: table.rowsNum,
+      colsCount: table.columns.length,
+      prev: this.grid
+    });
+
+    this.grid.setLoader((from, count) => {
+      const table = this.selectTable;
+      if (!table)
+        return Promise.reject('table not loaded');
+
+      return (
+        this.loadTableData({
+          guid: table.guid,
+          from,
+          count
+        }).then(res => {
+          return res.rows.map(obj => {
+            return { cell: table.desc.columns.map(c => obj[c.colName]) };
+          });
+        })
+      );
+    });
+
     this.holder.delayedNotify();
   }
 
@@ -356,7 +315,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
                   header={{ value: 'Column', render: this.renderHeader }}
                   values={this.getColumnValues()}
                   onMoveTo={args => {
-                    this.selectTable.changed = true;
+                    /*this.selectTable.changed = true;
                     const srcIdx = +args.drag[0].value;
                     if (args.before) {
                       const [drag] = this.selectTable.columns.splice(srcIdx, 1);
@@ -367,7 +326,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
 
                       this.updateColumnsToShow();
                       this.holder.delayedNotify({});
-                    }
+                    }*/
                   }}
                 />
               </div>

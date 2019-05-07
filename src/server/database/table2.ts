@@ -1,16 +1,21 @@
 import {
   TableBase,
-  TableArgs,
-  TableInfo,
   TableData,
   TableDataArgs,
   DatabaseHolderBase,
-  TmpTableArgs
+  SetTableNameArgs
 } from '../../base/database/table2';
 import { IDArgs } from '../../common/interfaces';
 import { TableFileBase } from '../../base/table-file';
 import { OnRowsArgs } from '../../base/table-file/data-reading';
-import { PushDataArgs, PushDataResult } from '../../base/database-holder';
+import {
+  PushDataArgs,
+  PushDataResult,
+  LoadTableGuidArgs,
+  TableGuid,
+  LoadTableDataArgs,
+  LoadTableGuidResult
+} from '../../base/database-holder-decl';
 
 export class Table2 extends TableBase {
   constructor(args) {
@@ -21,16 +26,16 @@ export class Table2 extends TableBase {
         method: (args: PushDataArgs) => this.pushData(args),
         rights: 'write'
       },
-      loadTableInfo: {
-        method: (args: TableArgs) => this.loadTableInfo(args),
+      loadTableGuid: {
+        method: (args: LoadTableGuidArgs) => this.loadTableGuid(args),
         rights: 'read'
       },
       loadTableRowsNum: {
-        method: (args: TableArgs) => this.loadTableRowsNum(args),
+        method: (args: TableGuid) => this.loadTableRowsNum(args),
         rights: 'read'
       },
       loadTableData: {
-        method: (args: TableDataArgs) => this.loadTableData(args),
+        method: (args: LoadTableDataArgs) => this.loadTableData(args),
         rights: 'read'
       },
       setDatabase: {
@@ -38,16 +43,12 @@ export class Table2 extends TableBase {
         rights: 'write'
       },
       setTableName: {
-        method: (args: TableArgs) => this.setTableName(args),
+        method: (args: SetTableNameArgs) => this.setTableName(args),
         rights: 'write'
       },
       setTableFile: {
         method: (args: IDArgs) => this.setTableFile(args),
         rights: 'write'
-      },
-      createTempTable: {
-        method: (args: TmpTableArgs) => this.createTempTable(args),
-        rights: 'read'
       },
       loadTableFile: {
         method: (args: IDArgs) => this.loadTableFile(args),
@@ -159,28 +160,21 @@ export class Table2 extends TableBase {
     return this.db.pushData(args);
   }
 
-  createTempTable(args: TmpTableArgs): Promise<TableInfo> {
+  loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult> {
     if (!this.db)
       return Promise.reject('Database is not selected');
 
-    return this.db.createTempTable(args);
+    return this.db.loadTableGuid(args);
   }
 
-  loadTableInfo(args: TableArgs): Promise<TableInfo> {
-    if (!this.db)
-      return Promise.reject('Database is not selected');
-
-    return this.db.loadTableInfo(args);
-  }
-
-  loadTableRowsNum(args: TableArgs): Promise<number> {
+  loadTableRowsNum(args: TableGuid): Promise<number> {
     if (!this.db)
       return Promise.reject('Database is not selected');
 
     return this.db.loadTableRowsNum(args);
   }
 
-  loadTableData(args: TableDataArgs): Promise<TableData> {
+  loadTableData(args: LoadTableDataArgs): Promise<TableData> {
     if (!this.db)
       return Promise.reject('Database is not selected');
 
@@ -207,7 +201,7 @@ export class Table2 extends TableBase {
     );
   }
 
-  setTableName(args: TableArgs): Promise<void> {
+  setTableName(args: SetTableNameArgs): Promise<void> {
     if (!this.db)
       return Promise.reject('Database is not selected');
 

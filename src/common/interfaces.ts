@@ -15,4 +15,14 @@ export interface NameArgs {
   name: string;
 }
 
+export interface MinMax {
+  min: number;
+  max: number;
+}
+
+export interface Range {
+  from: number;
+  count: number;
+}
+
 export type StrMap = { [key: string]: string };

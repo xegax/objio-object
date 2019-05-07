@@ -1,17 +1,15 @@
 import {
-  DatabaseHolderBase,
   DeleteTableArgs,
-  DatabaseHolderArgs,
   CreateTableArgs,
-  TableInfo,
   ColumnToCreate,
+  TableDesc,
   ColumnInfo,
-  TableData,
   PushDataArgs,
+  PushDataResult,
   DeleteDataArgs
-} from '../../base/database-holder';
+} from '../../base/database-holder-decl';
+import { DatabaseHolderBase, DatabaseHolderArgs } from '../../base/database-holder';
 import { IDArgs } from '../../common/interfaces';
-import { PushDataResult } from '../../base/database-holder';
 
 export {
   ColumnInfo,
@@ -60,7 +58,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
     )
   }
 
-  createTable(args: CreateTableArgs): Promise<TableInfo> {
+  createTable(args: CreateTableArgs): Promise<TableDesc> {
     return (
       this.impl.createTable(args)
       .then(res => {

@@ -8,6 +8,7 @@ export interface ServerSendFileArgs {
   mime: string;
   fileId?: string;
   data: Readable;
+  other?: string;
 }
 
 export class FileObject extends FileObjectBase {

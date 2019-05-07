@@ -1,0 +1,45 @@
+.file-storage-view {
+  position: relative;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+
+  &-folder {
+    position: relative;
+    display: inline-block;
+    background-color: white;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    padding: 3px;
+    border: 1px solid silver;
+    border-radius: 3px;
+
+    i {
+      color: darkgoldenrod;
+      margin-right: 5px;
+    }
+
+    &:hover {
+      background-color: #dcffff;
+    }
+  }
+
+  &-folder-view {
+    background-color: transparent;
+    margin: 5px;
+    padding: 5px;
+  }
+
+  .curr-path-stack {
+    &-folder {
+      cursor: pointer;
+      display: inline-block;
+    }
+    i {
+      margin-left: 2px;
+      margin-right: 2px;
+    }
+  }
+}

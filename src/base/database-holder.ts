@@ -1,99 +1,33 @@
 import { SERIALIZER, OBJIOItemClass } from 'objio';
 import { ObjectBase } from './object-base';
-import { StrMap, IDArgs } from '../common/interfaces';
+import { IDArgs } from '../common/interfaces';
 import { ConnectionBase } from './database/connection';
-
-export interface ValueCond {
-  column: string;
-  value: string | Array<string | number> | CompoundCond;
-  like?: boolean;
-  inverse?: boolean;
-}
-
-export interface CompoundCond {
-  values: Array<ValueCond | CompoundCond>;
-  op: 'or' | 'and';
-  table?: string;
-}
-
-export interface TableArgs {
-  tableName: string;
-}
-
-export interface TmpTableArgs {
-  tableName: string;
-  columns?: Array<string>;
-}
-
-export interface ColumnInfo {
-  colName: string;
-  colType: string;
-}
-
-export interface ColumnToCreate extends ColumnInfo {
-  notNull?: boolean;
-  unique?: boolean;
-  primary?: boolean;
-  autoInc?: boolean;
-  index?: boolean;
-}
-
-export interface TableInfo {
-  tableName: string;
-  columns: Array<ColumnInfo>;
-  rowsNum: number;
-}
-
-export interface TableDataArgs {
-  tableName: string;
-  columns?: Array<string>;
-  fromRow: number;
-  rowsNum: number;
-}
-
-export interface TableData {
-  rows: Array<StrMap>;
-  fromRow: number;
-  rowsNum: number;
-}
-
-export interface PushDataArgs {
-  tableName: string;
-  rows: Array<StrMap>;
-  updateVersion?: boolean;
-}
-
-export interface PushDataResult {
-  pushRows: number;
-}
-
-export interface DeleteDataArgs {
-  tableName: string;
-  cond: CompoundCond;
-}
-
-export interface CreateTableArgs {
-  tableName: string;
-  columns: Array<ColumnToCreate>;
-}
-
-export interface DeleteTableArgs {
-  tableName: string;
-}
+import {
+  TableGuid,
+  TableDesc,
+  LoadTableGuidResult,
+  LoadTableGuidArgs,
+  LoadTableDataArgs,
+  LoadTableDataResult,
+  CreateTableArgs,
+  DeleteDataArgs,
+  DeleteTableArgs,
+  PushDataArgs,
+  PushDataResult
+} from './database-holder-decl';
 
 export abstract class DatabaseBase2 extends ObjectBase {
   protected conn: ConnectionBase;
   protected database: string;
   // conn and database are using by remote database
 
-  abstract loadTableList(): Promise<Array<TableInfo>>;
-  abstract loadTableInfo(args: TableArgs): Promise<TableInfo>;
-  abstract loadTableRowsNum(args: TableArgs): Promise<number>;
-  abstract loadTableData(args: TableDataArgs): Promise<TableData>;
+  abstract loadTableList(): Promise<Array<TableDesc>>;
+  abstract loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult>;
 
-  abstract createTempTable(args: TmpTableArgs): Promise<TableInfo>;
+  abstract loadTableRowsNum(args: TableGuid): Promise<number>;
+  abstract loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult>;
 
-  abstract createTable(args: CreateTableArgs): Promise<TableInfo>;
+  abstract createTable(args: CreateTableArgs): Promise<TableDesc>;
   abstract deleteTable(args: DeleteTableArgs): Promise<void>;
   abstract pushData(args: PushDataArgs): Promise<PushDataResult>;
   abstract deleteData(args: DeleteDataArgs): Promise<void>;
@@ -136,24 +70,20 @@ export abstract class DatabaseHolderBase extends DatabaseBase2 {
     }
   }
 
-  loadTableList(): Promise<Array<TableInfo>> {
+  loadTableList(): Promise<Array<TableDesc>> {
     return this.impl.loadTableList();
   }
 
-  loadTableInfo(args: TableArgs): Promise<TableInfo> {
-    return this.impl.loadTableInfo(args);
+  loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult> {
+    return this.impl.loadTableGuid(args);
   }
 
-  loadTableRowsNum(args: TableArgs): Promise<number> {
+  loadTableRowsNum(args: TableGuid): Promise<number> {
     return this.impl.loadTableRowsNum(args);
   }
 
-  loadTableData(args: TableDataArgs): Promise<TableData> {
+  loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult> {
     return this.impl.loadTableData(args);
-  }
-
-  createTempTable(args: TmpTableArgs): Promise<TableInfo> {
-    return this.impl.createTempTable(args);
   }
 
   getDatabaseList(): Promise<Array<string>> {

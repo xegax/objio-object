@@ -4,22 +4,40 @@ import {
   StorageInfo,
   LoadDataArgs,
   LoadDataResult,
-  DeleteArgs
+  DeleteArgs,
+  LoadStatsResult,
+  LoadInfoArgs,
+  LoadFolderArgs,
+  CreateFolderArgs,
+  Folder
 } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { DatabaseHolder, ColumnToCreate } from './database/database-holder';
+import { CompoundCond } from '../base/database-holder-decl';
 import { ServerSendFileArgs } from './file-object';
 import { createWriteStream, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { genUUID, getExt } from '../common/common';
 import { Stream } from 'stream';
-import { ValueCond } from '../base/database-holder';
+import { ValueCond } from '../base/database-holder-decl';
+import { SERIALIZER } from 'objio';
+
+const MAX_FOLDER_DEPTH = 3;
+const MAX_SUBFOLDERS = 32;
+const pathCols = [ 'sub1', 'sub2', 'sub3' ];
 
 interface SrvEntryData extends EntryData {
   userId: string;
 }
 
+type FolderSrv = {
+  id: string;
+  name: string;
+  subfolder: Array<FolderSrv>;
+};
+
 type TColumnName = keyof SrvEntryData;
-const fileSchema: {[key: string]: ColumnToCreate & { colName: TColumnName }} = {
+type Column = ColumnToCreate & { colName: TColumnName };
+const fileSchema = {
   rowId: {
     colName: 'rowId',
     colType: 'integer',
@@ -27,49 +45,67 @@ const fileSchema: {[key: string]: ColumnToCreate & { colName: TColumnName }} = {
     unique: true,
     notNull: true,
     primary: true
-  },
+  } as Column,
   userId: {
     colName: 'userId',
     colType: 'string'
-  },
+  } as Column,
   fileId: {
     colName: 'fileId',
     colType: 'string',
     unique: true,
     notNull: true
-  },
+  } as Column,
   size: {
     colName: 'size',
     colType: 'integer',
     notNull: true
-  },
+  } as Column,
   type: {
     colName: 'type',
     colType: 'string'
-  },
+  } as Column,
   hash: {
     colName: 'hash',
     colType: 'string',
     notNull: true
-  },
+  } as Column,
   name: {
     colName: 'name',
     colType: 'string'
-  },
+  } as Column,
   createDate: {
     colName: 'createDate',
     colType: 'integer',
     notNull: true
-  },
+  } as Column,
   modifyDate: {
     colName: 'modifyDate',
     colType: 'integer',
     notNull: true
+  } as Column,
+  sub1: {
+    colName: 'sub1',
+    colType: 'string'
+  } as Column,
+  sub2: {
+    colName: 'sub2',
+    colType: 'string'
+  } as Column,
+  sub3: {
+    colName: 'sub3',
+    colType: 'string'
   }
 };
 
 export class FileStorage extends FileStorageBase {
   private initTask: Promise<void>;
+  private srvFolder: FolderSrv = {
+    id: 'root',
+    name: 'root',
+    subfolder: []
+  };
+  private folderIdCounter: number = 0;
 
   constructor() {
     super();
@@ -88,11 +124,23 @@ export class FileStorage extends FileStorageBase {
         rights: 'read'
       },
       loadInfo: {
-        method: () => this.loadInfo(),
+        method: (args: LoadInfoArgs, userId: string) => this.loadInfo(args, userId),
         rights: 'read'
       },
       delete: {
         method: (args: DeleteArgs) => this.delete(args),
+        rights: 'write'
+      },
+      loadStats: {
+        method: () => this.loadStats(),
+        rights: 'read'
+      },
+      loadFolder: {
+        method: (args: LoadFolderArgs) => this.loadFolder(args),
+        rights: 'read'
+      },
+      createFolder: {
+        method: (args: CreateFolderArgs) => this.createFolder(args),
         rights: 'write'
       }
     });
@@ -109,7 +157,7 @@ export class FileStorage extends FileStorageBase {
         }
 
         return (
-          this.db.loadTableInfo({ tableName: this.fileTable })
+          this.db.loadTableGuid({ tableName: this.fileTable })
           .then(() => {
             this.setStatus('ok');
           })
@@ -121,7 +169,8 @@ export class FileStorage extends FileStorageBase {
     });
   }
 
-  private createEntry(args: ServerSendFileArgs, userId: string): Promise<SrvEntryData> {
+  private createEntry(args: ServerSendFileArgs, userId: string, path?: Array<string>): Promise<SrvEntryData> {
+    path = path || [];
     const type = getExt(args.name).toLocaleLowerCase();
     const entry: SrvEntryData = {
       fileId: genUUID() + type,
@@ -131,7 +180,10 @@ export class FileStorage extends FileStorageBase {
       size: args.size,
       type,
       createDate: Date.now(),
-      modifyDate: Date.now()
+      modifyDate: Date.now(),
+      sub1: path[0] || '',
+      sub2: path[1] || '',
+      sub3: path[2] || ''
     };
 
     return (
@@ -172,12 +224,19 @@ export class FileStorage extends FileStorageBase {
   }
 
   private sendFileImpl = (args: ServerSendFileArgs, userId: string) => {
+    console.log('other', args.other);
     const folder = this.getPath();
     if (!existsSync(folder))
       mkdirSync(folder);
 
+    let path = Array<string>();
+    try {
+      path = JSON.parse(args.other || '[]');
+    } catch(e) {
+    }
+  
     return (
-      this.createEntry(args, userId)
+      this.createEntry(args, userId, path)
       .then(entry => this.writeToFile(entry, args.data))
     );
   };
@@ -202,16 +261,50 @@ export class FileStorage extends FileStorageBase {
     );
   }
 
-  loadInfo(): Promise<StorageInfo> {
+  loadInfo(args: LoadInfoArgs, userId?: string): Promise<StorageInfo> {
     if (!this.db)
       return Promise.reject('db is not selected');
 
     if (!this.fileTable)
       return Promise.reject('table is not selected');
 
+      let cond: CompoundCond = {
+        op: 'and',
+        values: []
+      };
+      
+      const pathCond: CompoundCond = {
+        op: 'and',
+        values: pathCols.map((column, i) => ({
+          column,
+          value: args.path[i] || ''
+        }))
+      };
+  
+      const accss: CompoundCond = {
+        op: 'or',
+        values: [
+          {
+            column: fileSchema.userId.colName,
+            value: ''
+          },
+          {
+            column: fileSchema.userId.colName,
+            value: userId
+          }
+        ]
+      };
+
+      if (pathCond.values.length)
+        cond.values.push(pathCond);
+      cond.values.push(accss);
+  
+      if (pathCond.values.length == 0)
+        cond = null;
+
     return (
-      this.db.loadTableInfo({ tableName: this.fileTable })
-      .then(res => ({ filesCount: res.rowsNum }))
+      this.db.loadTableGuid({ tableName: this.fileTable, desc: true, cond })
+      .then(res => ({ guid: res.guid, filesCount: res.desc.rowsNum }))
     );
   }
 
@@ -223,7 +316,7 @@ export class FileStorage extends FileStorageBase {
       return Promise.reject('table is not selected');
 
     return (
-      this.db.loadTableData({ tableName: this.fileTable, fromRow: args.from, rowsNum: args.count })
+      this.db.loadTableData({ guid: args.guid, from: args.from, count: args.count })
       .then(data => {
         let res: LoadDataResult = {
           files: data.rows as any
@@ -232,6 +325,89 @@ export class FileStorage extends FileStorageBase {
         return res;
       })
     );
+  }
+
+  loadStats(): Promise<LoadStatsResult> {
+    if (!this.db)
+      return Promise.reject('db is not selected');
+
+    return Promise.resolve(null);
+  }
+
+  loadFolder(args: LoadFolderArgs) {
+    if (!this.db)
+      return Promise.reject('db is not selected');
+
+    const folder = this.findFolder(args.path);
+    if (!folder)
+      return Promise.reject(`path not found`);
+
+    return Promise.resolve({
+      path: this.makePath(args.path),
+      subfolder: folder.subfolder.map(f => {
+        return {
+          id: f.id,
+          name: f.name
+        };
+      })
+    });
+  }
+
+  makePath(path: Array<string>): Array<Folder> {
+    let arr = Array<Folder>();
+
+    let f = this.srvFolder;
+    for (let n = 0; n < path.length; n++) {
+      const curr = f.subfolder.find(f => f.id == path[n]);
+      if (!curr)
+        return null;
+
+      f = curr;
+      arr.push({ id: f.id, name: f.name });
+    }
+
+    return arr;
+  }
+
+  findFolder(path: Array<string>): FolderSrv {
+    let f: FolderSrv = this.srvFolder;
+    for (let n = 0; n < path.length; n++) {
+      const next = f.subfolder.find(f => path[n] == f.id);
+      if (!next)
+        return null;
+      f = next;
+    }
+
+    return f;
+  }
+
+  createFolder(args: CreateFolderArgs) {
+    if (!this.db)
+      return Promise.reject('db is not selected');
+
+    if (args.path.length >= MAX_FOLDER_DEPTH)
+      return Promise.reject(`folder depth cannot be greater than ${MAX_FOLDER_DEPTH}`);
+
+    let folder: FolderSrv = this.findFolder(args.path);
+    if (!folder)
+      return Promise.reject('path not found');
+
+    if (folder.subfolder.length >= MAX_SUBFOLDERS)
+      return Promise.reject(`one folder cannot contains greater than ${MAX_SUBFOLDERS} folders`);
+
+    if (folder.subfolder.find(f => f.name == args.name))
+      return Promise.reject('folder with same name already exists');
+
+    this.folderIdCounter++;
+    let newFolder: FolderSrv = {
+      id: 'fid-' + this.folderIdCounter,
+      name: args.name,
+      subfolder: []
+    };
+    folder.subfolder.push(newFolder);
+
+    this.holder.save(true);
+    return Promise.resolve();
   }
 
   delete(args: DeleteArgs) {
@@ -294,4 +470,10 @@ export class FileStorage extends FileStorageBase {
       })
     );
   }
+
+  static SERIALIZE: SERIALIZER = () => ({
+    ...FileStorageBase.SERIALIZE(),
+    srvFolder:        { type: 'json', tags: [ 'sr' ] },
+    folderIdCounter:  { type: 'number', tags: [ 'sr' ]}
+  });
 }

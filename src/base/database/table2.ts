@@ -1,23 +1,21 @@
 import { ObjectBase, ObjProps } from '../object-base';
 import { SERIALIZER } from 'objio';
 import {
-  DatabaseHolderBase,
-  TableArgs,
-  TableInfo,
   TableDataArgs,
-  TableData,
-  TmpTableArgs,
+  LoadTableDataResult,
   PushDataArgs,
-  PushDataResult
-} from '../database-holder';
+  PushDataResult,
+  LoadTableGuidResult,
+  TableGuid,
+  LoadTableDataArgs,
+  LoadTableGuidArgs
+} from '../database-holder-decl';
+import { DatabaseHolderBase } from '../database-holder';
 import { IDArgs } from '../../common/interfaces';
 
 export {
-  TableArgs,
-  TableInfo,
   TableDataArgs,
-  TableData,
-  TmpTableArgs,
+  LoadTableDataResult as TableData,
   DatabaseHolderBase,
   ObjectBase,
   ObjProps
@@ -27,20 +25,25 @@ export interface LoadTableFileArgs {
   id: string;
 }
 
+export interface SetTableNameArgs {
+  tableName: string;
+}
+
 export abstract class TableBase extends ObjectBase {
   protected db: DatabaseHolderBase;
   protected tableFileId: string;
   protected tableName: string;
 
   abstract loadTableFile(args: LoadTableFileArgs): Promise<void>;
-  abstract createTempTable(args: TmpTableArgs): Promise<TableInfo>;
-  abstract loadTableInfo(args: TableArgs): Promise<TableInfo>;
-  abstract loadTableRowsNum(args: TableArgs): Promise<number>;
-  abstract loadTableData(args: TableDataArgs): Promise<TableData>;
+  
+  abstract loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult>;
+  abstract loadTableRowsNum(args: TableGuid): Promise<number>;
+  abstract loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult>;
+
   abstract pushData(args: PushDataArgs): Promise<PushDataResult>;
   
   abstract setDatabase(args: IDArgs): Promise<void>;
-  abstract setTableName(args: TableArgs): Promise<void>;
+  abstract setTableName(args: SetTableNameArgs): Promise<void>;
   abstract setTableFile(args: IDArgs): Promise<void>;
 
   getTableName(): string {

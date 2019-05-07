@@ -9,6 +9,7 @@ export interface ObjProps {
 export interface SendFileArgs {
   file: File;
   fileId?: string;
+  other?: string;
   onProgress?(value: number): void;
 }
 
@@ -164,7 +165,7 @@ export class ObjectBase extends OBJIOItem {
   sendFile(args: SendFileArgs): Promise<any> {
     return this.holder.invokeMethod({
       method: 'sendFile',
-      args: { file: args.file, fileId: args.fileId },
+      args: { file: args.file, fileId: args.fileId, other: args.other },
       onProgress: args.onProgress
     });
   }

@@ -1,12 +1,10 @@
 import * as React from 'react';
 import {
   TableBase,
-  TableArgs,
   TableData,
   TableDataArgs,
-  TableInfo,
-  TmpTableArgs,
-  ObjProps
+  ObjProps,
+  SetTableNameArgs
 } from '../../base/database/table2';
 import {
   PropsGroup,
@@ -15,7 +13,18 @@ import {
 } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database-holder';
 import { IDArgs } from '../../common/interfaces';
-import { DatabaseBase2, PushDataArgs, PushDataResult } from '../../base/database-holder';
+import { DatabaseBase2 } from '../../base/database-holder';
+import {
+  PushDataArgs,
+  PushDataResult,
+  TableDesc,
+  LoadTableDataResult,
+  TableGuid,
+  LoadTableGuidArgs,
+  LoadTableGuidResult,
+  TableDescShort,
+  LoadTableDataArgs
+} from '../../base/database-holder-decl';
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
@@ -24,7 +33,8 @@ export class Table2 extends TableBase {
   private grid: GridLoadableModel;
   private prevDB: DatabaseBase2;
   private tables = Array<string>();
-  private tableInfo: TableInfo;
+  private tableDesc: TableDesc;
+  private guid: string;
 
   private dbChangeHandler = {
     onObjChange: () => this.updateDatabaseData()
@@ -59,8 +69,8 @@ export class Table2 extends TableBase {
   }
 
   private updateDatabaseData() {
-    if (this.tableInfo && this.tableName != this.tableInfo.tableName)
-      this.tableInfo = null;
+    if (this.tableDesc && this.tableName != this.tableDesc.tableName)
+      this.tableDesc = null;
 
     this.db.loadTableList()
       .then(lst => {
@@ -68,34 +78,38 @@ export class Table2 extends TableBase {
         this.holder.delayedNotify();
       });
 
-    if (this.tableName && !this.tableInfo) {
-      this.db.loadTableInfo({ tableName: this.tableName })
-      .then(info => {
-        this.onTableSelected(info);
+    if (this.tableName && !this.tableDesc) {
+      this.loadTableGuid({ tableName: this.tableName, desc: true })
+      .then(desc => {
+        this.onTableSelected(desc);
       })
       .catch(e => {
-        this.tableInfo = null;
+        this.tableDesc = null;
         this.holder.delayedNotify();
         return Promise.reject(e);
       });
     }
   }
 
-  private onTableSelected(table: TableInfo) {
-    this.tableInfo = table;
-    
+  private onTableSelected(table: LoadTableGuidResult) {
+    this.tableDesc = {
+      ...table.desc,
+      tableName: this.tableName
+    };
+    this.guid = table.guid;
+
     this.grid = new GridLoadableModel({
-      rowsCount: table.rowsNum,
-      colsCount: table.columns.length,
+      rowsCount: table.desc.rowsNum,
+      colsCount: table.desc.columns.length,
       prev: this.grid
     });
 
     this.grid.setLoader((from, count) => {
       return (
         this.loadTableData({
-          tableName: table.tableName,
-          fromRow: from,
-          rowsNum: count
+          guid: this.guid,
+          from,
+          count
         })
         .then(res => {
           return res.rows.map(obj => ({ obj }));
@@ -103,13 +117,13 @@ export class Table2 extends TableBase {
       );
     });
 
-    this.holder.delayedNotify({});
+    this.holder.delayedNotify();
   }
 
-  getTableInfo(): TableInfo {
+  getTableInfo(): TableDesc {
     if (this.status != 'ok')
       return null;
-    return this.tableInfo;
+    return this.tableDesc;
   }
 
   pushData(args: PushDataArgs): Promise<PushDataResult> {
@@ -120,19 +134,15 @@ export class Table2 extends TableBase {
     return this.holder.invokeMethod({ method: 'loadTableFile', args });
   }
 
-  createTempTable(args: TmpTableArgs): Promise<TableInfo> {
-    return this.holder.invokeMethod<TableInfo>({ method: 'createTempTable', args });
+  loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult> {
+    return this.holder.invokeMethod<LoadTableGuidResult>({ method: 'loadTableGuid', args });
   }
 
-  loadTableInfo(args: TableArgs): Promise<TableInfo> {
-    return this.holder.invokeMethod<TableInfo>({ method: 'loadTableInfo', args });
-  }
-
-  loadTableRowsNum(args: TableArgs): Promise<number> {
+  loadTableRowsNum(args: TableGuid): Promise<number> {
     return this.holder.invokeMethod<number>({ method: 'loadTableRowsNum', args });
   }
 
-  loadTableData(args: TableDataArgs): Promise<TableData> {
+  loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult> {
     return this.holder.invokeMethod<TableData>({ method: 'loadTableData', args });
   }
 
@@ -140,7 +150,7 @@ export class Table2 extends TableBase {
     return this.holder.invokeMethod({ method: 'setDatabase', args });
   }
 
-  setTableName(args: TableArgs): Promise<void> {
+  setTableName(args: SetTableNameArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'setTableName', args });
   }
 
@@ -149,7 +159,7 @@ export class Table2 extends TableBase {
   }
 
   isTableValid() {
-    return this.tableName && this.tableInfo;
+    return this.tableName && this.tableDesc;
   }
 
   getObjPropGroups(props: ObjProps) {
@@ -173,7 +183,7 @@ export class Table2 extends TableBase {
           value={{
             value: this.tableName,
             render: () => {
-              if (this.tableName && !this.tableInfo)
+              if (this.tableName && !this.tableDesc)
                 return <span style={{ color: 'red' }}>{this.tableName}</span>;
 
               return <span>{this.tableName}</span>;
@@ -196,7 +206,7 @@ export class Table2 extends TableBase {
         />
         <PropItem
           label='rows'
-          value={this.tableInfo ? this.tableInfo.rowsNum : '?'}
+          value={this.tableDesc ? this.tableDesc.rowsNum : '?'}
         />
         <DropDownPropItem
           right={[
