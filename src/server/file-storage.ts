@@ -1,7 +1,7 @@
 import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { DatabaseHolder, ColumnToCreate } from './database/database-holder';
-import { CompoundCond } from '../base/database-holder-decl';
+import { CompoundCond, LoadTableGuidResult } from '../base/database-holder-decl';
 import { ServerSendFileArgs } from './file-object';
 import { createWriteStream, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { genUUID, getExt } from '../common/common';
@@ -166,7 +166,10 @@ export class FileStorage extends FileStorageBase {
 
   private createEntry(args: ServerSendFileArgs, userId: string, path?: Array<string>): Promise<SrvEntryData> {
     path = path || [];
-    const type = getExt(args.name).toLocaleLowerCase();
+    let type = getExt(args.name).toLocaleLowerCase();
+    if (['.zip', '.rar', '.7z'].indexOf(type) != -1)
+      type = getExt(args.name, 2);
+
     const entry: SrvEntryData = {
       fileId: genUUID() + type,
       userId,
@@ -295,9 +298,35 @@ export class FileStorage extends FileStorageBase {
 
       cond.values.push(accss);
 
+    let info: StorageInfo;
     return (
       this.db.loadTableGuid({ tableName: this.fileTable, desc: true, cond })
-      .then(res => ({ guid: res.guid, filesCount: res.desc.rowsNum }))
+      .then(res => {
+        info = { guid: res.guid, filesCount: res.desc.rowsNum };
+        if (args.stat) {
+          return this.db.loadAggrData({
+            guid: res.guid,
+            values: [
+              { column: fileSchema.size.colName, aggs: 'min' },
+              { column: fileSchema.size.colName, aggs: 'max' },
+              { column: fileSchema.createDate.colName, aggs: 'min' },
+              { column: fileSchema.createDate.colName, aggs: 'max' },
+              { column: fileSchema.modifyDate.colName, aggs: 'min' },
+              { column: fileSchema.modifyDate.colName, aggs: 'max' },
+              { column: fileSchema.size.colName, aggs: 'sum' }
+            ]
+          })
+          .then(aggRes => {
+            info.stat = {
+              size: { min: aggRes.values[0].value, max: aggRes.values[1].value },
+              createDate: { min: aggRes.values[2].value, max: aggRes.values[3].value },
+              modifyDate: { min: aggRes.values[4].value, max: aggRes.values[5].value },
+              sizeSum: aggRes.values[6].value
+            };
+          })
+        }
+      })
+      .then(() => info)
     );
   }
 

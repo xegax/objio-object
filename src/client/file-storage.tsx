@@ -2,10 +2,9 @@ import * as React from 'react';
 import { ObjProps, SendFileArgs } from '../base/object-base';
 import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
-import { PropsGroup, DropDownPropItem, PropItem } from 'ts-react-ui/prop-sheet';
+import { PropsGroup, DropDownPropItem, PropItem, SwitchPropItem } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database/database-holder';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
-import { CompoundCond } from '../base/database';
 import {
   DeleteArgs,
   LoadInfoArgs,
@@ -16,8 +15,10 @@ import {
   LoadDataArgs,
   LoadDataResult,
   StorageInfo,
-  EntryData
+  EntryData,
+  StatInfo
 } from '../base/file-storage-decl';
+import { fmtBytes } from '../common/common';
 
 export { Folder };
 
@@ -26,6 +27,9 @@ export class FileStorage extends FileStorageBase {
   
   private currDirFiles: number = 0;
   private totalFiles: number = 0;
+  private dirStat: StatInfo;
+  private totalStat: StatInfo;
+  private showDirs: boolean = true;
 
   private prevDB: DatabaseHolder;
   private dbEventHandler = {
@@ -34,7 +38,6 @@ export class FileStorage extends FileStorageBase {
   private selIds: {[row: number]: EntryData} = {}; // [rowIdx] = file entry
   private grid: GridLoadableModel<EntryData>;
   private extFilter: string;
-  private extFilterCond: CompoundCond;
   private guid: string;
   private path = Array<Folder>();
   private subfolders = Array<Folder>();
@@ -153,7 +156,7 @@ export class FileStorage extends FileStorageBase {
     if (!this.db || !this.fileTable)
       return;
 
-    this.loadInfo({ path: this.path.map(p => p.id) })
+    this.loadInfo({ path: this.showDirs ? this.path.map(p => p.id) : null, stat: true })
     .then(r => {
       this.guid = r.guid;
       this.grid.setRowsCount(r.filesCount);
@@ -163,12 +166,14 @@ export class FileStorage extends FileStorageBase {
         this.grid.reloadCurrent();
 
       this.currDirFiles = r.filesCount;
+      this.dirStat = r.stat;
       this.holder.delayedNotify();
     });
 
-    this.loadInfo({})
+    this.loadInfo({ stat: true })
     .then(r => {
       this.totalFiles = r.filesCount;
+      this.totalStat = r.stat;
       this.holder.delayedNotify();
     });
 
@@ -222,6 +227,18 @@ export class FileStorage extends FileStorageBase {
     return super.sendFile({...args, other: JSON.stringify(args.dest) });
   }
 
+  setShowFolders(show: boolean) {
+    if (this.showDirs == show)
+      return;
+
+    this.showDirs = show;
+    this.holder.delayedNotify();
+  }
+
+  isShowFolders(): boolean {
+    return this.showDirs;
+  }
+
   deleteSelected = () => {
     if (!this.grid)
       return;
@@ -235,10 +252,6 @@ export class FileStorage extends FileStorageBase {
 
   setTypeFilter(type: string) {
     this.extFilter = type;
-    if (!type)
-      this.extFilterCond = null;
-    else
-      this.extFilterCond = { op: 'or', values: [{ column: 'type', value: type }] };
     this.onObjChanged();
     this.holder.delayedNotify();
   }
@@ -260,21 +273,31 @@ export class FileStorage extends FileStorageBase {
             this.setDatabase({ id: db.value });
           }}
         />
-        <PropItem
+        <SwitchPropItem
+          value={this.showDirs}
+          label='show folders'
+          onChanged={value => {
+            this.setShowFolders(value);
+            this.onObjChanged();
+            this.holder.delayedNotify();
+          }}
+        />
+        {this.showDirs && <PropItem
           label='files num'
           value={this.currDirFiles}
-        />
+        />}
         <PropItem
           label='total files num'
           value={this.totalFiles}
         />
-        <DropDownPropItem
-          value={{value: this.extFilter}}
-          values={['', '.mp3', '.png', '.jpg', '.mp4', '.pdf', '.jpeg', '.torrent', '.zip'].map(t => ({ value: t }))}
-          onSelect={s => {
-            this.setTypeFilter(s.value);
-          }}
-        />
+        {this.dirStat && this.showDirs && <PropItem
+          label='size'
+          value={fmtBytes(this.dirStat.sizeSum || 0)}
+        />}
+        {this.totalStat && <PropItem
+          label='total size'
+          value={fmtBytes(this.totalStat.sizeSum || 0)}
+        />}
       </PropsGroup>
     );
   }

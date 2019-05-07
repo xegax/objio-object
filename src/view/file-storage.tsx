@@ -77,6 +77,9 @@ export class FileStorageView extends React.Component<Props> {
   }
 
   renderFolderView() {
+    if (!this.props.model.isShowFolders())
+      return null;
+
     const currPath = [
       { id: 'root', name: 'root' } as Folder,
       ...this.props.model.getCurrPath()

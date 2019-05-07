@@ -26,6 +26,7 @@ export interface LoadInfoArgs {
 
 export interface StatInfo {
   size: MinMax;
+  sizeSum: number;
   createDate: MinMax;
   modifyDate: MinMax;
 }
