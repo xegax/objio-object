@@ -13,7 +13,9 @@ import {
   DeleteDataArgs,
   DeleteTableArgs,
   PushDataArgs,
-  PushDataResult
+  PushDataResult,
+  LoadAggrDataArgs,
+  LoadAggrDataResult
 } from './database-holder-decl';
 
 export abstract class DatabaseBase2 extends ObjectBase {
@@ -23,6 +25,7 @@ export abstract class DatabaseBase2 extends ObjectBase {
 
   abstract loadTableList(): Promise<Array<TableDesc>>;
   abstract loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult>;
+  abstract loadAggrData(args: LoadAggrDataArgs): Promise<LoadAggrDataResult>;
 
   abstract loadTableRowsNum(args: TableGuid): Promise<number>;
   abstract loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult>;
@@ -84,6 +87,10 @@ export abstract class DatabaseHolderBase extends DatabaseBase2 {
 
   loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult> {
     return this.impl.loadTableData(args);
+  }
+
+  loadAggrData(args: LoadAggrDataArgs): Promise<LoadAggrDataResult> {
+    return this.impl.loadAggrData(args);
   }
 
   getDatabaseList(): Promise<Array<string>> {

@@ -1,16 +1,4 @@
-import {
-  FileStorageBase,
-  EntryData,
-  StorageInfo,
-  LoadDataArgs,
-  LoadDataResult,
-  DeleteArgs,
-  LoadStatsResult,
-  LoadInfoArgs,
-  LoadFolderArgs,
-  CreateFolderArgs,
-  Folder
-} from '../base/file-storage';
+import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { DatabaseHolder, ColumnToCreate } from './database/database-holder';
 import { CompoundCond } from '../base/database-holder-decl';
@@ -20,6 +8,17 @@ import { genUUID, getExt } from '../common/common';
 import { Stream } from 'stream';
 import { ValueCond } from '../base/database-holder-decl';
 import { SERIALIZER } from 'objio';
+import {
+  EntryData,
+  StorageInfo,
+  LoadDataArgs,
+  LoadDataResult,
+  DeleteArgs,
+  LoadInfoArgs,
+  LoadFolderArgs,
+  CreateFolderArgs,
+  Folder
+} from '../base/file-storage-decl';
 
 const MAX_FOLDER_DEPTH = 3;
 const MAX_SUBFOLDERS = 32;
@@ -130,10 +129,6 @@ export class FileStorage extends FileStorageBase {
       delete: {
         method: (args: DeleteArgs) => this.delete(args),
         rights: 'write'
-      },
-      loadStats: {
-        method: () => this.loadStats(),
-        rights: 'read'
       },
       loadFolder: {
         method: (args: LoadFolderArgs) => this.loadFolder(args),
@@ -272,14 +267,14 @@ export class FileStorage extends FileStorageBase {
         op: 'and',
         values: []
       };
-      
-      const pathCond: CompoundCond = {
+
+      const pathCond: CompoundCond = args.path ? {
         op: 'and',
         values: pathCols.map((column, i) => ({
           column,
           value: args.path[i] || ''
         }))
-      };
+      } : null;
   
       const accss: CompoundCond = {
         op: 'or',
@@ -295,12 +290,10 @@ export class FileStorage extends FileStorageBase {
         ]
       };
 
-      if (pathCond.values.length)
+      if (pathCond)
         cond.values.push(pathCond);
+
       cond.values.push(accss);
-  
-      if (pathCond.values.length == 0)
-        cond = null;
 
     return (
       this.db.loadTableGuid({ tableName: this.fileTable, desc: true, cond })
@@ -325,13 +318,6 @@ export class FileStorage extends FileStorageBase {
         return res;
       })
     );
-  }
-
-  loadStats(): Promise<LoadStatsResult> {
-    if (!this.db)
-      return Promise.reject('db is not selected');
-
-    return Promise.resolve(null);
   }
 
   loadFolder(args: LoadFolderArgs) {

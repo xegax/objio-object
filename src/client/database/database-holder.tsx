@@ -26,8 +26,6 @@ export interface SelectTableInfo {
   desc: TableDesc;
 }
 
-const MAX_COLUMN_TO_SHOW = 10;
-
 export class DatabaseHolder extends DatabaseHolderBase {
   private dbList: Array<string> = [];
   private tables: Array<TableDesc> = null;

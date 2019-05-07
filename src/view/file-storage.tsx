@@ -46,7 +46,10 @@ export class FileStorageView extends React.Component<Props> {
       return null;
 
     return (
-      <div style={{ position: 'relative', flexGrow: 1}}>
+      <div
+        style={{ position: 'relative', flexGrow: 1}}
+        onContextMenu={this.onFilesContextMenu}
+      >
         <Grid
           headerBorder
           model={grid}
@@ -81,7 +84,7 @@ export class FileStorageView extends React.Component<Props> {
 
     const subfolder = this.props.model.getSubfolder();
     return (
-      <div className={scss.folderView} onContextMenu={this.onContextMenu}>
+      <div className={scss.folderView} onContextMenu={this.onDirContextMenu}>
         <div className={scss.pathStack}>
           {currPath.map((p, k) => {
             let jsx = <span>{p.name}</span>;
@@ -118,7 +121,27 @@ export class FileStorageView extends React.Component<Props> {
     );
   }
 
-  onContextMenu = (evt: React.MouseEvent) => {
+  onFilesContextMenu = (evt: React.MouseEvent) => {
+    if (!this.props.model.getSelectCount())
+      return;
+
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    ContextMenu.show(
+      <Menu>
+        <MenuItem
+          text={`delete ${this.props.model.getSelectCount()} files`}
+          onClick={() => {
+            this.props.model.deleteSelected();
+          }}
+        />
+      </Menu>,
+      { left: evt.pageX, top: evt.pageY }
+    );
+  }
+
+  onDirContextMenu = (evt: React.MouseEvent) => {
     evt.preventDefault();
     evt.stopPropagation();
 

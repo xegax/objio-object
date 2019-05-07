@@ -10,6 +10,7 @@ export interface SendFileArgs {
   file: File;
   fileId?: string;
   other?: string;
+  dest?: any;       // getFileDropDest
   onProgress?(value: number): void;
 }
 
@@ -57,6 +58,11 @@ export class ObjectBase extends OBJIOItem {
       this.status = args.status || this.status;
       this.progress = args.progress || this.progress;
     }
+  }
+
+  // sendFile dest parameter
+  getFileDropDest(): any {
+    return {};
   }
 
   getChildren(): Array<ObjectsFolder> {

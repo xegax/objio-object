@@ -1,5 +1,7 @@
 import { StrMap } from '../common/interfaces';
 
+export type AggregationFunc = 'min' | 'max' | 'sum' | 'count' | 'avg';
+
 export interface ValueCond {
   column: string;
   value: string | Array<string | number> | CompoundCond;
@@ -90,4 +92,13 @@ export interface CreateTableArgs {
 
 export interface DeleteTableArgs {
   tableName: string;
+}
+
+export interface LoadAggrDataArgs {
+  guid: string;
+  values: Array<{ column: string; aggs: AggregationFunc }>;
+}
+
+export interface LoadAggrDataResult {
+  values: Array<{ column: string; aggs: AggregationFunc; value: number }>;
 }

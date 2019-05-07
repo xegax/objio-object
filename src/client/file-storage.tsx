@@ -1,27 +1,32 @@
 import * as React from 'react';
 import { ObjProps, SendFileArgs } from '../base/object-base';
+import { FileStorageBase } from '../base/file-storage';
+import { IDArgs } from '../common/interfaces';
+import { PropsGroup, DropDownPropItem, PropItem } from 'ts-react-ui/prop-sheet';
+import { DatabaseHolder } from './database/database-holder';
+import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
+import { CompoundCond } from '../base/database';
 import {
-  FileStorageBase,
   DeleteArgs,
-  LoadStatsResult,
   LoadInfoArgs,
   LoadFolderArgs,
   LoadFolderResult,
   CreateFolderArgs,
-  Folder
-} from '../base/file-storage';
-import { IDArgs } from '../common/interfaces';
-import { PropsGroup, DropDownPropItem, PropItem } from 'ts-react-ui/prop-sheet';
-import { DatabaseHolder } from './database/database-holder';
-import { LoadDataArgs, LoadDataResult, StorageInfo, EntryData } from '../base/file-storage';
-import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
-import { CompoundCond } from '../base/database';
+  Folder,
+  LoadDataArgs,
+  LoadDataResult,
+  StorageInfo,
+  EntryData
+} from '../base/file-storage-decl';
 
 export { Folder };
 
 export class FileStorage extends FileStorageBase {
   private columns: Array<keyof EntryData> = ['rowId', 'name', 'type', 'size'];
-  private filesCount: number = 0;
+  
+  private currDirFiles: number = 0;
+  private totalFiles: number = 0;
+
   private prevDB: DatabaseHolder;
   private dbEventHandler = {
     onObjChange: () => this.onObjChanged()
@@ -59,6 +64,10 @@ export class FileStorage extends FileStorageBase {
     return this.subfolders;
   }
 
+  getFileDropDest() {
+    return this.path.map(p => p.id);
+  }
+
   openFolder(subfolderId: string) {
     const nextFolder = this.subfolders.find(f => f.id == subfolderId);
     if (!nextFolder)
@@ -90,7 +99,7 @@ export class FileStorage extends FileStorageBase {
 
   private makeGrid() {
     const grid = new GridLoadableModel<EntryData>({
-      rowsCount: this.filesCount,
+      rowsCount: this.currDirFiles,
       colsCount: this.columns.length,
       prev: this.grid
     });
@@ -153,7 +162,13 @@ export class FileStorage extends FileStorageBase {
       else
         this.grid.reloadCurrent();
 
-      this.filesCount = r.filesCount;
+      this.currDirFiles = r.filesCount;
+      this.holder.delayedNotify();
+    });
+
+    this.loadInfo({})
+    .then(r => {
+      this.totalFiles = r.filesCount;
       this.holder.delayedNotify();
     });
 
@@ -167,8 +182,16 @@ export class FileStorage extends FileStorageBase {
     return Promise.resolve();
   };
 
-  getFilesCount(): number {
-    return this.filesCount;
+  getCurrDirFilesCount(): number {
+    return this.currDirFiles;
+  }
+
+  getTotalFilesCount(): number {
+    return this.totalFiles;
+  }
+
+  getSelectCount(): number {
+    return this.grid && this.grid.getSelectRows().length;
   }
 
   setDatabase(args: IDArgs): Promise<void> {
@@ -195,12 +218,8 @@ export class FileStorage extends FileStorageBase {
     return this.holder.invokeMethod({ method: 'delete', args });
   }
 
-  loadStats(): Promise<LoadStatsResult> {
-    return this.holder.invokeMethod({ method: 'loadStats', args: {} });
-  }
-
   sendFile(args: SendFileArgs): Promise<any> {
-    return super.sendFile({...args, other: JSON.stringify(this.path.map(p => p.id)) });
+    return super.sendFile({...args, other: JSON.stringify(args.dest) });
   }
 
   deleteSelected = () => {
@@ -243,14 +262,12 @@ export class FileStorage extends FileStorageBase {
         />
         <PropItem
           label='files num'
-          value={this.getFilesCount()}
+          value={this.currDirFiles}
         />
-        <button
-          disabled={this.grid == null || this.grid.getSelectRows().length == 0}
-          onClick={this.deleteSelected}
-        >
-          delete
-        </button>
+        <PropItem
+          label='total files num'
+          value={this.totalFiles}
+        />
         <DropDownPropItem
           value={{value: this.extFilter}}
           values={['', '.mp3', '.png', '.jpg', '.mp4', '.pdf', '.jpeg', '.torrent', '.zip'].map(t => ({ value: t }))}
