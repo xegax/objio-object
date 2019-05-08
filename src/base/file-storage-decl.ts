@@ -64,3 +64,9 @@ export interface CreateFolderArgs {
   path: Array<string>;
   name: string;
 }
+
+export interface CopyFileObjArgs {
+  path: Array<string>;
+  fileObjId: string;
+  replaceEntryId?: string;
+}

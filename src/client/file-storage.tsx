@@ -16,7 +16,8 @@ import {
   LoadDataResult,
   StorageInfo,
   EntryData,
-  StatInfo
+  StatInfo,
+  CopyFileObjArgs
 } from '../base/file-storage-decl';
 import { fmtBytes } from '../common/common';
 
@@ -221,6 +222,10 @@ export class FileStorage extends FileStorageBase {
 
   delete(args: DeleteArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'delete', args });
+  }
+
+  copyFileObject(args: CopyFileObjArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'copyFileObject', args });
   }
 
   sendFile(args: SendFileArgs): Promise<any> {

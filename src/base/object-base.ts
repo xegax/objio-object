@@ -93,8 +93,16 @@ export class ObjectBase extends OBJIOItem {
     return this.holder.getVersion();
   }
 
-  getName(): string {
-    return this.name;
+  getName(ext?: string): string {
+    let name = this.name;
+    if (ext) {
+      const i = name.lastIndexOf('.');
+      if (i != -1)
+        name = name.substr(0, i);
+      name += ext;
+    }
+
+    return name;
   }
 
   setName(name: string): void {

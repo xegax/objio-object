@@ -1,13 +1,13 @@
 import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { DatabaseHolder, ColumnToCreate } from './database/database-holder';
-import { CompoundCond, LoadTableGuidResult } from '../base/database-holder-decl';
+import { CompoundCond } from '../base/database-holder-decl';
 import { ServerSendFileArgs } from './file-object';
-import { createWriteStream, mkdirSync, existsSync, unlinkSync } from 'fs';
+import { createWriteStream, mkdirSync, existsSync, unlinkSync, copyFile, createReadStream } from 'fs';
 import { genUUID, getExt } from '../common/common';
 import { Stream } from 'stream';
 import { ValueCond } from '../base/database-holder-decl';
-import { SERIALIZER } from 'objio';
+import { SERIALIZER, OBJIOItem } from 'objio';
 import {
   EntryData,
   StorageInfo,
@@ -17,8 +17,10 @@ import {
   LoadInfoArgs,
   LoadFolderArgs,
   CreateFolderArgs,
-  Folder
+  Folder,
+  CopyFileObjArgs
 } from '../base/file-storage-decl';
+import { FileObjectBase } from '../base/file-object';
 
 const MAX_FOLDER_DEPTH = 3;
 const MAX_SUBFOLDERS = 32;
@@ -137,6 +139,10 @@ export class FileStorage extends FileStorageBase {
       createFolder: {
         method: (args: CreateFolderArgs) => this.createFolder(args),
         rights: 'write'
+      },
+      copyFileObject: {
+        method: (args: CopyFileObjArgs, userId: string) => this.copyFileObject(args, userId),
+        rights: 'write'
       }
     });
 
@@ -164,7 +170,10 @@ export class FileStorage extends FileStorageBase {
     });
   }
 
-  private createEntry(args: ServerSendFileArgs, userId: string, path?: Array<string>): Promise<SrvEntryData> {
+  private replaceEntry(args: {name: string, size: number, entryId: string}, userId: string) {
+  }
+
+  private createEntry(args: {name: string, size: number}, userId: string, path?: Array<string>): Promise<SrvEntryData> {
     path = path || [];
     let type = getExt(args.name).toLocaleLowerCase();
     if (['.zip', '.rar', '.7z'].indexOf(type) != -1)
@@ -452,6 +461,29 @@ export class FileStorage extends FileStorageBase {
       })
       .then(() => {
         this.holder.save(true);
+      })
+    );
+  }
+
+  copyFileObject(args: CopyFileObjArgs, userId?: string) {
+    return (
+      this.holder.getObject<FileObjectBase>(args.fileObjId)
+      .then(fileObj => {
+        if (!fileObj)
+          return Promise.reject('file object not found');
+
+        if (!(fileObj instanceof FileObjectBase))
+          return Promise.reject(`file object type ${OBJIOItem.getClass(fileObj).TYPE_ID} is not support`);
+
+        const strm = createReadStream(fileObj.getPath());
+        return (
+          this.createEntry({
+            name: fileObj.getName(fileObj.getExt()),
+            size: fileObj.getLoadSize()
+          }, userId, args.path)
+          .then(entry => this.writeToFile(entry, strm))
+          .then(() => {})
+        );
       })
     );
   }

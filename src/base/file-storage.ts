@@ -10,7 +10,8 @@ import {
   StorageInfo,
   LoadDataArgs,
   LoadDataResult,
-  DeleteArgs
+  DeleteArgs,
+  CopyFileObjArgs
 } from './file-storage-decl';
 
 export abstract class FileStorageBase extends ObjectBase {
@@ -33,6 +34,7 @@ export abstract class FileStorageBase extends ObjectBase {
   abstract loadInfo(args: LoadInfoArgs): Promise<StorageInfo>;
   abstract loadData(args: LoadDataArgs): Promise<LoadDataResult>;
   abstract delete(args: DeleteArgs): Promise<void>;
+  abstract copyFileObject(args: CopyFileObjArgs): Promise<void>;
 
   static TYPE_ID = 'FileContainer2';
   static SERIALIZE: SERIALIZER = () => ({
