@@ -5,6 +5,8 @@ import { Menu, MenuItem, ContextMenu } from 'ts-react-ui/blueprint';
 import { prompt } from 'ts-react-ui/prompt';
 import { Droppable } from 'ts-react-ui/drag-and-drop';
 import { cn } from 'ts-react-ui/common/common';
+import { VerticalResizer } from 'ts-react-ui/resizer';
+import { FitToParent } from 'ts-react-ui/fittoparent';
 
 export {
   FileStorage
@@ -16,6 +18,7 @@ export interface Props {
 
 export interface State {
   hover?: boolean;
+  rightPanelSize: number;
 }
 
 const scss = {
@@ -24,12 +27,15 @@ const scss = {
   dropBlock: 'file-storage-view-drop-block',
   folder: 'file-storage-view-folder',
   folderView: 'file-storage-view-folder-view',
+  folderList: 'file-storage-view-folderlist',
   pathStack: 'curr-path-stack',
   folderInStack: 'curr-path-stack-folder'
 };
 
 export class FileStorageView extends React.Component<Props, State> {
-  state: State = {};
+  state: State = {
+    rightPanelSize: 100
+  };
 
   renderCell = (props: CellProps) => {
     const row = this.props.model.getGrid().getRowOrLoad(props.row);
@@ -98,37 +104,39 @@ export class FileStorageView extends React.Component<Props, State> {
     const subfolder = this.props.model.getSubfolder();
     return (
       <div className={scss.folderView} onContextMenu={this.onDirContextMenu}>
-        <div className={scss.pathStack}>
-          {currPath.map((p, k) => {
-            let jsx = <span>{p.name}</span>;
-            if (k != currPath.length - 1)
-              jsx = <>{jsx}<i className='fa fa-arrow-right' /></>;
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, right: 0, display: 'flex', flexDirection: 'column' }}>
+          <div className={scss.pathStack}>
+            {currPath.map((p, k) => {
+              let jsx = <span>{p.name}</span>;
+              if (k != currPath.length - 1)
+                jsx = <>{jsx}<i className='fa fa-arrow-right' /></>;
 
-            return (
-              <div
-                key={k}
-                className={scss.folderInStack}
-                onClick={e => {
-                  let path = currPath.slice(1, k + 1).map(f => f.id);
-                  this.props.model.openPath(path);
-                }}
-              >
-                {jsx}
-              </div>
-            );
-          })}
-        </div>
-        <div className='horz-panel-1' style={{ padding: 5 }}>
-          {subfolder.length == 0 ?
-            this.renderFolder({ folder: '!', folderId: '!', key: 0, hidden: true }) :
-            subfolder.map((folder, key) => {
-              return this.renderFolder({
-                folder: folder.name,
-                folderId: folder.id,
-                key
-              });
-            })
-          }
+              return (
+                <div
+                  key={k}
+                  className={scss.folderInStack}
+                  onClick={e => {
+                    let path = currPath.slice(1, k + 1).map(f => f.id);
+                    this.props.model.openPath(path);
+                  }}
+                >
+                  {jsx}
+                </div>
+              );
+            })}
+          </div>
+          <div className={cn('horz-panel-1', scss.folderList)}>
+            {subfolder.length == 0 ?
+              this.renderFolder({ folder: '!', folderId: '!', key: 0, hidden: true }) :
+              subfolder.map((folder, key) => {
+                return this.renderFolder({
+                  folder: folder.name,
+                  folderId: folder.id,
+                  key
+                });
+              })
+            }
+          </div>
         </div>
       </div>
     );
@@ -173,6 +181,62 @@ export class FileStorageView extends React.Component<Props, State> {
       </Menu>,
       { left: evt.pageX, top: evt.pageY }
     )
+  }
+
+  renderContentPanel() {
+    const m = this.props.model;
+    if (!m.getContentPanelShow())
+      return null;
+
+    const sel = m.getLastSelectFile();
+    let jsx: JSX.Element = null;
+    let url = sel ? m.getPath(sel.fileId) : '';
+    if (sel && ['.jpg', '.jpeg', '.png', '.gif'].indexOf(sel.type) != -1) {
+      jsx = (
+        <div
+          key={url}
+          style={{
+            backgroundImage: `url(${url})`,
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'contain',
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            right: 0
+          }}
+        />
+      );
+    } else if (sel && ['.mp4'].indexOf(sel.type) != -1) {
+      jsx = (
+        <video
+          width='100%'
+          height='100%'
+          src={url}
+          controls
+        />
+      );
+    } else if (sel) {
+      jsx = <span>{sel.name}</span>;
+    }
+
+    return (
+      <div style={{ flexGrow: 0, width: this.state.rightPanelSize, backgroundColor: 'white', position: 'relative' }}>
+        <div style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {jsx}
+        </div>
+        <VerticalResizer
+          side='left'
+          style={{ marginLeft: -5 }}
+          size={this.state.rightPanelSize}
+          scale={-1}
+          onResizing={size => {
+            this.setState({ rightPanelSize: size });
+          }}
+        />
+      </div>
+    );
   }
 
   renderDNDOverlay() {
@@ -237,12 +301,15 @@ export class FileStorageView extends React.Component<Props, State> {
         }}
       >
         <div className={scss.fileStorageView} key={model.holder.getID()}>
-          {this.renderFolderView()}
-          <div style={{ display: 'flex', flexGrow: 1, position: 'relative' }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, display: 'flex' }}>
-              {jsx}
+          <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column' }}>
+            {this.renderFolderView()}
+            <div style={{ display: 'flex', flexGrow: 1, position: 'relative' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, display: 'flex' }}>
+                {jsx}
+              </div>
             </div>
           </div>
+          {this.renderContentPanel()}
           {this.renderDNDOverlay()}
         </div>
       </Droppable>

@@ -31,6 +31,7 @@ export class FileStorage extends FileStorageBase {
   private dirStat: StatInfo;
   private totalStat: StatInfo;
   private showDirs: boolean = true;
+  private contentPanel: boolean = false;
 
   private prevDB: DatabaseHolder;
   private dbEventHandler = {
@@ -70,6 +71,18 @@ export class FileStorage extends FileStorageBase {
 
   getFileDropDest() {
     return this.path.map(p => p.id);
+  }
+
+  setContentPanelShow(show: boolean) {
+    if (this.contentPanel == show)
+      return;
+
+    this.contentPanel = show;
+    this.holder.delayedNotify();
+  }
+
+  getContentPanelShow() {
+    return this.contentPanel;
   }
 
   openFolder(subfolderId: string) {
@@ -200,6 +213,21 @@ export class FileStorage extends FileStorageBase {
     return this.grid && this.grid.getSelectRows().length;
   }
 
+  getLastSelectFile(): EntryData {
+    if (!this.grid)
+      return null;
+
+    const rows = this.grid.getSelectRows();
+    if (!rows.length)
+      return null;
+
+    const row = this.grid.getRowOrLoad(rows[rows.length - 1]);
+    if (!row)
+      return null;
+
+    return row.obj;
+  }
+
   setDatabase(args: IDArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'setDatabase', args });
   }
@@ -284,7 +312,13 @@ export class FileStorage extends FileStorageBase {
           onChanged={value => {
             this.setShowFolders(value);
             this.onObjChanged();
-            this.holder.delayedNotify();
+          }}
+        />
+        <SwitchPropItem
+          value={this.contentPanel}
+          label='content panel'
+          onChanged={value => {
+            this.setContentPanelShow(value);
           }}
         />
         {this.showDirs && <PropItem
