@@ -296,7 +296,7 @@ export class FileStorage extends FileStorageBase {
 
   getObjPropGroups(props: ObjProps) {
     return (
-      <PropsGroup label='config' defaultHeight={200} key={this.holder.getID()}>
+      <PropsGroup label='config' key={this.holder.getID()}>
         <DropDownPropItem
           disabled={this.db != null}
           label='database'
