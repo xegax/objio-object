@@ -6,7 +6,6 @@ import { prompt } from 'ts-react-ui/prompt';
 import { Droppable } from 'ts-react-ui/drag-and-drop';
 import { cn } from 'ts-react-ui/common/common';
 import { VerticalResizer } from 'ts-react-ui/resizer';
-import { FitToParent } from 'ts-react-ui/fittoparent';
 
 export {
   FileStorage
@@ -143,7 +142,9 @@ export class FileStorageView extends React.Component<Props, State> {
   }
 
   onFilesContextMenu = (evt: React.MouseEvent) => {
-    if (!this.props.model.getSelectCount())
+    const m = this.props.model;
+    const selNum = m.getSelectCount();
+    if (!selNum)
       return;
 
     evt.preventDefault();
@@ -151,10 +152,20 @@ export class FileStorageView extends React.Component<Props, State> {
 
     ContextMenu.show(
       <Menu>
-        <MenuItem
-          text={`delete ${this.props.model.getSelectCount()} files`}
+        {selNum == 1 && <MenuItem
+          text='rename'
           onClick={() => {
-            this.props.model.deleteSelected();
+            const sel = m.getLastSelectFile();
+            prompt({ title: `Rename file "${sel.name}"`, value: sel.name })
+            .then(newName => {
+              m.update({ fileId: sel.fileId, newName });
+            });
+          }}
+        />}
+        <MenuItem
+          text={`delete ${selNum} files`}
+          onClick={() => {
+            m.deleteSelected();
           }}
         />
       </Menu>,

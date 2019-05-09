@@ -18,7 +18,8 @@ import {
   LoadFolderArgs,
   CreateFolderArgs,
   Folder,
-  CopyFileObjArgs
+  CopyFileObjArgs,
+  UpdateArgs
 } from '../base/file-storage-decl';
 import { FileObjectBase } from '../base/file-object';
 
@@ -142,6 +143,10 @@ export class FileStorage extends FileStorageBase {
       },
       copyFileObject: {
         method: (args: CopyFileObjArgs, userId: string) => this.copyFileObject(args, userId),
+        rights: 'write'
+      },
+      update: {
+        method: (args: UpdateArgs) => this.update(args),
         rights: 'write'
       }
     });
@@ -432,6 +437,33 @@ export class FileStorage extends FileStorageBase {
 
     this.holder.save(true);
     return Promise.resolve();
+  }
+
+  update(args: UpdateArgs) {
+    if (!this.db)
+      return Promise.reject('database is not selected');
+
+    return (
+      this.db.updateData({
+        tableName: this.fileTable,
+        limit: 1,
+        cond: {
+          op: 'or',
+          values: [
+            {
+              column: fileSchema.fileId.colName,
+              value: args.fileId
+            }
+          ]
+        },
+        values: [
+          {
+            column: fileSchema.name.colName,
+            value: args.newName
+          }
+        ]
+      })
+    );
   }
 
   delete(args: DeleteArgs) {

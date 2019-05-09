@@ -5,7 +5,8 @@ import {
   CreateTableArgs,
   PushDataArgs,
   PushDataResult,
-  DeleteDataArgs
+  DeleteDataArgs,
+  UpdateDataArgs
 } from '../../base/database-holder-decl';
 import { DatabaseHolderBase } from '../../base/database-holder';
 import { PropsGroup } from 'ts-react-ui/prop-sheet';
@@ -70,6 +71,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
 
   pushData(args: PushDataArgs): Promise<PushDataResult> {
     return this.holder.invokeMethod({ method: 'pushData', args });
+  }
+
+  updateData(args: UpdateDataArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'updateData', args });
   }
 
   deleteData(args: DeleteDataArgs): Promise<void> {

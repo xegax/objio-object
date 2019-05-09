@@ -85,6 +85,18 @@ export interface DeleteDataArgs {
   cond: CompoundCond;
 }
 
+export interface UpdateValue {
+  column: string;
+  value: string;
+}
+
+export interface UpdateDataArgs {
+  tableName: string;
+  values: Array<UpdateValue>;
+  cond?: CompoundCond;
+  limit?: number;
+}
+
 export interface CreateTableArgs {
   tableName: string;
   columns: Array<ColumnToCreate>;

@@ -15,7 +15,8 @@ import {
   PushDataArgs,
   PushDataResult,
   LoadAggrDataArgs,
-  LoadAggrDataResult
+  LoadAggrDataResult,
+  UpdateDataArgs
 } from './database-holder-decl';
 
 export abstract class DatabaseBase2 extends ObjectBase {
@@ -33,6 +34,7 @@ export abstract class DatabaseBase2 extends ObjectBase {
   abstract createTable(args: CreateTableArgs): Promise<TableDesc>;
   abstract deleteTable(args: DeleteTableArgs): Promise<void>;
   abstract pushData(args: PushDataArgs): Promise<PushDataResult>;
+  abstract updateData(args: UpdateDataArgs): Promise<void>;
   abstract deleteData(args: DeleteDataArgs): Promise<void>;
   
   // remote db

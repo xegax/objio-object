@@ -70,3 +70,8 @@ export interface CopyFileObjArgs {
   fileObjId: string;
   replaceEntryId?: string;
 }
+
+export interface UpdateArgs {
+  fileId: string;
+  newName: string;
+}

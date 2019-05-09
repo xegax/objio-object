@@ -6,7 +6,8 @@ import {
   ColumnInfo,
   PushDataArgs,
   PushDataResult,
-  DeleteDataArgs
+  DeleteDataArgs,
+  UpdateDataArgs
 } from '../../base/database-holder-decl';
 import { DatabaseHolderBase, DatabaseHolderArgs } from '../../base/database-holder';
 import { IDArgs } from '../../common/interfaces';
@@ -44,6 +45,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
       setDatabase: {
         method: (args: { database: string }) => this.setDatabase(args.database),
         rights: 'write'
+      },
+      updateData: {
+        method: (args: UpdateDataArgs) => this.updateData(args),
+        rights: 'write'
       }
     });
   }
@@ -74,6 +79,16 @@ export class DatabaseHolder extends DatabaseHolderBase {
       .then(res => {
         if (args.updateVersion != false)
           this.holder.save(true);
+        return res;
+      })
+    );
+  }
+
+  updateData(args: UpdateDataArgs): Promise<void> {
+    return (
+      this.impl.updateData(args)
+      .then(res => {
+        this.holder.save(true);
         return res;
       })
     );
