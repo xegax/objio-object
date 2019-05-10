@@ -88,10 +88,13 @@ export class Table2 extends TableBase {
         linesPerBunch: rowsPerBunch
       })
       .then(() => {
+        // need update version
+        this.db.holder.save(true);
         this.setStatus('ok');
         return result;
       })
       .catch(e => {
+        this.db.holder.save(true);
         this.addError(e.toString());
         this.setStatus('ok');
         return result;

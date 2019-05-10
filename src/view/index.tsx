@@ -2,7 +2,7 @@ import * as React from 'react';
 import { FileObject, FileObjectView, Props as FileViewProps } from './file-object-view';
 import { JSONTableFile, CSVTableFile } from '../client/table-file';
 import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video-file-view';
-import { DocTable, DocTableView, DocTableConfig, DocTableProps } from './doc-table-view';
+import { DocTable } from './doc-table-view';
 import { OBJIOItemClassViewable, registerViews } from './config';
 import {
   FilesContainer,
@@ -17,8 +17,11 @@ import 'ts-react-ui/typings';
 import { Icon } from 'ts-react-ui/icon';
 import * as CSVIcon from '../images/csv-icon.png';
 import * as JSONIcon from '../images/json-icon.png';
-import * as TableIcon from '../images/table-icon.png';
-import * as MP4Icon from '../images/mp4-icon.png';
+import * as FSIcon from '../images/file-storage.svg';
+import * as TableIcon from '../images/table.svg';
+import * as DatabaseIcon from '../images/database.svg';
+import * as MP4Icon from '../images/mp4.svg';
+import * as ImageIcon from '../images/image.svg';
 import { FileObjectBase } from '../base/file-object';
 import { Project, ProjectView } from './project';
 import { ServerInstanceView, ServerInstance } from './server-view';
@@ -38,10 +41,12 @@ export function getObjectsToCreate(): Array<ObjectToCreate> {
     }, {
       name: 'table',
       desc: 'table object',
+      icon: <Icon src={TableIcon}/>,
       create: () => new Table2()
     }, {
       name: 'file-storage',
       desc: 'files storage',
+      icon: <Icon src={FSIcon}/>,
       create: () => new FileStorage()
     }
   ];
@@ -50,6 +55,7 @@ export function getObjectsToCreate(): Array<ObjectToCreate> {
 export function getViews(): Array<OBJIOItemClassViewable> {
   registerViews({
     classObj: FileStorage,
+    icons: { item: <Icon src={FSIcon} /> },
     views: [{
       view: (props: FileStorageViewProps) => <FileStorageView {...props}/>
     }]
@@ -64,6 +70,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: ImageFile,
+    icons: { item: <Icon src={ImageIcon}/> },
     views: [{
       view: (props: FileViewProps) => <FileObjectView {...props}/>
     }]
@@ -100,18 +107,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     }],
     flags: ['create-wizard'],
     desc: 'Video concatenation'
-  });
-
-  registerViews({
-    classObj: DocTable,
-    icons: { item: <Icon src={TableIcon}/> },
-    views: [{
-      view: (props: DocTableProps) => <DocTableView {...props}/>
-    }],
-    sources: [ [ CSVTableFile, Database ], [JSONTableFile, Database] ],
-    config: props => <DocTableConfig {...props}/>,
-    flags: ['create-wizard'],
-    desc: 'Database table'
   });
 
   registerViews({
@@ -152,6 +147,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: DatabaseHolder,
+    icons: { item: <Icon src={DatabaseIcon}/> },
     views: [{
       view: (props: {model: DatabaseHolder}) => <DatabaseHolderView {...props}/>
     }]
@@ -159,6 +155,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: Table2,
+    icons: { item: <Icon src={TableIcon}/> },
     views: [{
       view: (props: {model: Table2, objects: any}) => <Table2View {...props}/>
     }]

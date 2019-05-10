@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 64 64"
+   height="64"
+   width="64">
+  <defs
+     id="defs2" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <rect
+     y="11.5"
+     x="3.75"
+     height="41.5"
+     width="55.5"
+     id="rect9848"
+     style="fill:#d5f6ff;fill-opacity:1;stroke:none;stroke-width:1;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+  <path
+     id="path9241"
+     class=""
+     d="M 58,8.0000001 H 6 C 2.6862519,8.0000001 0,10.68625 0,14 v 36 c 0,3.31375 2.6862519,6 6,6 h 52 c 3.313748,0 6,-2.68625 6,-6 V 14 C 64,10.68625 61.313748,8.0000001 58,8.0000001 Z M 57.249999,50 H 6.7500015 C 6.3357874,50.000001 6,49.664214 6,49.25 V 14.750001 C 5.9999994,14.335786 6.335787,13.999999 6.7500015,14 H 57.249999 c 0.414214,-10e-7 0.750002,0.335787 0.750001,0.750001 V 49.25 c 0,0.414214 -0.335787,0.750001 -0.750001,0.75 z"
+     style="fill:#666666;stroke-width:0.12500001" />
+  <path
+     id="path9241-7"
+     class=""
+     d="m 16.5,19.5 c -2.76137,0 -5,2.238625 -5,5 0,2.761375 2.23863,5 5,5 2.76137,0 5,-2.238625 5,-5 0,-2.761375 -2.23863,-5 -5,-5 z"
+     style="fill:#ffcc00;stroke-width:0.12500001" />
+  <path
+     id="path9241-7-0"
+     class=""
+     d="m 12.5,44.5 h 40 v -10 L 41.56063,23.560626 c -0.58576,-0.58575 -1.5355,-0.58575 -2.12138,0 L 24.5,38.5 19.56063,33.560625 c -0.58576,-0.58575 -1.5355,-0.58575 -2.12138,0 L 12.5,38.5 Z"
+     style="fill:#00d400;stroke-width:0.12500001" />
+</svg>
