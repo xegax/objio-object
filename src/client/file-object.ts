@@ -7,4 +7,8 @@ export class FileObject extends FileObjectBase {
   onFileUploaded(userId: string): Promise<void> {
     return Promise.resolve();
   }
+
+  removeContent(): Promise<void> {
+    return this.holder.invokeMethod({ method: 'removeContent', args: {} });
+  }
 }

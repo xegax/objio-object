@@ -49,8 +49,19 @@ export class FileObject extends FileObjectBase {
       'sendFile': {
         method: FileObject.getUploadFileImpl(obj),
         rights: 'write'
+      },
+      'removeContent': {
+        method: () => FileObject.removeContent(obj),
+        rights: 'write'
       }
     });
+  }
+
+  static removeContent(obj: FileObject) {
+    const file = obj.getPath();
+    if (existsSync(file))
+      unlinkSync(file);
+    return Promise.resolve();
   }
 
   static getUploadFileImpl(obj: FileObject) {

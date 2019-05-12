@@ -1,11 +1,27 @@
 import * as React from 'react';
-import { VideoFileBase, SendFileArgs, FileId, FilterArgs, AppendImageArgs } from '../base/video-file';
+import { VideoFileBase, SendFileArgs, RemoveArgs, FilterArgs, AppendImageArgs } from '../base/video-file';
 import { PropsGroup, PropItem, TextPropItem } from 'ts-react-ui/prop-sheet';
 import { ListView, Item } from 'ts-react-ui/list-view';
 import { CheckIcon } from 'ts-react-ui/checkicon';
+import { confirm, Action } from 'ts-react-ui/prompt';
 import { MediaStream } from '../task/media-desc';
 import { ObjectsFolder } from '../base/object-base';
 import { ImageFileBase } from '../base/image-file';
+
+const RemoveAll: Action = {
+  text: 'Remove all',
+  onAction: () => {}
+};
+
+const RemoveObjectOnly: Action = {
+  text: 'Object only',
+  onAction: () => {}
+};
+
+const Cancel: Action = {
+  text: 'Cancel',
+  onAction: () => {}
+};
 
 interface CutItem extends Item {
   file: VideoFileBase;
@@ -32,7 +48,7 @@ export class VideoFileObject extends VideoFileBase {
     return this.holder.invokeMethod({ method: 'save', args });
   }
 
-  execute(args: FileId): Promise<void> {
+  execute(args: RemoveArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'execute', args });
   }
 
@@ -44,7 +60,7 @@ export class VideoFileObject extends VideoFileBase {
     return this.sendFile({ file, fileId: '.import' });
   }
 
-  remove(args: FileId): Promise<void> {
+  remove(args: RemoveArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'remove', args });
   }
 
@@ -151,7 +167,15 @@ export class VideoFileObject extends VideoFileBase {
           title='Remove'
           faIcon='fa fa-trash'
           value={false}
-          onChange={() => this.remove({ id: fileID })}
+          onChange={() => {
+            confirm({ text: 'Are you sure to delete?', actions: [ RemoveAll, RemoveObjectOnly, Cancel] })
+            .then(action => {
+              if (action == Cancel)
+                return;
+
+              this.remove({ objId: fileID, removeContent: action == RemoveAll });
+            });
+          }}
         />
       </div>
     );
@@ -185,7 +209,7 @@ export class VideoFileObject extends VideoFileBase {
             if (file.isStatusInProgess())
               return;
 
-            this.execute({ id: fileID });
+            this.execute({ objId: fileID });
           }}
         />
         <div
@@ -215,7 +239,15 @@ export class VideoFileObject extends VideoFileBase {
           title='Remove'
           faIcon='fa fa-trash'
           value={false}
-          onChange={() => this.remove({ id: fileID })}
+          onChange={() => {
+            confirm({ text: 'Are you sure to delete?', actions: [ RemoveAll, RemoveObjectOnly, Cancel] })
+            .then(action => {
+              if (action == Cancel)
+                return;
+
+              this.remove({ objId: fileID, removeContent: action == RemoveAll });
+            });
+          }}
         />
       </div>
     );

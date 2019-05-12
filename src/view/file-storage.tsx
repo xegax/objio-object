@@ -6,12 +6,14 @@ import { prompt } from 'ts-react-ui/prompt';
 import { Droppable } from 'ts-react-ui/drag-and-drop';
 import { cn } from 'ts-react-ui/common/common';
 import { VerticalResizer } from 'ts-react-ui/resizer';
+import { ObjProps } from '../base/object-base';
+import { VideoFileObject } from '../view/video-file-view';
 
 export {
   FileStorage
 };
 
-export interface Props {
+export interface Props extends ObjProps {
   model: FileStorage;
 }
 
@@ -147,15 +149,29 @@ export class FileStorageView extends React.Component<Props, State> {
     if (!selNum)
       return;
 
+    const sel = m.getLastSelectFile();
     evt.preventDefault();
     evt.stopPropagation();
 
     ContextMenu.show(
       <Menu>
+        {sel && sel.type == '.mp4' && <MenuItem
+          text='create object'
+          onClick={() => {
+            let obj = new VideoFileObject({
+              name: sel.name,
+              size: sel.size,
+              mime: 'video/mp4',
+              filePath: `${m.holder.getID()}/${sel.fileId.substr(0, sel.fileId.length - sel.type.length)}`
+            });
+            m.holder.createObject(obj)
+            .then(() => this.props.append(obj))
+            .then(() => obj.updateDesciption());
+          }}
+        />}
         {selNum == 1 && <MenuItem
           text='rename'
           onClick={() => {
-            const sel = m.getLastSelectFile();
             prompt({ title: `Rename file "${sel.name}"`, value: sel.name })
             .then(newName => {
               m.update({ fileId: sel.fileId, newName });

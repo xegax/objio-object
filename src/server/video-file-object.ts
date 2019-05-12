@@ -1,10 +1,10 @@
 import { parseMedia, encodeFile, parseStream, EncodeArgs, FileInfo } from '../task/ffmpeg';
 import { lstatSync, existsSync, unlinkSync, readFileSync } from 'fs';
-import { VideoFileBase, FilterArgs, FileId, AppendImageArgs, VideoFileExportData } from '../base/video-file';
+import { VideoFileBase, FilterArgs, RemoveArgs, AppendImageArgs, VideoFileExportData } from '../base/video-file';
 import { getTimeFromSeconds } from '../common/time';
 import { FileObject } from './file-object';
 import { ImageFile, ImageFileBase } from './image-file';
-import { OBJIOArray, OBJIOItem } from 'objio';
+import { OBJIOArray } from 'objio';
 
 export class VideoFileObject extends VideoFileBase {
   constructor(filter?: FilterArgs) {
@@ -32,11 +32,11 @@ export class VideoFileObject extends VideoFileBase {
     this.holder.setMethodsToInvoke({
       ...this.holder.getMethodsToInvoke(),
       execute: {
-        method: (args: FileId, userId: string) => this.execute(args, userId),
+        method: (args: RemoveArgs, userId: string) => this.execute(args, userId),
         rights: 'write'
       },
       remove: {
-        method: (args: FileId) => this.remove(args),
+        method: (args: RemoveArgs) => this.remove(args),
         rights: 'write'
       },
       updateDescription: {
@@ -154,26 +154,30 @@ export class VideoFileObject extends VideoFileBase {
     });
   }
 
-  remove(args: FileId): Promise<void> {
-    if (![this.files, this.images].some((arr: OBJIOArray<OBJIOItem>) => {
-      const idx = arr.find(item => item.holder.getID() == args.id);
+  remove(args: RemoveArgs): Promise<void> {
+    if (![this.files, this.images].some((arr: OBJIOArray<FileObject>) => {
+      const idx = arr.find(item => item.holder.getID() == args.objId);
       if (idx != -1) {
+        const obj = arr.get(idx);
+        if (args.removeContent)
+          FileObject.removeContent(obj);
+
         arr.remove(idx);
         arr.holder.save();
       }
       return idx != -1;
     })) {
-      return Promise.reject(`file id=${args.id} not found`);
+      return Promise.reject(`file id=${args.objId} not found`);
     }
 
     this.holder.save(true);
     return Promise.resolve();
   }
 
-  execute(args: FileId, userId?: string): Promise<void> {
-    const file = this.findFile(args.id) as VideoFileObject;
+  execute(args: RemoveArgs, userId?: string): Promise<void> {
+    const file = this.findFile(args.objId) as VideoFileObject;
     if (!file)
-      return Promise.reject(`file id=${args.id} not found!`);
+      return Promise.reject(`file id=${args.objId} not found!`);
 
     if (file.isStatusInProgess())
       return Promise.reject('execute in progress');
@@ -264,7 +268,7 @@ export class VideoFileObject extends VideoFileBase {
 
   onFileUploaded(userId: string, fileId?: string): Promise<void> {
     if (!fileId)
-      return this.onVideoUploaded(userId, fileId);
+      return this.onVideoUploaded(userId);
 
     if (fileId == '.import') {
       this.onImportUploaded(userId, fileId);
@@ -300,7 +304,7 @@ export class VideoFileObject extends VideoFileBase {
     return Promise.resolve();
   }
 
-  private onVideoUploaded(userId: string, fileId?: string): Promise<void> {
+  private onVideoUploaded(userId: string): Promise<void> {
     let p = (
       parseMedia(this.getPath())
       .then(info => {

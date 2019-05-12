@@ -47,8 +47,9 @@ export interface ExecuteArgs {
   name?: string;
 }
 
-export interface FileId {
-  id: string;
+export interface RemoveArgs {
+  objId: string;
+  removeContent?: boolean;
 }
 
 export abstract class VideoFileBase extends FileObjectBase {
@@ -105,11 +106,11 @@ export abstract class VideoFileBase extends FileObjectBase {
   abstract save(args: FilterArgs): Promise<void>;
   abstract append(args: FilterArgs): Promise<void>;
   abstract appendImage(args: AppendImageArgs): Promise<void>;
-  abstract execute(args: FileId): Promise<void>;
+  abstract execute(args: RemoveArgs): Promise<void>;
   
   abstract export(): Promise<VideoFileExportData>;
 
-  abstract remove(args: FileId): Promise<void>;
+  abstract remove(args: RemoveArgs): Promise<void>;
   abstract updateDesciption(): Promise<void>;
 
   static TYPE_ID = 'VideoFileObject';

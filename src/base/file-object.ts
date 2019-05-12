@@ -6,6 +6,7 @@ export interface FileArgs {
   name: string;
   size: number;
   mime: string;
+  filePath?: string;
 }
 
 export { SendFileArgs };
@@ -15,6 +16,7 @@ export abstract class FileObjectBase extends ObjectBase {
   protected size: number = 0;
   protected mime: string = '';
   protected loadSize: number = 0;
+  protected filePath: string = '';
 
   constructor(args?: FileArgs) {
     super();
@@ -25,6 +27,7 @@ export abstract class FileObjectBase extends ObjectBase {
     this.origName = this.name = args.name;
     this.size = args.size;
     this.mime = args.mime;
+    this.filePath = args.filePath;
   }
 
   getOriginName(ext?: string) {
@@ -39,7 +42,8 @@ export abstract class FileObjectBase extends ObjectBase {
   }
 
   getFileName(ext?: string): string {
-    return `file_${this.holder.getID()}${ ext || this.getExt()}`;
+    const path = this.filePath || `file_${this.holder.getID()}`;
+    return `${path}${ ext || this.getExt()}`;
   }
 
   getPath(ext?: string): string {
@@ -64,6 +68,9 @@ export abstract class FileObjectBase extends ObjectBase {
   }
 
   abstract onFileUploaded(userId: string, fileId?: string): Promise<void>;
+  removeContent(): Promise<void> {
+    return this.holder.invokeMethod({ method: 'removeContent', args: {} });
+  }
 
   static TYPE_ID: string = 'FileObject';
   static SERIALIZE: SERIALIZER = () => ({
@@ -71,6 +78,7 @@ export abstract class FileObjectBase extends ObjectBase {
     'origName':   { type: 'string' },
     'size':       { type: 'number' },
     'mime':       { type: 'string' },
-    'loadSize':   { type: 'number' }
+    'loadSize':   { type: 'number' },
+    'filePath':    { type: 'string' }
   })
 }

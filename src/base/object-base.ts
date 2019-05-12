@@ -4,6 +4,7 @@ import { Flag, ConfigProps } from '../common/view-factory';
 export type Status = 'ok' | 'error' | 'not configured' | 'in progress';
 export interface ObjProps {
   objects(filter?: Array<OBJIOItemClass>): Array<ObjectBase>;
+  append(newObj: ObjectBase): Promise<void>; 
 }
 
 export interface SendFileArgs {
