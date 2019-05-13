@@ -1,4 +1,4 @@
-import { FileObjectBase, FileArgs, SendFileArgs } from '../base/file-object';
+import { FileObjectBase, FileArgs } from '../base/file-object';
 import { createWriteStream, unlinkSync, existsSync, lstatSync } from 'fs';
 import { Readable } from 'stream';
 
@@ -23,7 +23,6 @@ export class FileObject extends FileObjectBase {
       onDelete: () => {
         try {
           const file = obj.getPath();
-          console.log('removing content file', file);
           if (existsSync(file))
             unlinkSync(file);
         } catch (e) {
@@ -36,7 +35,7 @@ export class FileObject extends FileObjectBase {
         let size = 0;
         if (existsSync(file))
           size = lstatSync(file).size;
-        
+
         if (obj.size != size) {
           obj.size = obj.loadSize = size;
           obj.holder.save();

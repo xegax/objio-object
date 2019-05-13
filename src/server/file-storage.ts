@@ -31,7 +31,7 @@ interface SrvEntryData extends EntryData {
   userId: string;
 }
 
-type FolderSrv = {
+export type FolderSrv = {
   id: string;
   name: string;
   subfolder: Array<FolderSrv>;
