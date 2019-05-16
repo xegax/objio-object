@@ -50,11 +50,11 @@ const fileSchema = {
   } as Column,
   userId: {
     colName: 'userId',
-    colType: 'string'
+    colType: 'varchar(64)'
   } as Column,
   fileId: {
     colName: 'fileId',
-    colType: 'string',
+    colType: 'varchar(64)',
     unique: true,
     notNull: true
   } as Column,
@@ -65,38 +65,38 @@ const fileSchema = {
   } as Column,
   type: {
     colName: 'type',
-    colType: 'string'
+    colType: 'varchar(32)'
   } as Column,
   hash: {
     colName: 'hash',
-    colType: 'string',
+    colType: 'varchar(64)',
     notNull: true
   } as Column,
   name: {
     colName: 'name',
-    colType: 'string'
+    colType: 'varchar(256)'
   } as Column,
   createDate: {
     colName: 'createDate',
-    colType: 'integer',
+    colType: 'bigint',
     notNull: true
   } as Column,
   modifyDate: {
     colName: 'modifyDate',
-    colType: 'integer',
+    colType: 'bigint',
     notNull: true
   } as Column,
   sub1: {
     colName: 'sub1',
-    colType: 'string'
+    colType: 'varchar(32)'
   } as Column,
   sub2: {
     colName: 'sub2',
-    colType: 'string'
+    colType: 'varchar(32)'
   } as Column,
   sub3: {
     colName: 'sub3',
-    colType: 'string'
+    colType: 'varchar(32)'
   }
 };
 
