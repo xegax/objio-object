@@ -13,7 +13,7 @@ import {
 } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database-holder';
 import { IDArgs } from '../../common/interfaces';
-import { DatabaseBase2 } from '../../base/database-holder';
+import { DatabaseBase2 } from '../../base/database/database-holder';
 import {
   PushDataArgs,
   PushDataResult,
@@ -22,9 +22,8 @@ import {
   TableGuid,
   LoadTableGuidArgs,
   LoadTableGuidResult,
-  TableDescShort,
   LoadTableDataArgs
-} from '../../base/database-holder-decl';
+} from '../../base/database/database-holder-decl';
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';

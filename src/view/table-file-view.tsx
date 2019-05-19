@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { TableFile } from '../client/table-file';
-import { ColumnAttr } from '../base/database';
+import { ColumnAttr } from '../base/table-file/table-file-decl';
 import { DropDown } from 'ts-react-ui/drop-down';
 import { CheckBox } from 'ts-react-ui/checkbox';
 import { ListView } from 'ts-react-ui/list-view';

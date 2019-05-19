@@ -1,9 +1,7 @@
 import { FileObject, FileArgs, getExt } from './file-object';
 import { CSVTableFile, JSONTableFile } from './table-file';
 import { VideoFileObject } from './video-file-object';
-import { Table, DocTable } from './database';
 import { OBJIOItemClass } from 'objio';
-import { FilesContainer } from './files-container';
 import { Animation, SpriteSheet } from './sprite-sheet';
 import { VideoConcat } from './video-concat';
 import { ImageFile } from './image-file';
@@ -33,13 +31,10 @@ export function getClasses(): Array<OBJIOItemClass> {
     Animation,
     SpriteSheet,
     DatabaseHolder,
-    Table,
-    DocTable,
     FileObject,
     CSVTableFile,
     JSONTableFile,
     VideoFileObject,
-    FilesContainer,
     VideoConcat,
     ImageFile,
     Table2,

@@ -1,7 +1,7 @@
 import { SERIALIZER, OBJIOItemClass } from 'objio';
-import { ObjectBase } from './object-base';
-import { IDArgs } from '../common/interfaces';
-import { ConnectionBase } from './database/connection';
+import { ObjectBase } from '../object-base';
+import { IDArgs } from '../../common/interfaces';
+import { ConnectionBase } from './connection';
 import {
   TableGuid,
   TableDesc,

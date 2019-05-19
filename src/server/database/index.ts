@@ -1,2 +1,2 @@
-export * from './doc-table';
-export * from './table';
+export * from './database-holder';
+export * from './table2';

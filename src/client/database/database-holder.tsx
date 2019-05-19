@@ -7,8 +7,8 @@ import {
   PushDataResult,
   DeleteDataArgs,
   UpdateDataArgs
-} from '../../base/database-holder-decl';
-import { DatabaseHolderBase } from '../../base/database-holder';
+} from '../../base/database/database-holder-decl';
+import { DatabaseHolderBase } from '../../base/database/database-holder';
 import { PropsGroup } from 'ts-react-ui/prop-sheet';
 import { ListView, Item as LVItem } from 'ts-react-ui/list-view';
 import { DropDown, Item as DDItem } from 'ts-react-ui/drop-down';

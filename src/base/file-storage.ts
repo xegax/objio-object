@@ -1,6 +1,6 @@
 import { ObjectBase } from './object-base';
 import { SERIALIZER } from 'objio';
-import { DatabaseHolderBase } from './database-holder';
+import { DatabaseHolderBase } from './database/database-holder';
 import { IDArgs } from '../common/interfaces';
 import {
   CreateFolderArgs,

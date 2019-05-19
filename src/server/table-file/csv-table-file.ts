@@ -2,7 +2,7 @@ import { CSVReader, CSVBunch, CSVReadArgs } from 'objio/common/csv-reader';
 import { SERIALIZER } from 'objio';
 import { CSVTableFile as Base } from '../../base/table-file/csv-table-file';
 import { ReadLinesArgs } from '../../base/table-file/data-reading';
-import { ColumnAttr } from '../../base/database/table';
+import { ColumnAttr } from '../../base/table-file/table-file-decl';
 import { FileObject } from '../file-object';
 import { onFileUpload } from './table-file';
 

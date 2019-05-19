@@ -1,6 +1,6 @@
 import { SERIALIZER } from 'objio';
 import { FileObjectBase, SendFileArgs } from '../file-object';
-import { ColumnAttr } from '../../base/database/table';
+import { ColumnAttr } from './table-file-decl';
 import { DataReading } from './data-reading';
 import { StatMap } from 'objio/common/reader/statistics';
 

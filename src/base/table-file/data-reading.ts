@@ -1,4 +1,4 @@
-import { ColumnAttr } from '../../base/database/table';
+import { ColumnAttr } from './table-file-decl';
 
 export interface OnRowsArgs {
   rows: ReadRowsResult;

@@ -2,15 +2,7 @@ import * as React from 'react';
 import { FileObject, FileObjectView, Props as FileViewProps } from './file-object-view';
 import { JSONTableFile, CSVTableFile } from '../client/table-file';
 import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video-file-view';
-import { DocTable } from './doc-table-view';
 import { OBJIOItemClassViewable, registerViews } from './config';
-import {
-  FilesContainer,
-  FilesContainerView,
-  FilesContainerConfig,
-  FilesContainerProps
-} from './files-container-view';
-import { Database } from '../client/database/database';
 import { DatabaseHolder, DatabaseHolderView } from './database-holder-view';
 import { SpriteSheet, SpriteSheetView, SpriteConfig } from './sprite-sheet';
 import 'ts-react-ui/typings';
@@ -110,17 +102,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
   });
 
   registerViews({
-    classObj: FilesContainer,
-    views: [{
-      view: (props: FilesContainerProps) => <FilesContainerView {...props}/>
-    }],
-    config: props => <FilesContainerConfig {...props}/>,
-    flags: ['create-wizard'],
-    desc: 'Files container object',
-    sources: [ [ Database ] ]
-  });
-
-  registerViews({
     classObj: SpriteSheet,
     views: [{
       view: (props: {model: SpriteSheet}) => <SpriteSheetView key={props.model.holder.getID()} {...props} />
@@ -163,12 +144,10 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   return [
     Project,
-    FilesContainer,
     FileObject,
     CSVTableFile,
     JSONTableFile,
     VideoFileObject,
-    DocTable,
     SpriteSheet,
     VideoConcat,
     ImageFile,

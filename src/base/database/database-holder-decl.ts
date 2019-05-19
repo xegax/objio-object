@@ -1,4 +1,4 @@
-import { StrMap } from '../common/interfaces';
+import { StrMap } from '../../common/interfaces';
 
 export type AggregationFunc = 'min' | 'max' | 'sum' | 'count' | 'avg';
 

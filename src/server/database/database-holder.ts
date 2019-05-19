@@ -8,8 +8,8 @@ import {
   PushDataResult,
   DeleteDataArgs,
   UpdateDataArgs
-} from '../../base/database-holder-decl';
-import { DatabaseHolderBase, DatabaseHolderArgs } from '../../base/database-holder';
+} from '../../base/database/database-holder-decl';
+import { DatabaseHolderBase, DatabaseHolderArgs } from '../../base/database/database-holder';
 import { IDArgs } from '../../common/interfaces';
 
 export {

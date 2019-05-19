@@ -15,7 +15,7 @@ import {
   TableGuid,
   LoadTableDataArgs,
   LoadTableGuidResult
-} from '../../base/database-holder-decl';
+} from '../../base/database/database-holder-decl';
 
 export class Table2 extends TableBase {
   constructor(args) {

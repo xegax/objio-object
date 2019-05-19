@@ -9,8 +9,8 @@ import {
   TableGuid,
   LoadTableDataArgs,
   LoadTableGuidArgs
-} from '../database-holder-decl';
-import { DatabaseHolderBase } from '../database-holder';
+} from './database-holder-decl';
+import { DatabaseHolderBase } from './database-holder';
 import { IDArgs } from '../../common/interfaces';
 
 export {

@@ -1,12 +1,11 @@
 import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { DatabaseHolder, ColumnToCreate } from './database/database-holder';
-import { CompoundCond } from '../base/database-holder-decl';
+import { CompoundCond, ValueCond } from '../base/database/database-holder-decl';
 import { ServerSendFileArgs } from './file-object';
 import { createWriteStream, mkdirSync, existsSync, unlinkSync, copyFile, createReadStream } from 'fs';
 import { genUUID, getExt } from '../common/common';
 import { Stream } from 'stream';
-import { ValueCond } from '../base/database-holder-decl';
 import { SERIALIZER, OBJIOItem } from 'objio';
 import {
   EntryData,
