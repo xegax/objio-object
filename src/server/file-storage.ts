@@ -157,19 +157,13 @@ export class FileStorage extends FileStorageBase {
       },
       onLoad: () => {
         if (!this.db) {
-          this.setStatus('not configured')
+          this.setStatus('not configured');
+          this.addError('database not selected');
           return Promise.resolve();
         }
 
-        return (
-          this.db.loadTableGuid({ tableName: this.fileTable })
-          .then(() => {
-            this.setStatus('ok');
-          })
-          .catch(() => {
-            this.setStatus('not configured');
-          })
-        )
+        this.setStatus('ok');
+        return Promise.resolve();
       }
     });
   }
