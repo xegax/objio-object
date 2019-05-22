@@ -37,7 +37,6 @@ function getArgsKey(args: LoadTableGuidArgs): string {
 }
 
 export class DatabaseHolder extends DatabaseHolderBase {
-  protected impl: DatabaseBase;
   protected guidMap: {[guid: string]: GuidMapData} = {};
   protected argsToGuid: {[argsKey: string]: string} = {};
 
@@ -93,6 +92,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
       },
       loadTableRowsNum: {
         method: (args: TableGuid) => this.loadTableRowsNum(args),
+        rights: 'read'
+      },
+      loadTableGuid: {
+        method: (args: LoadTableGuidArgs) => this.loadTableGuid(args),
         rights: 'read'
       }
     });

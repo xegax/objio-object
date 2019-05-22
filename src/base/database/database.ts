@@ -157,6 +157,7 @@ export abstract class RemoteDatabaseClient extends RemoteDatabaseBase {
   setDatabase() {
     return Promise.reject(`not implemented`);
   }
+
   deleteDatabase() {
     return Promise.reject(`not implemented`);
   }

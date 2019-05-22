@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { DatabaseHolder } from '../client/database/database-holder';
 import { HeaderProps, CellProps, Grid } from 'ts-react-ui/grid/grid';
-import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 
 export { DatabaseHolder };
 
@@ -38,18 +37,19 @@ export class DatabaseHolderView extends React.Component<Props> {
   renderTable() {
     const model = this.props.model;
     const table = model.getSelectTable();
-    if (!table || table instanceof Promise)
+    const grid = model.getGrid();
+    if (!table || table instanceof Promise || !grid)
       return null;
 
     return (
       <div style={{ position: 'relative', flexGrow: 1}}>
         <Grid
-          model={model.getGrid()}
+          model={grid}
           key={table.tableName}
           renderHeader={this.renderHeader}
           renderCell={this.renderCell}
           onScrollToBottom={() => {
-            model.getGrid().loadNext();
+            grid.loadNext();
           }}
         />
       </div>

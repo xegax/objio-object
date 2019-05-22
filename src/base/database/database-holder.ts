@@ -82,6 +82,10 @@ export abstract class DatabaseHolderBase extends ObjectBase {
     return this.getRemote().getConnClasses();
   }
 
+  deleteDatabase(db: string) {
+    return this.getRemote().deleteDatabase(db);
+  }
+
   static TYPE_ID = 'DatabaseHolder';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),

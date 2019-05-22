@@ -74,7 +74,7 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
       this.updateTask.cancel();
 
     this.updateTask = (
-      this.impl.loadTableList()
+      this.loadTableList()
         .then(tables => {
           this.updateTask = null;
           this.tables = tables || [];
