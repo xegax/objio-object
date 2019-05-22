@@ -1,7 +1,6 @@
 import {
   TableBase,
   TableData,
-  TableDataArgs,
   DatabaseHolderBase,
   SetTableNameArgs
 } from '../../base/database/table2';
@@ -9,13 +8,15 @@ import { IDArgs } from '../../common/interfaces';
 import { TableFileBase } from '../../base/table-file';
 import { OnRowsArgs } from '../../base/table-file/data-reading';
 import {
-  PushDataArgs,
-  PushDataResult,
   LoadTableGuidArgs,
   TableGuid,
   LoadTableDataArgs,
   LoadTableGuidResult
 } from '../../base/database/database-holder-decl';
+import {
+  PushDataArgs,
+  PushDataResult
+} from '../../base/database/database-decl';
 
 export class Table2 extends TableBase {
   constructor(args) {
@@ -65,7 +66,7 @@ export class Table2 extends TableBase {
     const onRows = (args: OnRowsArgs) => {
       return (
         this.pushData({
-          tableName: this.tableName,
+          table: this.tableName,
           rows: args.rows as any,
           updateVersion: false
         })
@@ -117,7 +118,7 @@ export class Table2 extends TableBase {
         // drop table
         if (this.tableName) {
           return (
-            this.db.deleteTable({ tableName: this.tableName })
+            this.db.deleteTable({ table: this.tableName })
             .then(() => this.tableName)
           );
         }
@@ -129,7 +130,7 @@ export class Table2 extends TableBase {
             let objName = table.getName().toLowerCase().replace(/[\?\-\,\.]/g, '_');
             let tableName = objName;
             let idx = 0;
-            while (tables.some(t => tableName == t.tableName)) {
+            while (tables.some(t => tableName == t.table)) {
               tableName = objName + '_' + idx++;
             }
 
@@ -146,7 +147,7 @@ export class Table2 extends TableBase {
         });
 
         // start to push data from file
-        this.db.createTable({ tableName, columns })
+        this.db.createTable({ table: tableName, columns })
         .then(() => {
           this.tableName = tableName;
           this.holder.save();
@@ -197,7 +198,7 @@ export class Table2 extends TableBase {
         this.db = db;
         return this.db.loadTableList();
       }).then(lst => {
-        if (!lst.find(t => t.tableName == this.tableName))
+        if (!lst.find(t => t.table == this.tableName))
           this.tableName = '';
         this.holder.save();
       })
@@ -220,7 +221,7 @@ export class Table2 extends TableBase {
     return (
       this.db.loadTableList()
       .then(lst => {
-        if (!lst.find(t => t.tableName == args.tableName))
+        if (!lst.find(t => t.table == args.tableName))
           return Promise.reject(`Table "${args.tableName}" not present in database`);
 
         this.tableName = args.tableName;

@@ -1,14 +1,7 @@
 import * as React from 'react';
-import {
-  TableDesc,
-  DeleteTableArgs,
-  CreateTableArgs,
-  PushDataArgs,
-  PushDataResult,
-  DeleteDataArgs,
-  UpdateDataArgs
-} from '../../base/database/database-holder-decl';
-import { DatabaseHolderBase } from '../../base/database/database-holder';
+import { GuidMapData } from '../../base/database/database-holder-decl';
+import { TableDesc, TableDescShort } from '../../base/database/database-decl';
+import { DatabaseHolderClientBase } from '../../base/database/database-holder';
 import { PropsGroup } from 'ts-react-ui/prop-sheet';
 import { ListView, Item as LVItem } from 'ts-react-ui/list-view';
 import { DropDown, Item as DDItem } from 'ts-react-ui/drop-down';
@@ -27,7 +20,7 @@ export interface SelectTableInfo {
   desc: TableDesc;
 }
 
-export class DatabaseHolder extends DatabaseHolderBase {
+export class DatabaseHolder extends DatabaseHolderClientBase {
   private dbList: Array<string> = [];
   private tables: Array<TableDesc> = null;
   private updateTask: Promise<any>;
@@ -53,14 +46,6 @@ export class DatabaseHolder extends DatabaseHolderBase {
     return this.grid;
   }
 
-  deleteTable(args: DeleteTableArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'deleteTable', args });
-  }
-
-  createTable(args: CreateTableArgs): Promise<TableDesc> {
-    return this.holder.invokeMethod({ method: 'createTable', args });
-  }
-
   setDatabase(database: string): Promise<void> {
     return this.holder.invokeMethod({ method: 'setDatabase', args: { database } });
   }
@@ -69,23 +54,15 @@ export class DatabaseHolder extends DatabaseHolderBase {
     return this.holder.invokeMethod({ method: 'setConnection', args });
   }
 
-  pushData(args: PushDataArgs): Promise<PushDataResult> {
-    return this.holder.invokeMethod({ method: 'pushData', args });
-  }
-
-  updateData(args: UpdateDataArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'updateData', args });
-  }
-
-  deleteData(args: DeleteDataArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'deleteData', args });
+  createTempTable(args: GuidMapData): Promise<TableDescShort> {
+    return Promise.reject('not implemented');
   }
 
   protected updateDBList() {
     if (!this.isRemote())
       return;
 
-    this.getDatabaseList()
+    this.loadDatabaseList()
       .then(lst => {
         this.dbList = lst;
         this.holder.delayedNotify();
@@ -104,7 +81,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
 
           if (this.selectTable) {
             this.tables.find(table => {
-              return table.tableName == this.selectTable.tableName;
+              return table.table == this.selectTable.tableName;
             });
           }
 
@@ -125,8 +102,8 @@ export class DatabaseHolder extends DatabaseHolderBase {
       this.tables.map(table => {
         return {
           title: `rows: ${table.rowsNum}\ncolumns: ${table.columns.length}`,
-          value: table.tableName,
-          render: table.tableName,
+          value: table.table,
+          render: table.table,
           table
         };
       })
@@ -224,9 +201,9 @@ export class DatabaseHolder extends DatabaseHolderBase {
   }
 
   private setTable(tableName: string): boolean {
-    const table = this.tables.find(item => item.tableName == tableName);
+    const table = this.tables.find(item => item.table == tableName);
     // nothing changed
-    if (this.selectTable && this.selectTable.tableName == table.tableName)
+    if (this.selectTable && this.selectTable.tableName == table.table)
       return false;
 
     if (!table) {
@@ -236,12 +213,12 @@ export class DatabaseHolder extends DatabaseHolderBase {
     }
 
     this.selectTable = {
-      tableName: table.tableName,
+      tableName: table.table,
       guid: null,
       desc: table
     };
 
-    this.loadTableGuid({ tableName: table.tableName, desc: true })
+    this.loadTableGuid({ table: table.table, desc: true })
     .then(res => {
       this.selectTable.guid = res.guid;
       this.createGrid();
@@ -303,7 +280,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
                       if (!this.selectTable)
                         return;
 
-                      this.deleteTable({ tableName: this.selectTable.tableName })
+                      this.deleteTable({ table: this.selectTable.tableName })
                         .then(() => {
                           this.selectTable = null;
                           this.holder.delayedNotify();

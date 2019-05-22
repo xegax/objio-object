@@ -13,24 +13,26 @@ import {
 } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database-holder';
 import { IDArgs } from '../../common/interfaces';
-import { DatabaseBase2 } from '../../base/database/database-holder';
+import { DatabaseHolderBase } from '../../base/database/database-holder';
 import {
-  PushDataArgs,
-  PushDataResult,
-  TableDesc,
-  LoadTableDataResult,
   TableGuid,
   LoadTableGuidArgs,
   LoadTableGuidResult,
   LoadTableDataArgs
 } from '../../base/database/database-holder-decl';
+import {
+  PushDataArgs,
+  PushDataResult,
+  TableDesc,
+  LoadTableDataResult
+} from '../../base/database/database-decl';
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 
 export class Table2 extends TableBase {
   private grid: GridLoadableModel;
-  private prevDB: DatabaseBase2;
+  private prevDB: DatabaseHolderBase;
   private tables = Array<string>();
   private tableDesc: TableDesc;
   private guid: string;
@@ -68,17 +70,17 @@ export class Table2 extends TableBase {
   }
 
   private updateDatabaseData() {
-    if (this.tableDesc && this.tableName != this.tableDesc.tableName)
+    if (this.tableDesc && this.tableName != this.tableDesc.table)
       this.tableDesc = null;
 
     this.db.loadTableList()
       .then(lst => {
-        this.tables = lst.map(t => t.tableName);
+        this.tables = lst.map(t => t.table);
         this.holder.delayedNotify();
       });
 
     if (this.tableName && !this.tableDesc) {
-      this.loadTableGuid({ tableName: this.tableName, desc: true })
+      this.loadTableGuid({ table: this.tableName, desc: true })
       .then(desc => {
         this.onTableSelected(desc);
       })
@@ -93,7 +95,7 @@ export class Table2 extends TableBase {
   private onTableSelected(table: LoadTableGuidResult) {
     this.tableDesc = {
       ...table.desc,
-      tableName: this.tableName
+      table: this.tableName
     };
     this.guid = table.guid;
 
@@ -234,6 +236,6 @@ export class Table2 extends TableBase {
           }}
         />
       </PropsGroup>
-    )
+    );
   }
 }

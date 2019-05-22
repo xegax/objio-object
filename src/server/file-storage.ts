@@ -1,7 +1,7 @@
 import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
-import { DatabaseHolder, ColumnToCreate } from './database/database-holder';
-import { CompoundCond, ValueCond } from '../base/database/database-holder-decl';
+import { DatabaseHolder, ColumnInfoFull } from './database/database-holder';
+import { CompoundCond, ValueCond } from '../base/database/database-decl';
 import { ServerSendFileArgs } from './file-object';
 import { createWriteStream, mkdirSync, existsSync, unlinkSync, copyFile, createReadStream } from 'fs';
 import { genUUID, getExt } from '../common/common';
@@ -24,7 +24,7 @@ import { FileObjectBase } from '../base/file-object';
 
 const MAX_FOLDER_DEPTH = 3;
 const MAX_SUBFOLDERS = 32;
-const pathCols = [ 'sub1', 'sub2', 'sub3' ];
+const pathCols = ['sub1', 'sub2', 'sub3'];
 
 interface SrvEntryData extends EntryData {
   userId: string;
@@ -37,7 +37,7 @@ export type FolderSrv = {
 };
 
 type TColumnName = keyof SrvEntryData;
-type Column = ColumnToCreate & { colName: TColumnName };
+type Column = ColumnInfoFull & { colName: TColumnName };
 const fileSchema = {
   rowId: {
     colName: 'rowId',
@@ -168,10 +168,10 @@ export class FileStorage extends FileStorageBase {
     });
   }
 
-  private replaceEntry(args: {name: string, size: number, entryId: string}, userId: string) {
+  private replaceEntry(args: { name: string, size: number, entryId: string }, userId: string) {
   }
 
-  private createEntry(args: {name: string, size: number}, userId: string, path?: Array<string>): Promise<SrvEntryData> {
+  private createEntry(args: { name: string, size: number }, userId: string, path?: Array<string>): Promise<SrvEntryData> {
     path = path || [];
     let type = getExt(args.name).toLocaleLowerCase();
     if (['.zip', '.rar', '.7z'].indexOf(type) != -1)
@@ -193,13 +193,13 @@ export class FileStorage extends FileStorageBase {
 
     return (
       this.db.pushData({
-        tableName: this.fileTable,
-        rows: [ entry as any ]
+        table: this.fileTable,
+        rows: [entry as any]
       })
-      .then(() => {
-        this.holder.save(true);
-        return entry;
-      })
+        .then(() => {
+          this.holder.save(true);
+          return entry;
+        })
     );
   }
 
@@ -237,32 +237,32 @@ export class FileStorage extends FileStorageBase {
     let path = Array<string>();
     try {
       path = JSON.parse(args.other || '[]');
-    } catch(e) {
+    } catch (e) {
     }
-  
+
     return (
       this.createEntry(args, userId, path)
-      .then(entry => this.writeToFile(entry, args.data))
+        .then(entry => this.writeToFile(entry, args.data))
     );
-  };
+  }
 
   private initTables(args: { fileTable: string, tagsTable: string, tryNum?: number }): Promise<void> {
     const fileTable = args.tryNum ? `${args.fileTable}_${args.tryNum}` : args.fileTable;
     return (
       this.db.createTable({
-        tableName: fileTable,
+        table: fileTable,
         columns: Object.keys(fileSchema).map(k => fileSchema[k])
       })
-      .then(() => {
-        this.fileTable = fileTable;
-      })
-      .catch(() => {
-        args.tryNum = (args.tryNum || 0) + 1;
-        if (args.tryNum >= 50)
-          return Promise.reject(`create table failed`);
+        .then(() => {
+          this.fileTable = fileTable;
+        })
+        .catch(() => {
+          args.tryNum = (args.tryNum || 0) + 1;
+          if (args.tryNum >= 50)
+            return Promise.reject(`create table failed`);
 
-        return this.initTables(args);
-      })
+          return this.initTables(args);
+        })
     );
   }
 
@@ -273,67 +273,67 @@ export class FileStorage extends FileStorageBase {
     if (!this.fileTable)
       return Promise.reject('table is not selected');
 
-      let cond: CompoundCond = {
-        op: 'and',
-        values: []
-      };
+    let cond: CompoundCond = {
+      op: 'and',
+      values: []
+    };
 
-      const pathCond: CompoundCond = args.path ? {
-        op: 'and',
-        values: pathCols.map((column, i) => ({
-          column,
-          value: args.path[i] || ''
-        }))
-      } : null;
-  
-      const accss: CompoundCond = {
-        op: 'or',
-        values: [
-          {
-            column: fileSchema.userId.colName,
-            value: ''
-          },
-          {
-            column: fileSchema.userId.colName,
-            value: userId
-          }
-        ]
-      };
+    const pathCond: CompoundCond = args.path ? {
+      op: 'and',
+      values: pathCols.map((column, i) => ({
+        column,
+        value: args.path[i] || ''
+      }))
+    } : null;
 
-      if (pathCond)
-        cond.values.push(pathCond);
+    const accss: CompoundCond = {
+      op: 'or',
+      values: [
+        {
+          column: fileSchema.userId.colName,
+          value: ''
+        },
+        {
+          column: fileSchema.userId.colName,
+          value: userId
+        }
+      ]
+    };
 
-      cond.values.push(accss);
+    if (pathCond)
+      cond.values.push(pathCond);
+
+    cond.values.push(accss);
 
     let info: StorageInfo;
     return (
-      this.db.loadTableGuid({ tableName: this.fileTable, desc: true, cond })
-      .then(res => {
-        info = { guid: res.guid, filesCount: res.desc.rowsNum };
-        if (args.stat) {
-          return this.db.loadAggrData({
-            guid: res.guid,
-            values: [
-              { column: fileSchema.size.colName, aggs: 'min' },
-              { column: fileSchema.size.colName, aggs: 'max' },
-              { column: fileSchema.createDate.colName, aggs: 'min' },
-              { column: fileSchema.createDate.colName, aggs: 'max' },
-              { column: fileSchema.modifyDate.colName, aggs: 'min' },
-              { column: fileSchema.modifyDate.colName, aggs: 'max' },
-              { column: fileSchema.size.colName, aggs: 'sum' }
-            ]
-          })
-          .then(aggRes => {
-            info.stat = {
-              size: { min: aggRes.values[0].value, max: aggRes.values[1].value },
-              createDate: { min: aggRes.values[2].value, max: aggRes.values[3].value },
-              modifyDate: { min: aggRes.values[4].value, max: aggRes.values[5].value },
-              sizeSum: aggRes.values[6].value
-            };
-          })
-        }
-      })
-      .then(() => info)
+      this.db.loadTableGuid({ table: this.fileTable, desc: true, cond })
+        .then(res => {
+          info = { guid: res.guid, filesCount: res.desc.rowsNum };
+          if (args.stat) {
+            return this.db.loadAggrData({
+              guid: res.guid,
+              values: [
+                { column: fileSchema.size.colName, aggs: 'min' },
+                { column: fileSchema.size.colName, aggs: 'max' },
+                { column: fileSchema.createDate.colName, aggs: 'min' },
+                { column: fileSchema.createDate.colName, aggs: 'max' },
+                { column: fileSchema.modifyDate.colName, aggs: 'min' },
+                { column: fileSchema.modifyDate.colName, aggs: 'max' },
+                { column: fileSchema.size.colName, aggs: 'sum' }
+              ]
+            })
+              .then(aggRes => {
+                info.stat = {
+                  size: { min: aggRes.values[0].value, max: aggRes.values[1].value },
+                  createDate: { min: aggRes.values[2].value, max: aggRes.values[3].value },
+                  modifyDate: { min: aggRes.values[4].value, max: aggRes.values[5].value },
+                  sizeSum: aggRes.values[6].value
+                };
+              })
+          }
+        })
+        .then(() => info)
     );
   }
 
@@ -346,13 +346,13 @@ export class FileStorage extends FileStorageBase {
 
     return (
       this.db.loadTableData({ guid: args.guid, from: args.from, count: args.count })
-      .then(data => {
-        let res: LoadDataResult = {
-          files: data.rows as any
-        };
+        .then(data => {
+          let res: LoadDataResult = {
+            files: data.rows as any
+          };
 
-        return res;
-      })
+          return res;
+        })
     );
   }
 
@@ -438,7 +438,7 @@ export class FileStorage extends FileStorageBase {
 
     return (
       this.db.updateData({
-        tableName: this.fileTable,
+        table: this.fileTable,
         limit: 1,
         cond: {
           op: 'or',
@@ -478,38 +478,38 @@ export class FileStorage extends FileStorageBase {
 
     return (
       this.db.deleteData({
-        tableName: this.fileTable,
+        table: this.fileTable,
         cond: {
           op: 'or',
           values: cond
         }
       })
-      .then(() => {
-        this.holder.save(true);
-      })
+        .then(() => {
+          this.holder.save(true);
+        })
     );
   }
 
   copyFileObject(args: CopyFileObjArgs, userId?: string) {
     return (
       this.holder.getObject<FileObjectBase>(args.fileObjId)
-      .then(fileObj => {
-        if (!fileObj)
-          return Promise.reject('file object not found');
+        .then(fileObj => {
+          if (!fileObj)
+            return Promise.reject('file object not found');
 
-        if (!(fileObj instanceof FileObjectBase))
-          return Promise.reject(`file object type ${OBJIOItem.getClass(fileObj).TYPE_ID} is not support`);
+          if (!(fileObj instanceof FileObjectBase))
+            return Promise.reject(`file object type ${OBJIOItem.getClass(fileObj).TYPE_ID} is not support`);
 
-        const strm = createReadStream(fileObj.getPath());
-        return (
-          this.createEntry({
-            name: fileObj.getName(fileObj.getExt()),
-            size: fileObj.getLoadSize()
-          }, userId, args.path)
-          .then(entry => this.writeToFile(entry, strm))
-          .then(() => {})
-        );
-      })
+          const strm = createReadStream(fileObj.getPath());
+          return (
+            this.createEntry({
+              name: fileObj.getName(fileObj.getExt()),
+              size: fileObj.getLoadSize()
+            }, userId, args.path)
+              .then(entry => this.writeToFile(entry, strm))
+              .then(() => { })
+          );
+        })
     );
   }
 
@@ -517,35 +517,35 @@ export class FileStorage extends FileStorageBase {
     if (this.initTask)
       return this.initTask;
 
-    return  (
+    return (
       this.initTask = this.holder.getObject<DatabaseHolder>(args.id)
-      .then(db => {
-        if (!(db instanceof DatabaseHolder))
-          return Promise.reject('invalid database object');
+        .then(db => {
+          if (!(db instanceof DatabaseHolder))
+            return Promise.reject('invalid database object');
 
-        this.db = db;
-        this.holder.save();
+          this.db = db;
+          this.holder.save();
 
-        return this.initTables({
-          fileTable: `_fste_ftbl_${this.getID()}`,
-          tagsTable: `_fste_tags_${this.getID()}`
-        });
-      })
-      .then(() => {
-        this.initTask = null;
-        this.setStatus('ok');
-        this.holder.save(true);
-      })
-      .catch(e => {
-        this.initTask = null;
-        return Promise.reject(e);
-      })
+          return this.initTables({
+            fileTable: `_fste_ftbl_${this.getID()}`,
+            tagsTable: `_fste_tags_${this.getID()}`
+          });
+        })
+        .then(() => {
+          this.initTask = null;
+          this.setStatus('ok');
+          this.holder.save(true);
+        })
+        .catch(e => {
+          this.initTask = null;
+          return Promise.reject(e);
+        })
     );
   }
 
   static SERIALIZE: SERIALIZER = () => ({
     ...FileStorageBase.SERIALIZE(),
-    srvFolder:        { type: 'json', tags: [ 'sr' ] },
-    folderIdCounter:  { type: 'number', tags: [ 'sr' ]}
+    srvFolder: { type: 'json', tags: ['sr'] },
+    folderIdCounter: { type: 'number', tags: ['sr'] }
   });
 }

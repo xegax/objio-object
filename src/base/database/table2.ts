@@ -2,14 +2,16 @@ import { ObjectBase, ObjProps } from '../object-base';
 import { SERIALIZER } from 'objio';
 import {
   TableDataArgs,
-  LoadTableDataResult,
-  PushDataArgs,
-  PushDataResult,
   LoadTableGuidResult,
   TableGuid,
   LoadTableDataArgs,
   LoadTableGuidArgs
 } from './database-holder-decl';
+import {
+  LoadTableDataResult,
+  PushDataArgs,
+  PushDataResult
+} from './database-decl';
 import { DatabaseHolderBase } from './database-holder';
 import { IDArgs } from '../../common/interfaces';
 

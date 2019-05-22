@@ -3,121 +3,145 @@ import { ObjectBase } from '../object-base';
 import { IDArgs } from '../../common/interfaces';
 import { ConnectionBase } from './connection';
 import {
-  TableGuid,
   TableDesc,
-  LoadTableGuidResult,
-  LoadTableGuidArgs,
-  LoadTableDataArgs,
   LoadTableDataResult,
   CreateTableArgs,
   DeleteDataArgs,
   DeleteTableArgs,
   PushDataArgs,
   PushDataResult,
-  LoadAggrDataArgs,
-  LoadAggrDataResult,
   UpdateDataArgs
+} from './database-decl';
+import {
+  TableGuid,
+  LoadTableGuidResult,
+  LoadTableGuidArgs,
+  LoadTableDataArgs,
+  LoadAggrDataArgs,
+  LoadAggrDataResult
 } from './database-holder-decl';
+import { DatabaseBase, RemoteDatabaseBase } from './database';
 
-export abstract class DatabaseBase2 extends ObjectBase {
-  protected conn: ConnectionBase;
-  protected database: string;
-  // conn and database are using by remote database
+export interface DatabaseHolderArgs {
+  impl: DatabaseBase;
+}
+
+export abstract class DatabaseHolderBase extends ObjectBase {
+  protected impl: DatabaseBase;
+
+  constructor(args?: DatabaseHolderArgs) {
+    super();
+
+    if (args)
+      this.impl = args.impl;
+  }
 
   abstract loadTableList(): Promise<Array<TableDesc>>;
   abstract loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult>;
-  abstract loadAggrData(args: LoadAggrDataArgs): Promise<LoadAggrDataResult>;
 
   abstract loadTableRowsNum(args: TableGuid): Promise<number>;
   abstract loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult>;
+  abstract loadAggrData(args: LoadAggrDataArgs): Promise<LoadAggrDataResult>;
+
+  abstract loadDatabaseList(): Promise<Array<string>>;
 
   abstract createTable(args: CreateTableArgs): Promise<TableDesc>;
   abstract deleteTable(args: DeleteTableArgs): Promise<void>;
   abstract pushData(args: PushDataArgs): Promise<PushDataResult>;
   abstract updateData(args: UpdateDataArgs): Promise<void>;
   abstract deleteData(args: DeleteDataArgs): Promise<void>;
-  
-  // remote db
-  abstract isRemote(): boolean;
-  abstract setConnection(args: IDArgs): Promise<void>;
-  abstract setDatabase(name: string): Promise<void>;
-  abstract getDatabaseList(): Promise<Array<string>>;
-  abstract getConnClasses(): Array<OBJIOItemClass>;
 
-  getConnection(): ConnectionBase {
-    return this.conn;
+  isRemote(): boolean {
+    return this.impl instanceof RemoteDatabaseBase;
   }
 
-  getDatabase() {
-    return this.database;
+  protected getRemote() {
+    if (this.impl instanceof RemoteDatabaseBase)
+      return this.impl;
+
+    throw `it is not a remote database`;
   }
 
-  static TYPE_ID = 'Database2'; // It must be overridden in implementation
-  static SERIALIZE: SERIALIZER = () => ({
-    ...ObjectBase.SERIALIZE(),
-    conn:     { type: 'object', const: true },
-    database: { type: 'string', const: true }
-  })
-}
-
-export interface DatabaseHolderArgs {
-  impl: DatabaseBase2;
-}
-
-export abstract class DatabaseHolderBase extends DatabaseBase2 {
-  protected impl: DatabaseBase2 = null;
-
-  constructor(args?: DatabaseHolderArgs) {
-    super();
-
-    if (args) {
-      this.impl = args.impl;
-    }
-  }
-
-  loadTableList(): Promise<Array<TableDesc>> {
-    return this.impl.loadTableList();
-  }
-
-  loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult> {
-    return this.impl.loadTableGuid(args);
-  }
-
-  loadTableRowsNum(args: TableGuid): Promise<number> {
-    return this.impl.loadTableRowsNum(args);
-  }
-
-  loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult> {
-    return this.impl.loadTableData(args);
-  }
-
-  loadAggrData(args: LoadAggrDataArgs): Promise<LoadAggrDataResult> {
-    return this.impl.loadAggrData(args);
-  }
-
-  getDatabaseList(): Promise<Array<string>> {
-    return this.impl.getDatabaseList();
-  }
-
-  isRemote() {
-    return this.impl.isRemote();
-  }
-
-  getConnClasses(): Array<OBJIOItemClass> {
-    return this.impl.getConnClasses();
+  setConnection(conn: IDArgs): Promise<void> {
+    return this.getRemote().setConnection(conn);
   }
 
   getConnection(): ConnectionBase {
-    return this.impl.getConnection();
+    return this.getRemote().getConnection();
   }
 
-  getDatabase() {
-    return this.impl.getDatabase();
+  getDatabase(): string {
+    return this.getRemote().getDatabase();
+  }
+
+  setDatabase(db: string) {
+    return this.getRemote().setDatabase(db);
+  }
+
+  getConnClasses() {
+    return this.getRemote().getConnClasses();
   }
 
   static TYPE_ID = 'DatabaseHolder';
   static SERIALIZE: SERIALIZER = () => ({
-    ...DatabaseBase2.SERIALIZE(),
+    ...ObjectBase.SERIALIZE(),
     impl: { type: 'object', const: true }
+  })
+}
+
+export class DatabaseHolderClientBase extends DatabaseHolderBase {
+  loadTableList(): Promise<Array<TableDesc>> {
+    return this.holder.invokeMethod({ method: 'loadTableList', args: {} });
+  }
+
+  loadTableRowsNum(args: TableGuid): Promise<number> {
+    return this.holder.invokeMethod({ method: 'loadTableRowsNum', args });
+  }
+
+  loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult> {
+    return this.holder.invokeMethod({ method: 'loadTableGuid', args });
+  }
+
+  loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult> {
+    return this.holder.invokeMethod({ method: 'loadTableData', args });
+  }
+
+  loadAggrData(args: LoadAggrDataArgs): Promise<LoadAggrDataResult> {
+    return this.holder.invokeMethod({ method: 'loadAggrData', args });
+  }
+
+  loadDatabaseList(): Promise<Array<string>> {
+    return this.holder.invokeMethod({ method: 'loadDatabaseList', args: {} });
+  }
+
+  createTable(args: CreateTableArgs): Promise<TableDesc> {
+    return this.holder.invokeMethod({ method: 'createTable', args });
+  }
+
+  deleteTable(args: DeleteTableArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'deleteTable', args });
+  }
+
+  pushData(args: PushDataArgs): Promise<PushDataResult> {
+    return this.holder.invokeMethod({ method: 'pushData', args });
+  }
+
+  updateData(args: UpdateDataArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'updateData', args });
+  }
+
+  deleteData(args: DeleteDataArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'deleteData', args });
+  }
+
+  setConnection(args: IDArgs): Promise<void> {
+    return (
+      super.setConnection(args)
+      .then(() => this.holder.invokeMethod({ method: 'setConnection', args }))
+    );
+  }
+
+  static SERIALIZE: SERIALIZER = () => ({
+    ...DatabaseHolderBase.SERIALIZE()
   })
 }
