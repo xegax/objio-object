@@ -20,7 +20,7 @@ import { ServerInstanceView, ServerInstance } from './server-view';
 import { VideoConcatView, VideoConcat, Props as VideoConcatProps } from './video-concat-view';
 import { ImageFile } from '../client/image-file';
 import { ObjectToCreate } from '../common/interfaces';
-import { Table2, Table2View } from '../view/table2';
+import { DatabaseTable, DatabaseTableView } from '../view/database-table';
 export { registerViews };
 import { FileStorage, FileStorageView, Props as FileStorageViewProps } from './file-storage';
 
@@ -34,7 +34,7 @@ export function getObjectsToCreate(): Array<ObjectToCreate> {
       name: 'table',
       desc: 'table object',
       icon: <Icon src={TableIcon}/>,
-      create: () => new Table2()
+      create: () => new DatabaseTable()
     }, {
       name: 'file-storage',
       desc: 'files storage',
@@ -135,10 +135,10 @@ export function getViews(): Array<OBJIOItemClassViewable> {
   });
 
   registerViews({
-    classObj: Table2,
+    classObj: DatabaseTable,
     icons: { item: <Icon src={TableIcon}/> },
     views: [{
-      view: (props: {model: Table2, objects: any}) => <Table2View {...props}/>
+      view: (props: {model: DatabaseTable, objects: any}) => <DatabaseTableView {...props}/>
     }]
   });
 
@@ -152,7 +152,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     VideoConcat,
     ImageFile,
     DatabaseHolder,
-    Table2,
+    DatabaseTable,
     FileStorage
   ];
 }

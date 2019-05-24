@@ -6,7 +6,7 @@ import { SpriteSheet, Animation } from './sprite-sheet';
 import { VideoConcat } from './video-concat';
 import { ImageFile } from './image-file';
 import { DatabaseHolder } from './database/database-holder';
-import { Table2 } from './database/table2';
+import { DatabaseTable } from './database/database-table';
 import { FileStorage } from './file-storage';
 
 export function getClasses(): Array<OBJIOItemClass> {
@@ -20,7 +20,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     VideoConcat,
     ImageFile,
     DatabaseHolder,
-    Table2,
+    DatabaseTable,
     FileStorage
   ];
 }

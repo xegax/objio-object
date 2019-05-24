@@ -22,7 +22,7 @@ export class DatabaseHolderView extends React.Component<Props> {
 
   renderHeader = (props: HeaderProps) => {
     const table = this.props.model.getSelectTable();
-    if (!table)
+    if (!table || !table.desc.columns || !table.desc.columns[props.col])
       return null;
 
     return (

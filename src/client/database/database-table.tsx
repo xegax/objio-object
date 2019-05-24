@@ -1,11 +1,10 @@
 import * as React from 'react';
 import {
-  TableBase,
+  DatabaseTableBase,
   TableData,
-  TableDataArgs,
   ObjProps,
   SetTableNameArgs
-} from '../../base/database/table2';
+} from '../../base/database/database-table';
 import {
   PropsGroup,
   DropDownPropItem,
@@ -30,7 +29,7 @@ import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 
-export class Table2 extends TableBase {
+export class DatabaseTable extends DatabaseTableBase {
   private grid: GridLoadableModel;
   private prevDB: DatabaseHolderBase;
   private tables = Array<string>();

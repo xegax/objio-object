@@ -31,19 +31,19 @@ export interface SetTableNameArgs {
   tableName: string;
 }
 
-export abstract class TableBase extends ObjectBase {
+export abstract class DatabaseTableBase extends ObjectBase {
   protected db: DatabaseHolderBase;
   protected tableFileId: string;
   protected tableName: string;
 
   abstract loadTableFile(args: LoadTableFileArgs): Promise<void>;
-  
+
   abstract loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult>;
   abstract loadTableRowsNum(args: TableGuid): Promise<number>;
   abstract loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult>;
 
   abstract pushData(args: PushDataArgs): Promise<PushDataResult>;
-  
+
   abstract setDatabase(args: IDArgs): Promise<void>;
   abstract setTableName(args: SetTableNameArgs): Promise<void>;
   abstract setTableFile(args: IDArgs): Promise<void>;
@@ -56,11 +56,11 @@ export abstract class TableBase extends ObjectBase {
     return this.db;
   }
 
-  static TYPE_ID = 'Table2';
+  static TYPE_ID = 'DATABASE-TABLE';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),
     db:           { type: 'object', const: true },
     tableName:    { type: 'string', const: true },
     tableFileId:  { type: 'string', const: true }
-  });
+  })
 }

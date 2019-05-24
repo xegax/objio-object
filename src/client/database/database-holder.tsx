@@ -1,14 +1,12 @@
 import * as React from 'react';
-import { GuidMapData } from '../../base/database/database-holder-decl';
-import { TableDesc, TableDescShort } from '../../base/database/database-decl';
+import { TableDesc } from '../../base/database/database-decl';
 import { DatabaseHolderClientBase } from '../../base/database/database-holder';
 import { PropsGroup } from 'ts-react-ui/prop-sheet';
-import { ListView, Item as LVItem } from 'ts-react-ui/list-view';
 import { DropDown, Item as DDItem } from 'ts-react-ui/drop-down';
 import { ForwardProps } from 'ts-react-ui/forward-props';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { ObjProps } from '../../base/object-base';
-import { IDArgs } from '../../common/interfaces';
+import { prompt, confirm, Intent } from 'ts-react-ui/prompt';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 
 interface TableItem extends DDItem {
@@ -23,7 +21,7 @@ export interface SelectTableInfo {
 export class DatabaseHolder extends DatabaseHolderClientBase {
   private dbList: Array<string> = [];
   private tables: Array<TableDesc> = null;
-  private updateTask: Promise<any>;
+  private updateTablesTask: Promise<any>;
   private selectTable: SelectTableInfo;
   private grid: GridLoadableModel;
 
@@ -34,6 +32,7 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
       onObjChange: () => {
         this.updateDBList();
         this.updateTables();
+        this.holder.delayedNotify();
       },
       onLoad: () => {
         this.updateDBList();
@@ -44,18 +43,6 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
 
   getGrid() {
     return this.grid;
-  }
-
-  setDatabase(database: string): Promise<void> {
-    return this.holder.invokeMethod({ method: 'setDatabase', args: { database } });
-  }
-
-  setConnection(args: IDArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'setConnection', args });
-  }
-
-  createTempTable(args: GuidMapData): Promise<TableDescShort> {
-    return Promise.reject('not implemented');
   }
 
   protected updateDBList() {
@@ -70,13 +57,16 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
   }
 
   protected updateTables() {
-    if (this.updateTask)
-      this.updateTask.cancel();
+    if (this.isRemote() && !this.getDatabase())
+      return;
 
-    this.updateTask = (
+    if (this.updateTablesTask)
+      this.updateTablesTask.cancel();
+
+    this.updateTablesTask = (
       this.loadTableList()
         .then(tables => {
-          this.updateTask = null;
+          this.updateTablesTask = null;
           this.tables = tables || [];
 
           if (this.selectTable) {
@@ -89,12 +79,12 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
         })
     );
 
-    return this.updateTask;
+    return this.updateTablesTask;
   }
 
   private getTableValues(): Array<TableItem> {
     if (!this.tables) {
-      this.updateTask == null && this.updateTables();
+      this.updateTablesTask == null && this.updateTables();
       return [];
     }
 
@@ -110,49 +100,8 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
     );
   }
 
-  private getColumnValues(): Array<LVItem> {
-    if (!this.selectTable)
-      return [];
-
-    return (
-      this.selectTable.desc.columns.map((col, i) => {
-        return {
-          value: '' + i,
-          title: col.colName,
-          render: () => {
-            let shown = true;
-            return (
-              <div className='horz-panel-1'>
-                <CheckIcon
-                  faIcon={shown ? 'fa fa-check-square-o' : 'fa fa-square-o'}
-                  value
-                  showOnHover
-                />
-                <span style={{ color: shown ? undefined : 'gray' }}>
-                  {col.colName}
-                </span>
-              </div>
-            );
-          }
-        };
-      })
-    );
-  }
-
   getSelectTable(): SelectTableInfo {
     return this.selectTable;
-  }
-
-  renderHeader = (props: LVItem) => {
-    return (
-      <div className='horz-panel-1'>
-        <span>{props.value}</span>
-        <CheckIcon
-          faIcon='fa fa-thumbs-o-up'
-          value={true}
-        />
-      </div>
-    );
   }
 
   renderRemoteProps(props: ObjProps) {
@@ -164,10 +113,14 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
     return (
       <>
         <div className='horz-panel-1 flexrow' style={{ alignItems: 'center' }}>
-          <div>connection:</div>
+          <i
+            className='fa fa-plug'
+            title='connection'
+            style={{ width: '1em' }}
+          />
           <DropDown
             style={{ flexGrow: 1 }}
-            value={conn ? { value: conn.getID() } : null}
+            value={conn ? { value: conn.getID() } : DropDown.NOTHING_SELECT}
             values={props.objects(this.getConnClasses()).map(c => {
               return {
                 value: c.getID(),
@@ -180,10 +133,15 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
           />
         </div>
         <div className='horz-panel-1 flexrow' style={{ alignItems: 'center' }}>
-          <div>db:</div>
+          <i
+            className='fa fa-database'
+            title='database'
+            style={{ width: '1em' }}
+          />
           <DropDown
+            disabled={!!this.updateTablesTask}
             style={{ flexGrow: 1 }}
-            value={db ? { value: db } : null}
+            value={db ? { value: db } : DropDown.NOTHING_SELECT}
             values={this.dbList.map(db => {
               return {
                 value: db
@@ -191,26 +149,59 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
             })}
             onSelect={db => {
               this.setDatabase(db.value);
+              this.setTable(null);
               this.tables = null;
               this.holder.delayedNotify();
             }}
           />
+          <CheckIcon
+            title='Create new database'
+            showOnHover
+            value
+            faIcon='fa fa-plus'
+            onClick={() => {
+              prompt({ title: 'Create new database', placeholder: 'database name' })
+              .then(database => {
+                this.createDatabase(database)
+                .then(() => {
+                  this.tables = null;
+                  this.setTable(null);
+                  this.setDatabase(database);
+                });
+              });
+            }}
+          />
+          {db && <CheckIcon
+            title='Delete database'
+            showOnHover
+            value
+            faIcon='fa fa-trash'
+            onClick={() => {
+              confirm({ text: `Are you sure to delete database "${db}" ?`, intent: Intent.WARNING })
+              .then(() => {
+                this.deleteDatabase(this.getDatabase());
+              });
+            }}
+          />}
         </div>
       </>
     );
   }
 
   private setTable(tableName: string): boolean {
-    const table = this.tables.find(item => item.table == tableName);
-    // nothing changed
-    if (this.selectTable && this.selectTable.tableName == table.table)
+    if (!this.tables)
       return false;
 
+    const table = this.tables.find(item => item.table == tableName);
     if (!table) {
       this.selectTable = null;
       this.holder.delayedNotify();
       return true;
     }
+
+    // nothing changed
+    if (this.selectTable && this.selectTable.tableName == table.table)
+      return false;
 
     this.selectTable = {
       tableName: table.table,
@@ -263,52 +254,39 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
               <div className='vert-panel-1 flexcol flexgrow1' style={{ height: props.height }}>
                 {this.renderRemoteProps(objProps)}
                 <div className='horz-panel-1 flexrow' style={{ alignItems: 'center' }}>
-                  <div>table:</div>
+                  <i
+                    className={this.updateTablesTask ? 'fa fa-spinner spin' : 'fa fa-table'}
+                    title='table'
+                    style={{ width: '1em' }}
+                  />
                   <DropDown
                     style={{ flexGrow: 1 }}
-                    value={this.selectTable ? { value: this.selectTable.tableName } : null}
+                    value={this.selectTable ? { value: this.selectTable.tableName } : DropDown.NOTHING_SELECT}
                     values={this.getTableValues()}
                     onSelect={sel => {
                       this.setTable(sel.value);
                     }}
                   />
-                  <CheckIcon
+                  {this.selectTable && <CheckIcon
                     showOnHover
                     value={this.selectTable != null}
-                    faIcon='fa fa-remove'
+                    faIcon='fa fa-trash'
                     onClick={() => {
                       if (!this.selectTable)
                         return;
 
-                      this.deleteTable({ table: this.selectTable.tableName })
-                        .then(() => {
-                          this.selectTable = null;
-                          this.holder.delayedNotify();
-                        });
+                      confirm({
+                        text: `Are you sure to delete table "${this.selectTable.tableName}" ?`,
+                        intent: Intent.WARNING
+                      })
+                      .then(() => this.deleteTable({ table: this.selectTable.tableName }))
+                      .then(() => {
+                        this.selectTable = null;
+                        this.holder.delayedNotify();
+                      });
                     }}
-                  />
+                  />}
                 </div>
-                <ListView
-                  height={0}
-                  style={{ flexGrow: 1 }}
-                  border={false}
-                  header={{ value: 'Column', render: this.renderHeader }}
-                  values={this.getColumnValues()}
-                  onMoveTo={args => {
-                    /*this.selectTable.changed = true;
-                    const srcIdx = +args.drag[0].value;
-                    if (args.before) {
-                      const [drag] = this.selectTable.columns.splice(srcIdx, 1);
-                      if (srcIdx >= +args.before.value)
-                        this.selectTable.columns.splice(+args.before.value, 0, drag);
-                      else
-                        this.selectTable.columns.splice(+args.before.value - 1, 0, drag);
-
-                      this.updateColumnsToShow();
-                      this.holder.delayedNotify({});
-                    }*/
-                  }}
-                />
               </div>
             );
           }}

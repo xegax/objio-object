@@ -6,7 +6,7 @@ import { Animation, SpriteSheet } from './sprite-sheet';
 import { VideoConcat } from './video-concat';
 import { ImageFile } from './image-file';
 import { DatabaseHolder } from './database/database-holder';
-import { Table2 } from './database/table2';
+import { DatabaseTable } from './database/database-table';
 import { FileStorage } from './file-storage';
 
 export function createFileObject(args: FileArgs): FileObject {
@@ -37,7 +37,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     VideoFileObject,
     VideoConcat,
     ImageFile,
-    Table2,
+    DatabaseTable,
     FileStorage
   ];
 }

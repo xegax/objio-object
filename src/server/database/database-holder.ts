@@ -46,6 +46,22 @@ export class DatabaseHolder extends DatabaseHolderBase {
     super(args);
 
     this.holder.setMethodsToInvoke({
+      setConnection: {
+        method: (args: IDArgs) => this.setConnection(args),
+        rights: 'write'
+      },
+      setDatabase: {
+        method: (args: { database: string }) => this.setDatabase(args.database),
+        rights: 'write'
+      },
+      createDatabase: {
+        method: (args: { database: string }) => this.createDatabase(args.database),
+        rights: 'create'
+      },
+      deleteDatabase: {
+        method: (args: { database: string }) => this.deleteDatabase(args.database),
+        rights: 'write'
+      },
       deleteTable: {
         method: (args: DeleteTableArgs) => this.deleteTable(args),
         rights: 'write'
@@ -60,14 +76,6 @@ export class DatabaseHolder extends DatabaseHolderBase {
       },
       deleteData: {
         method: (args: DeleteDataArgs) => this.deleteData(args),
-        rights: 'write'
-      },
-      setConnection: {
-        method: (args: IDArgs) => this.setConnection(args),
-        rights: 'write'
-      },
-      setDatabase: {
-        method: (args: { database: string }) => this.setDatabase(args.database),
         rights: 'write'
       },
       updateData: {
@@ -99,6 +107,24 @@ export class DatabaseHolder extends DatabaseHolderBase {
         rights: 'read'
       }
     });
+  }
+
+  createDatabase(database: string): Promise<void> {
+    return (
+      this.getRemote().createDatabase(database)
+      .then(() => {
+        this.holder.save(true);
+      })
+    );
+  }
+
+  deleteDatabase(database: string): Promise<void> {
+    return (
+      this.getRemote().deleteDatabase(database)
+      .then(() => {
+        this.holder.save(true);
+      })
+    );
   }
 
   loadTableList(): Promise<Array<TableDesc>> {
@@ -150,7 +176,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
         this.holder.save(true);
         return res;
       })
-    )
+    );
   }
 
   createTable(args: CreateTableArgs): Promise<TableDesc> {
@@ -195,22 +221,20 @@ export class DatabaseHolder extends DatabaseHolderBase {
     );
   }
 
-  setDatabase(database: string) {
-    return (
-      this.getRemote().setDatabase(database)
-      .then(res => {
-        this.holder.save(true);
-        return res;
-      })
-    )
+  setDatabase(database: string): Promise<boolean> {
+    if (!this.getRemote().setDatabase(database))
+      return Promise.resolve(false);
+
+    this.holder.save(true);
+    return Promise.resolve(false);
   }
 
   setConnection(args: IDArgs) {
     return (
       this.getRemote().setConnection(args)
-      .then(res => {
+      .then(() => {
         this.holder.save(true);
-        return res;
+        return true;
       })
     );
   }

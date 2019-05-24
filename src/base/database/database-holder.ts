@@ -35,6 +35,10 @@ export abstract class DatabaseHolderBase extends ObjectBase {
     if (args)
       this.impl = args.impl;
   }
+  abstract setConnection(conn: IDArgs): Promise<boolean>;
+  abstract setDatabase(db: string): Promise<boolean>;
+  abstract createDatabase(db: string): Promise<void>;
+  abstract deleteDatabase(db: string): Promise<void>;
 
   abstract loadTableList(): Promise<Array<TableDesc>>;
   abstract loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult>;
@@ -62,10 +66,6 @@ export abstract class DatabaseHolderBase extends ObjectBase {
     throw `it is not a remote database`;
   }
 
-  setConnection(conn: IDArgs): Promise<void> {
-    return this.getRemote().setConnection(conn);
-  }
-
   getConnection(): ConnectionBase {
     return this.getRemote().getConnection();
   }
@@ -74,16 +74,8 @@ export abstract class DatabaseHolderBase extends ObjectBase {
     return this.getRemote().getDatabase();
   }
 
-  setDatabase(db: string) {
-    return this.getRemote().setDatabase(db);
-  }
-
   getConnClasses() {
     return this.getRemote().getConnClasses();
-  }
-
-  deleteDatabase(db: string) {
-    return this.getRemote().deleteDatabase(db);
   }
 
   static TYPE_ID = 'DatabaseHolder';
@@ -94,6 +86,26 @@ export abstract class DatabaseHolderBase extends ObjectBase {
 }
 
 export class DatabaseHolderClientBase extends DatabaseHolderBase {
+  setConnection(conn: IDArgs): Promise<boolean> {
+    return this.holder.invokeMethod({ method: 'setConnection', args: conn });
+  }
+
+  setDatabase(database: string): Promise<boolean> {
+    return this.holder.invokeMethod({ method: 'setDatabase', args: { database }});
+  }
+
+  createDatabase(database: string): Promise<void> {
+    return this.holder.invokeMethod({ method: 'createDatabase', args: { database } });
+  }
+
+  deleteDatabase(database: string): Promise<void> {
+    const remote = this.getRemote();
+    if (remote.getDatabase() == database)
+      remote.setDatabase('');
+
+    return this.holder.invokeMethod({ method: 'deleteDatabase', args: { database }});
+  }
+
   loadTableList(): Promise<Array<TableDesc>> {
     return this.holder.invokeMethod({ method: 'loadTableList', args: {} });
   }
@@ -136,13 +148,6 @@ export class DatabaseHolderClientBase extends DatabaseHolderBase {
 
   deleteData(args: DeleteDataArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'deleteData', args });
-  }
-
-  setConnection(args: IDArgs): Promise<void> {
-    return (
-      super.setConnection(args)
-      .then(() => this.holder.invokeMethod({ method: 'setConnection', args }))
-    );
   }
 
   static SERIALIZE: SERIALIZER = () => ({

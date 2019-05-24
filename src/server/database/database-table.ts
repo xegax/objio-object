@@ -1,9 +1,9 @@
 import {
-  TableBase,
+  DatabaseTableBase,
   TableData,
   DatabaseHolderBase,
   SetTableNameArgs
-} from '../../base/database/table2';
+} from '../../base/database/database-table';
 import { IDArgs } from '../../common/interfaces';
 import { TableFileBase } from '../../base/table-file';
 import { OnRowsArgs } from '../../base/table-file/data-reading';
@@ -18,7 +18,7 @@ import {
   PushDataResult
 } from '../../base/database/database-decl';
 
-export class Table2 extends TableBase {
+export class DatabaseTable extends DatabaseTableBase {
   constructor(args) {
     super(args);
 

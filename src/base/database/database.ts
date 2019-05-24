@@ -19,6 +19,8 @@ import {
 import { ConnectionBase } from './connection';
 import { IDArgs } from '../../common/interfaces';
 
+// DatabaseBase and RemoteDatabaseBase must be server side objects
+// DatabaseBaseClient and RemoteDatabaseClient must be used only as reference to server object
 export abstract class DatabaseBase extends ObjectBase {
   abstract loadTableList(): Promise<Array<TableDesc>>;
 
@@ -46,8 +48,8 @@ export abstract class RemoteDatabaseBase extends DatabaseBase {
 
   abstract setConnection(args: IDArgs): Promise<void>;
 
-  abstract setDatabase(name: string): Promise<void>;
-  abstract deleteDatabase(name: string): Promise<void>;
+  abstract deleteDatabase(database: string): Promise<void>;
+  abstract createDatabase(database: string): Promise<void>;
 
   abstract loadDatabaseList(): Promise<Array<string>>;
   abstract getConnClasses(): Array<OBJIOItemClass>;
@@ -56,8 +58,17 @@ export abstract class RemoteDatabaseBase extends DatabaseBase {
     return this.conn;
   }
 
-  getDatabase() {
+  getDatabase(): string {
     return this.database;
+  }
+
+  setDatabase(database: string): boolean {
+    if (this.database == database)
+      return false;
+
+    this.database = database;
+    this.holder.save(true);
+    return true;
   }
 
   static SERIALIZE: SERIALIZER = () => ({
@@ -67,6 +78,7 @@ export abstract class RemoteDatabaseBase extends DatabaseBase {
   })
 }
 
+// to avoid client calls
 export class DatabaseBaseClient extends DatabaseBase {
   loadTableList() {
     return Promise.reject(`not implemented`);
@@ -154,11 +166,11 @@ export abstract class RemoteDatabaseClient extends RemoteDatabaseBase {
     return Promise.reject(`not implemented`);
   }
 
-  setDatabase() {
+  deleteDatabase() {
     return Promise.reject(`not implemented`);
   }
 
-  deleteDatabase() {
+  createDatabase() {
     return Promise.reject(`not implemented`);
   }
 

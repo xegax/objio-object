@@ -1,21 +1,14 @@
 import * as React from 'react';
-import { Table2 } from '../client/database/table2';
+import { DatabaseTable } from '../client/database/database-table';
 import { Grid, CellProps, HeaderProps } from 'ts-react-ui/grid/grid';
-import { GridLoadableModel, Row } from 'ts-react-ui/grid/grid-loadable-model';
-import { StrMap } from '../common/interfaces';
 
-export { Table2 };
+export { DatabaseTable };
 
 export interface Props {
-  model: Table2;
+  model: DatabaseTable;
 }
 
-export interface State {
-}
-
-export class Table2View extends React.Component<Props, State> {
-  state: State = {};
-
+export class DatabaseTableView extends React.Component<Props> {
   notify = () => {
     this.setState({});
   }
