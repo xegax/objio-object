@@ -119,9 +119,12 @@ export class DatabaseHolder extends DatabaseHolderBase {
   }
 
   deleteDatabase(database: string): Promise<void> {
+    const remote = this.getRemote();
     return (
-      this.getRemote().deleteDatabase(database)
+      remote.deleteDatabase(database)
       .then(() => {
+        if (remote.getDatabase() == database)
+          remote.setDatabase('');
         this.holder.save(true);
       })
     );

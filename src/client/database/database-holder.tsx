@@ -65,18 +65,24 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
 
     this.updateTablesTask = (
       this.loadTableList()
-        .then(tables => {
-          this.updateTablesTask = null;
-          this.tables = tables || [];
+      .then(tables => {
+        this.updateTablesTask = null;
+        this.tables = tables || [];
 
-          if (this.selectTable) {
-            this.tables.find(table => {
-              return table.table == this.selectTable.tableName;
-            });
-          }
+        if (this.selectTable) {
+          this.tables.find(table => {
+            return table.table == this.selectTable.tableName;
+          });
+        }
 
-          this.holder.delayedNotify();
-        })
+        this.holder.delayedNotify();
+      })
+      .catch(err => {
+        this.selectTable = null;
+        this.tables = [];
+        this.updateTablesTask = null;
+        this.holder.delayedNotify();
+      })
     );
 
     return this.updateTablesTask;
@@ -255,7 +261,7 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
                 {this.renderRemoteProps(objProps)}
                 <div className='horz-panel-1 flexrow' style={{ alignItems: 'center' }}>
                   <i
-                    className={this.updateTablesTask ? 'fa fa-spinner spin' : 'fa fa-table'}
+                    className={this.updateTablesTask ? 'fa fa-spinner fa-spin' : 'fa fa-table'}
                     title='table'
                     style={{ width: '1em' }}
                   />
