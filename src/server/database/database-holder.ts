@@ -22,7 +22,6 @@ import {
 } from '../../base/database/database-decl';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
 import { IDArgs } from '../../common/interfaces';
-import { DatabaseBase } from '../../base/database/database';
 
 export {
   ColumnInfo,
@@ -39,6 +38,7 @@ function getArgsKey(args: LoadTableGuidArgs): string {
 export class DatabaseHolder extends DatabaseHolderBase {
   protected guidMap: {[guid: string]: GuidMapData} = {};
   protected argsToGuid: {[argsKey: string]: string} = {};
+  protected tableList: Array<TableDesc> = null;
 
   protected tmpTableCounter = 0;
 
@@ -131,8 +131,14 @@ export class DatabaseHolder extends DatabaseHolderBase {
   }
 
   loadTableList(): Promise<Array<TableDesc>> {
+    if (this.tableList)
+      return Promise.resolve(this.tableList);
+
     return (
       this.impl.loadTableList()
+      .then(tableList => {
+        return this.tableList = tableList;
+      })
     );
   }
 
@@ -146,16 +152,25 @@ export class DatabaseHolder extends DatabaseHolderBase {
   }
 
   loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult> {
+    const { from, count } = args;
     return (
       this.getGuidData(args.guid)
       .then(gd => {
-        return this.impl.loadTableData({
-          table: gd.tmpTable,
-          from: args.from,
-          count: args.count
-        });
+        return (
+          this.impl.loadTableData({ table: gd.tmpTable, from, count })
+          .catch(e => {
+            gd.invalid = true;
+            return Promise.reject(e);
+          })
+        );
       })
-    );
+    ).catch(e => {
+      console.log(e);
+      return (
+        this.getGuidData(args.guid)
+        .then(gd => this.impl.loadTableData({ table: gd.tmpTable, from, count }))
+      );
+    })
   }
 
   loadAggrData(args: LoadAggrDataArgs): Promise<LoadAggrDataResult> {
@@ -175,6 +190,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
     return (
       this.impl.deleteTable(args)
       .then(res => {
+        this.tableList = null;
         this.invalidateGuids(args.table);
         this.holder.save(true);
         return res;
@@ -186,6 +202,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
     return (
       this.impl.createTable(args)
       .then(res => {
+        this.tableList = null;
         this.holder.save(true);
         return res;
       })
@@ -253,7 +270,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
       args: other,
       desc: { table: args.table, columns: [], rowsNum: 0 },
       tmpTable,
-      invalid: false,
+      invalid: true,
       createTask: null
     };
     this.argsToGuid[argsKey] = guid;
@@ -261,6 +278,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
     return (
       this.createTempTableImpl({ guid })
       .then(res => {
+        this.guidMap[guid].invalid = false;
         this.guidMap[guid].desc = {
           table: args.table,
           columns: res.columns,
@@ -348,7 +366,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
     );
   }
 
-  protected invalidateGuids(table: string) {
+  invalidateGuids(table: string) {
     Object.keys(this.guidMap)
     .forEach(key => {
       const data = this.guidMap[key];

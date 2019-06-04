@@ -28,7 +28,6 @@ import {
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
-import { DropDown } from 'ts-react-ui/drop-down';
 
 export class DatabaseTable extends DatabaseTableBase {
   private grid: GridLoadableModel;
@@ -38,14 +37,21 @@ export class DatabaseTable extends DatabaseTableBase {
   private guid: string;
 
   private dbChangeHandler = {
-    onObjChange: () => this.updateDatabaseData()
+    onObjChange: () => {
+      this.updateDatabaseData();
+      this.grid && this.grid.reloadCurrent();
+    }
   };
 
   constructor() {
     super();
 
     this.holder.addEventHandler({
-      onLoad: this.onChangeOrLoad,
+      onLoad: () => {
+        this.onChangeOrLoad();
+        this.updateDatabaseData();
+        return Promise.resolve();
+      },
       onObjChange: this.onChangeOrLoad
     });
   }
@@ -64,61 +70,62 @@ export class DatabaseTable extends DatabaseTableBase {
       return Promise.resolve();
 
     this.db.holder.addEventHandler(this.dbChangeHandler);
-    this.updateDatabaseData();
+    this.loadTableDataImpl();
 
     return Promise.resolve();
   }
 
-  private updateDatabaseData() {
-    if (this.tableDesc && this.tableName != this.tableDesc.table)
-      this.tableDesc = null;
+  private loadTableTask: Promise<void>;
 
-    this.db.loadTableList()
-      .then(lst => {
-        this.tables = lst.map(t => t.table);
-        this.holder.delayedNotify();
+  private loadTableDataImpl(): Promise<void> {
+    if (!this.tableName || this.getStatus() != 'ok')
+      return Promise.resolve();
+
+    if (this.loadTableTask)
+      return this.loadTableTask;
+
+    this.tableDesc = null;
+    this.loadTableTask = this.loadTableGuid({ table: this.tableName, desc: true })
+    .then(table => {
+      this.loadTableTask = null;
+
+      this.tableDesc = {
+        ...table.desc,
+        table: this.tableName
+      };
+      this.guid = table.guid;
+
+      this.grid = new GridLoadableModel({
+        rowsCount: table.desc.rowsNum,
+        colsCount: table.desc.columns.length,
+        prev: this.grid
       });
 
-    if (this.tableName && !this.tableDesc) {
-      this.loadTableGuid({ table: this.tableName, desc: true })
-        .then(desc => {
-          this.onTableSelected(desc);
-        })
-        .catch(e => {
-          this.tableDesc = null;
-          this.holder.delayedNotify();
-          return Promise.reject(e);
-        });
-    }
-  }
-
-  private onTableSelected(table: LoadTableGuidResult) {
-    this.tableDesc = {
-      ...table.desc,
-      table: this.tableName
-    };
-    this.guid = table.guid;
-
-    this.grid = new GridLoadableModel({
-      rowsCount: table.desc.rowsNum,
-      colsCount: table.desc.columns.length,
-      prev: this.grid
-    });
-
-    this.grid.setLoader((from, count) => {
-      return (
-        this.loadTableData({
-          guid: this.guid,
-          from,
-          count
-        })
+      this.grid.setLoader((from, count) => {
+        return (
+          this.loadTableData({ guid: this.guid, from, count })
           .then(res => {
             return res.rows.map(obj => ({ obj }));
           })
-      );
+        );
+      });
+
+      this.holder.delayedNotify();
+    })
+    .catch(e => {
+      this.loadTableTask = null;
+      return Promise.reject(e);
     });
 
-    this.holder.delayedNotify();
+    return this.loadTableTask;
+  }
+
+  private updateDatabaseData() {
+    this.db.loadTableList()
+    .then(lst => {
+      this.tables = lst.map(t => t.table);
+      this.holder.delayedNotify();
+    });
   }
 
   getTableInfo(): TableDesc {

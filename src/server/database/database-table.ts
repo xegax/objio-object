@@ -17,6 +17,7 @@ import {
   PushDataArgs,
   PushDataResult
 } from '../../base/database/database-decl';
+import { DatabaseHolder } from './database-holder';
 
 export class DatabaseTable extends DatabaseTableBase {
   constructor(args) {
@@ -63,10 +64,11 @@ export class DatabaseTable extends DatabaseTableBase {
       return Promise.reject('unknown type of source file');
 
     const result = { skipRows: 0 };
+    const table = this.tableName;
     const onRows = (args: OnRowsArgs) => {
       return (
         this.pushData({
-          table: this.tableName,
+          table,
           rows: args.rows as any,
           updateVersion: false
         })
@@ -91,6 +93,7 @@ export class DatabaseTable extends DatabaseTableBase {
       .then(() => {
         // need update version
         this.db.holder.save(true);
+        (this.db as DatabaseHolder).invalidateGuids(table);
         this.setStatus('ok');
         return result;
       })
