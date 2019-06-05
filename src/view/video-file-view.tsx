@@ -237,7 +237,7 @@ export class VideoFileView extends React.Component<Props, State> {
           }}
         />
       )
-    ];
+    ] as Array<React.ReactElement<Tag>>;
   }
 
   renderToolbar() {

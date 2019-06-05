@@ -8,17 +8,17 @@ import { MediaStream } from '../task/media-desc';
 import { ObjectsFolder } from '../base/object-base';
 import { ImageFileBase } from '../base/image-file';
 
-const RemoveAll: Action = {
+const actRemoveAll: Action = {
   text: 'Remove all',
   onAction: () => {}
 };
 
-const RemoveObjectOnly: Action = {
+const actRemoveObjectOnly: Action = {
   text: 'Object only',
   onAction: () => {}
 };
 
-const Cancel: Action = {
+const actCancel: Action = {
   text: 'Cancel',
   onAction: () => {}
 };
@@ -168,12 +168,12 @@ export class VideoFileObject extends VideoFileBase {
           faIcon='fa fa-trash'
           value={false}
           onChange={() => {
-            confirm({ text: 'Are you sure to delete?', actions: [ RemoveAll, RemoveObjectOnly, Cancel] })
+            confirm({ text: 'Are you sure to delete?', actions: [ actRemoveAll, actRemoveObjectOnly, actCancel] })
             .then(action => {
-              if (action == Cancel)
+              if (action == actCancel)
                 return;
 
-              this.remove({ objId: fileID, removeContent: action == RemoveAll });
+              this.remove({ objId: fileID, removeContent: action == actRemoveAll });
             });
           }}
         />
@@ -240,12 +240,12 @@ export class VideoFileObject extends VideoFileBase {
           faIcon='fa fa-trash'
           value={false}
           onChange={() => {
-            confirm({ text: 'Are you sure to delete?', actions: [ RemoveAll, RemoveObjectOnly, Cancel] })
+            confirm({ text: 'Are you sure to delete?', actions: [ actRemoveAll, actRemoveObjectOnly, actCancel] })
             .then(action => {
-              if (action == Cancel)
+              if (action == actCancel)
                 return;
 
-              this.remove({ objId: fileID, removeContent: action == RemoveAll });
+              this.remove({ objId: fileID, removeContent: action == actRemoveAll });
             });
           }}
         />
