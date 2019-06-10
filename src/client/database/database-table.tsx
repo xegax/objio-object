@@ -28,6 +28,7 @@ import {
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
+import { ObjLink } from '../../control/obj-link';
 
 export class DatabaseTable extends DatabaseTableBase {
   private grid: GridLoadableModel;
@@ -121,6 +122,9 @@ export class DatabaseTable extends DatabaseTableBase {
   }
 
   private updateDatabaseData() {
+    if (!this.db)
+      return;
+
     this.db.loadTableList()
     .then(lst => {
       this.tables = lst.map(t => t.table);
@@ -175,7 +179,12 @@ export class DatabaseTable extends DatabaseTableBase {
       <PropsGroup label='config' defaultHeight={200} key={this.holder.getID()}>
         <DropDownPropItem
           left={[
-            <i className='fa fa-database' title='database' style={{ width: '1em', textAlign: 'center' }} />
+            <ObjLink
+              objId={this.db ? this.db.getID() : null}
+              className='fa fa-database'
+              title='database'
+              style={{ width: '1em', textAlign: 'center' }}
+            />
           ]}
           value={this.db ? { value: this.db.getID(), render: this.db.getName() } : null}
           values={props.objects([DatabaseHolder]).map(db => {

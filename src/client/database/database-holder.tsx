@@ -8,6 +8,7 @@ import { CheckIcon } from 'ts-react-ui/checkicon';
 import { ObjProps } from '../../base/object-base';
 import { prompt, confirm, Intent } from 'ts-react-ui/prompt';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
+import { ObjLink } from '../../control/obj-link';
 
 interface TableItem extends DDItem {
 }
@@ -119,7 +120,8 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
     return (
       <>
         <div className='horz-panel-1 flexrow' style={{ alignItems: 'center' }}>
-          <i
+          <ObjLink
+            objId={conn ? conn.getID() : null}
             className='fa fa-plug'
             title='connection'
             style={{ width: '1em' }}

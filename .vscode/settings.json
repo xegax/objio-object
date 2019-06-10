@@ -10,6 +10,7 @@
 		"server": true,
 		"view": true,
 		"task": true,
+		"control": true,
 		"**/build": true,
 		"**/.git": true,
 		"**/.DS_Store": true,

@@ -9,7 +9,7 @@
     "clean": "npm run clean-src && npm run clean-dirs",
     "clean-src": "shx rm -rf src/**/*.js src/**/*.js.map src/**/*.d.ts *.d.ts *.js *.js.map",
     "copy": "shx rm -rf images && shx cp -rf ./src/images ./images && shx cp -rf ./src/styles ./styles",
-    "clean-dirs": "shx rm -rf client server task view common base images styles"
+    "clean-dirs": "shx rm -rf client server task view common base images styles control"
   },
   "author": "xega",
   "license": "ISC",
