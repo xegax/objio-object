@@ -1,8 +1,7 @@
 import {
   DatabaseTableBase,
   TableData,
-  DatabaseHolderBase,
-  SetTableNameArgs
+  DatabaseHolderBase
 } from '../../base/database/database-table';
 import { IDArgs } from '../../common/interfaces';
 import { TableFileBase } from '../../base/table-file';
@@ -18,6 +17,7 @@ import {
   PushDataResult
 } from '../../base/database/database-decl';
 import { DatabaseHolder } from './database-holder';
+import { SetTableNameArgs, ModifyColumnArgs, TableColumn } from '../../base/database/database-table-decl';
 
 export class DatabaseTable extends DatabaseTableBase {
   constructor(args) {
@@ -54,6 +54,10 @@ export class DatabaseTable extends DatabaseTableBase {
       },
       loadTableFile: {
         method: (args: IDArgs) => this.loadTableFile(args),
+        rights: 'write'
+      },
+      modifyColumns: {
+        method: (args: ModifyColumnArgs) => this.modifyColumns(args),
         rights: 'write'
       }
     });
@@ -224,8 +228,18 @@ export class DatabaseTable extends DatabaseTableBase {
     return (
       this.db.loadTableList()
       .then(lst => {
-        if (!lst.find(t => t.table == args.tableName))
+        const t = lst.find(t => t.table == args.tableName);
+        if (!t)
           return Promise.reject(`Table "${args.tableName}" not present in database`);
+
+        this.columns = t.columns.map(c => {
+          const col: TableColumn = {
+            column: c.colName,
+            show: true
+          };
+
+          return col;
+        });
 
         this.tableName = args.tableName;
         this.holder.save();
@@ -259,5 +273,29 @@ export class DatabaseTable extends DatabaseTableBase {
         this.holder.save();
       })
     );
+  }
+
+  modifyColumns(args: ModifyColumnArgs): Promise<void> {
+    let changed = 0;
+    Object.keys(args)
+    .forEach(k => {
+      const col = this.columns.find(c => c.column == k);
+      if (!col)
+        return;
+
+      Object.keys(col)
+      .forEach(f => {
+        const newValue = args[k][f];
+        if (newValue === undefined || col[f] === newValue)
+          return;
+
+        col[f] = newValue;
+        changed++;
+      });
+    });
+
+    if (changed)
+      this.holder.save(true);
+    return Promise.resolve();
   }
 }

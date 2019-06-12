@@ -21,6 +21,7 @@ import {
   UpdateArgs
 } from '../base/file-storage-decl';
 import { fmtBytes } from '../common/common';
+import { ObjLink } from '../control/obj-link';
 
 export { Folder };
 
@@ -299,7 +300,13 @@ export class FileStorage extends FileStorageBase {
       <PropsGroup label='config' key={this.holder.getID()}>
         <DropDownPropItem
           disabled={this.db != null}
-          label='database'
+          left={[
+            <ObjLink
+              title='database'
+              objId={this.db ? this.db.getID() : null}
+              className='fa fa-database'
+            />
+          ]}
           value={this.db ? { value: this.db.getID(), render: this.db.getName() } : null}
           values={props.objects([DatabaseHolder]).map(db => {
             return {

@@ -31,7 +31,8 @@ export {
 function getArgsKey(args: LoadTableGuidArgs): string {
   return [
     args.table,
-    args.cond
+    args.cond,
+    args.columns.join(',')
   ].map(k => JSON.stringify(k)).join('-');
 }
 
@@ -331,7 +332,8 @@ export class DatabaseHolder extends DatabaseHolderBase {
       data.createTask = this.impl.createTempTable({
         table: data.desc.table,
         tmpTableName: data.tmpTable,
-        cond: data.args.cond
+        cond: data.args.cond,
+        columns: data.args.columns
       })
       .then(res => {
         data.invalid = false;

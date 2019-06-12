@@ -1,9 +1,7 @@
 import * as React from 'react';
 import {
-  DatabaseTableBase,
-  TableData,
-  ObjProps,
-  SetTableNameArgs
+  DatabaseTableClientBase,
+  ObjProps
 } from '../../base/database/database-table';
 import {
   PropsGroup,
@@ -11,31 +9,27 @@ import {
   PropItem
 } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database-holder';
-import { IDArgs } from '../../common/interfaces';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
-import {
-  TableGuid,
-  LoadTableGuidArgs,
-  LoadTableGuidResult,
-  LoadTableDataArgs
-} from '../../base/database/database-holder-decl';
-import {
-  PushDataArgs,
-  PushDataResult,
-  TableDesc,
-  LoadTableDataResult
-} from '../../base/database/database-decl';
+import { TableDesc } from '../../base/database/database-decl';
+import { TableColumn } from '../../base/database/database-table-decl';
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 import { ObjLink } from '../../control/obj-link';
+import { ForwardProps } from 'ts-react-ui/forward-props';
+import { ListView, Item } from 'ts-react-ui/list-view';
+import { FitToParent } from 'ts-react-ui/fittoparent';
 
-export class DatabaseTable extends DatabaseTableBase {
+interface ColumnItem extends Item {
+}
+
+export class DatabaseTable extends DatabaseTableClientBase {
   private grid: GridLoadableModel;
   private prevDB: DatabaseHolderBase;
   private tables = Array<string>();
   private tableDesc: TableDesc;
   private guid: string;
+  private modifiedCols: {[col: string]: Partial<TableColumn>} = {};
 
   private dbChangeHandler = {
     onObjChange: () => {
@@ -59,6 +53,19 @@ export class DatabaseTable extends DatabaseTableBase {
 
   getGrid(): GridLoadableModel {
     return this.grid;
+  }
+
+  private applyColsTask: Promise<void>;
+
+  private onApplyColumns() {
+    if (this.applyColsTask)
+      return;
+
+    this.applyColsTask = this.modifyColumns(this.modifiedCols)
+    .then(() => {
+      this.applyColsTask = null;
+      this.modifiedCols = {};
+    });
   }
 
   private onChangeOrLoad = () => {
@@ -86,7 +93,8 @@ export class DatabaseTable extends DatabaseTableBase {
       return this.loadTableTask;
 
     this.tableDesc = null;
-    this.loadTableTask = this.loadTableGuid({ table: this.tableName, desc: true })
+    let columns = this.columns.filter(c => c.show).map(c => c.column);
+    this.loadTableTask = this.loadTableGuid({ table: this.tableName, desc: true, columns })
     .then(table => {
       this.loadTableTask = null;
 
@@ -138,45 +146,13 @@ export class DatabaseTable extends DatabaseTableBase {
     return this.tableDesc;
   }
 
-  pushData(args: PushDataArgs): Promise<PushDataResult> {
-    return this.holder.invokeMethod({ method: 'pushData', args });
-  }
-
-  loadTableFile(args: IDArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'loadTableFile', args });
-  }
-
-  loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult> {
-    return this.holder.invokeMethod<LoadTableGuidResult>({ method: 'loadTableGuid', args });
-  }
-
-  loadTableRowsNum(args: TableGuid): Promise<number> {
-    return this.holder.invokeMethod<number>({ method: 'loadTableRowsNum', args });
-  }
-
-  loadTableData(args: LoadTableDataArgs): Promise<LoadTableDataResult> {
-    return this.holder.invokeMethod<TableData>({ method: 'loadTableData', args });
-  }
-
-  setDatabase(args: IDArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'setDatabase', args });
-  }
-
-  setTableName(args: SetTableNameArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'setTableName', args });
-  }
-
-  setTableFile(args: IDArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'setTableFile', args });
-  }
-
   isTableValid() {
     return this.tableName && this.tableDesc;
   }
 
-  getObjPropGroups(props: ObjProps) {
+  private renderBaseConfig(props: ObjProps) {
     return (
-      <PropsGroup label='config' defaultHeight={200} key={this.holder.getID()}>
+      <PropsGroup label='config' key={'base-' + this.holder.getID()}>
         <DropDownPropItem
           left={[
             <ObjLink
@@ -256,6 +232,101 @@ export class DatabaseTable extends DatabaseTableBase {
           }}
         />
       </PropsGroup>
+    );
+  }
+
+  private renderColumnItem = (c: Partial<TableColumn>): Item => {
+    let mc = {...c, ...this.modifiedCols[c.column]};
+    return {
+      value: c.column,
+      render: () => {
+        return (
+          <div className='horz-panel-1'>
+            <CheckIcon
+              showOnHover
+              value
+              faIcon={mc.show ? 'fa fa-check-square-o' : 'fa fa-square-o'}
+              onClick={() => {
+                const newc = this.modifiedCols[c.column] || (this.modifiedCols[c.column]={ show: c.show });
+                newc.show = !newc.show;
+
+                this.holder.delayedNotify();
+              }}
+            />
+            <span style={{ color: mc.show ? null : 'silver' }}>{c.column}</span>
+          </div>
+        );
+      }
+    };
+  }
+
+  private renderColumnsConfig(props: ObjProps) {
+    return (
+      <PropsGroup label='columns' defaultOpen={false} defaultHeight={this.columns.length ? 200 : null} key={'cols-' + this.holder.getID()}>
+        <ForwardProps render={(p: { height?: number }) =>
+          <div className='vert-panel-1 flexcol flexgrow1' style={{ height: p.height }}>
+            {this.renderColumnsView(props)}
+          </div>
+        }/>
+      </PropsGroup>
+    );
+  }
+
+  private renderColumnsView(props: ObjProps) {
+    const cols = this.columns;
+    if (!cols.length) {
+      return (
+        <div>nothing to display</div>
+      );
+    }
+
+    let apply = (
+      <>
+        <CheckIcon
+          title='apply'
+          style={{ color: 'green' }}
+          faIcon='fa fa-check-circle'
+          value
+        />
+        <span>Apply</span>
+      </>
+    );
+
+    if (Object.keys(this.modifiedCols).length) {
+      apply = (
+        <a className='horz-panel-1' onClick={() => this.onApplyColumns()}>
+          {apply}
+        </a>
+      );
+    } else {
+      apply = <span className='horz-panel-1' style={{ color: 'silver' }}>{apply}</span>
+    }
+
+    return (
+      <>
+        <FitToParent wrapToFlex
+          render={(w, h) =>
+            <ListView
+              height={h}
+              border={false}
+              onSelect={s => {}}
+              values={cols.map(this.renderColumnItem)}
+            />
+          }
+        />
+        <div className='horz-panel-1' style={{ textAlign: 'center', flexGrow: 0 }}>
+          {apply}
+        </div>
+      </>
+    );
+  }
+
+  getObjPropGroups(props: ObjProps) {
+    return (
+      <>
+        {this.renderBaseConfig(props)}
+        {this.renderColumnsConfig(props)}
+      </>
     );
   }
 }

@@ -8,6 +8,7 @@ import {
 export interface LoadTableGuidArgs {
   table: string;
   cond?: CompoundCond;
+  columns?: Array<string>;
   desc?: boolean;   // include table description to result
 }
 

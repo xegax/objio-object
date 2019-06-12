@@ -1,7 +1,6 @@
 import * as React from 'react';
-import { Connection, ConnectionArgs } from '../client/database/connection';
-import { ConfigBase } from './config';
-import { TextPropItem, PropsGroup } from 'ts-react-ui/prop-sheet';
+import { Connection } from '../client/database/connection';
+import { Card, Elevation } from 'ts-react-ui/blueprint';
 
 export { Connection };
 
@@ -11,52 +10,18 @@ export interface Props {
 
 export class ConnectionView extends React.Component<Props> {
   render() {
+    const m = this.props.model;
     return (
-      this.props.model.toString()
+      <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <Card interactive={false} elevation={Elevation.TWO}>
+          <h5>Database connection</h5>
+          <p>Host: <strong>{m.getHost()}</strong></p>
+          <p>Port: <strong>{m.getPort()}</strong></p>
+          <p>User: <strong>{m.getUser()}</strong></p>
+          <p>{m.isConnected() ? 'Connection established' : 'Disconnected'}</p>
+        </Card>
+      </div>
     );
   }
 }
 
-export class ConnectionConfig extends ConfigBase<ConnectionArgs> {
-  componentDidMount() {
-    this.config.host = 'localhost';
-    this.config.port = 3306;
-    this.config.user = 'root';
-    this.setState({});
-  }
-
-  render() {
-    return (
-      <PropsGroup label='connection'>
-        <TextPropItem
-          label='host'
-          value={this.config.host}
-          onChanged={value => {
-            this.config.host = value;
-          }}
-        />
-        <TextPropItem
-          label='user'
-          value={this.config.user}
-          onChanged={value => {
-            this.config.user = value;
-          }}
-        />
-        <TextPropItem
-          label='port'
-          value={this.config.port}
-          onChanged={value => {
-            this.config.port = +value;
-          }}
-        />
-        <TextPropItem
-          label='password'
-          onEnter={value => {
-            this.config.password = value;
-            return '';
-          }}
-        />
-      </PropsGroup>
-    );
-  }
-}

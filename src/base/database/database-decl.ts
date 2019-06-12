@@ -100,7 +100,7 @@ export interface CreateTempTableArgs {
   table: string;
   tmpTableName: string;
   cond?: CompoundCond;
-  columns?: Array<ColumnInfo>;
+  columns?: Array<string>;
 }
 
 export interface DeleteTableArgs {
