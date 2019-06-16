@@ -1,7 +1,9 @@
 export interface TableColumn {
   column: string;
   label?: string;
+  size?: number;
   show: boolean;
+  order?: number;
 }
 
 export interface LoadTableFileArgs {
@@ -10,8 +12,4 @@ export interface LoadTableFileArgs {
 
 export interface SetTableNameArgs {
   tableName: string;
-}
-
-export interface ModifyColumnArgs {
-  [column: string]: Partial<TableColumn>
 }

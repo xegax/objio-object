@@ -8,6 +8,7 @@ import { ImageFile } from './image-file';
 import { DatabaseHolder } from './database/database-holder';
 import { DatabaseTable } from './database/database-table';
 import { FileStorage } from './file-storage';
+import { ApprMapClientBase } from '../base/appr-map';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
@@ -38,6 +39,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     VideoConcat,
     ImageFile,
     DatabaseTable,
-    FileStorage
+    FileStorage,
+    ApprMapClientBase
   ];
 }

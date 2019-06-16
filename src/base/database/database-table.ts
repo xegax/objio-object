@@ -10,16 +10,17 @@ import {
 import {
   LoadTableDataResult,
   PushDataArgs,
-  PushDataResult
+  PushDataResult,
+  ColumnInfo
 } from './database-decl';
 import { DatabaseHolderBase } from './database-holder';
 import { IDArgs } from '../../common/interfaces';
 import {
-  TableColumn,
   LoadTableFileArgs,
-  SetTableNameArgs,
-  ModifyColumnArgs
+  SetTableNameArgs
 } from './database-table-decl';
+import { ApprMapBase } from '../appr-map';
+import { TableAppr } from './database-table-appr';
 
 export {
   TableDataArgs,
@@ -33,7 +34,8 @@ export abstract class DatabaseTableBase extends ObjectBase {
   protected db: DatabaseHolderBase;
   protected tableFileId: string;
   protected tableName: string;
-  protected columns = Array<TableColumn>();
+  protected appr: ApprMapBase<TableAppr>;
+  protected columns = Array<ColumnInfo>();
 
   abstract loadTableFile(args: LoadTableFileArgs): Promise<void>;
 
@@ -46,8 +48,6 @@ export abstract class DatabaseTableBase extends ObjectBase {
   abstract setDatabase(args: IDArgs): Promise<void>;
   abstract setTableName(args: SetTableNameArgs): Promise<void>;
   abstract setTableFile(args: IDArgs): Promise<void>;
-  
-  abstract modifyColumns(args: ModifyColumnArgs): Promise<void>;
 
   getTableName(): string {
     return this.tableName;
@@ -63,6 +63,7 @@ export abstract class DatabaseTableBase extends ObjectBase {
     db:           { type: 'object', const: true },
     tableName:    { type: 'string', const: true },
     tableFileId:  { type: 'string', const: true },
+    appr:         { type: 'object', const: true },
     columns:      { type: 'json', const: true }
   })
 }
@@ -98,9 +99,5 @@ export class DatabaseTableClientBase extends DatabaseTableBase {
 
   setTableFile(args: IDArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'setTableFile', args });
-  }
-
-  modifyColumns(args: ModifyColumnArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'modifyColumns', args });
   }
 }

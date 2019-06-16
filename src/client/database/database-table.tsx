@@ -6,7 +6,8 @@ import {
 import {
   PropsGroup,
   DropDownPropItem,
-  PropItem
+  PropItem,
+  SwitchPropItem
 } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database-holder';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
@@ -38,17 +39,67 @@ export class DatabaseTable extends DatabaseTableClientBase {
     }
   };
 
+  private apprHandler = {
+    onObjChange: () => {
+      this.applyAppr();
+    }
+  };
+
   constructor() {
     super();
 
     this.holder.addEventHandler({
+      onCreate: () => {
+        this.listenToAppr();
+        this.applyAppr();
+        return Promise.resolve();
+      },
       onLoad: () => {
+        this.listenToAppr();
         this.onChangeOrLoad();
         this.updateDatabaseData();
+        this.applyAppr();
         return Promise.resolve();
       },
       onObjChange: this.onChangeOrLoad
     });
+  }
+
+  private listenToAppr() {
+    if (!this.appr)
+      return;
+
+    this.appr.holder.addEventHandler(this.apprHandler);
+  }
+
+  private prevColsToShow = Array<string>();
+  private applyAppr() {
+    if (!this.grid)
+      return null;
+
+    const appr = this.appr.get();
+    this.grid.setHeader(appr.header.show);
+    this.grid.setBodyBorder(appr.body.border);
+
+    if (this.tableDesc && this.tableDesc.columns) {
+      const sizes = this.tableDesc.columns.map((c, i) => {
+        const col = appr.columns[c.colName];
+        if (col && col.size != null)
+          return { idx: i, size: col.size };
+
+        return null;
+      }).filter(p => p);
+
+      sizes.forEach(sz => {
+        this.grid.setColSize(sz.idx, sz.size);
+      });
+    }
+    const nextColsToShow = this.getColsToShow();
+    if (JSON.stringify(this.prevColsToShow) != JSON.stringify(nextColsToShow)) {
+      this.loadTableDataImpl();
+    }
+
+    this.prevColsToShow = nextColsToShow;
   }
 
   getGrid(): GridLoadableModel {
@@ -61,7 +112,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
     if (this.applyColsTask)
       return;
 
-    this.applyColsTask = this.modifyColumns(this.modifiedCols)
+    this.applyColsTask = this.appr.sendProps({ columns: this.modifiedCols })
     .then(() => {
       this.applyColsTask = null;
       this.modifiedCols = {};
@@ -85,6 +136,36 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private loadTableTask: Promise<void>;
 
+  getColsToShow(): Array<string> {
+    const colMap = this.appr.get().columns;
+    const cols = this.columns.filter(c => !colMap[c.colName] || this.getColumnProp(c.colName).show);
+    return cols.map(c => c.colName).sort((a, b) => {
+      const ac = this.getColumnProp(a);
+      const bc = this.getColumnProp(b);
+      if (ac.order == null || bc.order == null)
+        return 0;
+
+      return ac.order - bc.order;
+    });
+  }
+
+  private onColResized = () => {
+    const colMap = this.appr.get().columns;
+
+    let modified: {[name: string]: Partial<TableColumn>} = {};
+    this.getColsToShow().forEach((c, index) => {
+      const col = colMap[c] || {};
+      const w = this.grid.isColFixed(index) ? this.grid.getColWidth({ index }) : null;
+      if (col.size == w)
+        return;
+
+      modified[c] = { size: w };
+    });
+
+    if (Object.keys(modified).length)
+      this.appr.sendProps({ columns: modified });
+  }
+
   private loadTableDataImpl(): Promise<void> {
     if (!this.tableName || this.getStatus() != 'ok')
       return Promise.resolve();
@@ -93,7 +174,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
       return this.loadTableTask;
 
     this.tableDesc = null;
-    let columns = this.columns.filter(c => c.show).map(c => c.column);
+    const columns = this.getColsToShow();
     this.loadTableTask = this.loadTableGuid({ table: this.tableName, desc: true, columns })
     .then(table => {
       this.loadTableTask = null;
@@ -104,11 +185,15 @@ export class DatabaseTable extends DatabaseTableClientBase {
       };
       this.guid = table.guid;
 
+      this.grid && this.grid.unsubscribe(this.onColResized, 'col-resized');
+
       this.grid = new GridLoadableModel({
         rowsCount: table.desc.rowsNum,
         colsCount: table.desc.columns.length,
         prev: this.grid
       });
+      this.applyAppr();
+      this.grid.subscribe(this.onColResized, 'col-resized');
 
       this.grid.setLoader((from, count) => {
         return (
@@ -260,9 +345,53 @@ export class DatabaseTable extends DatabaseTableClientBase {
     };
   }
 
+  getColumnProp(column: string): Partial<TableColumn> {
+    const colMap = this.appr.get().columns;
+    const tc: TableColumn = {
+      column,
+      show: true,
+      ...colMap[column],
+      ...this.modifiedCols[column]
+    };
+    return tc;
+  }
+
+  private renderAppr(props: ObjProps) {
+    if (!this.appr)
+      return null;
+
+    return (
+      <PropsGroup
+        label='appearance'
+        defaultOpen={false}
+        key={'appr-' + this.holder.getID()}
+      >
+        <SwitchPropItem
+          label='show header'
+          value={this.appr.get().header.show}
+          onChanged={show => {
+            this.appr.sendProps({ header: { show }});
+          }}
+        />
+        <SwitchPropItem
+          label='show border'
+          value={this.appr.get().body.border}
+          onChanged={border => {
+            this.appr.sendProps({ body: { border }});
+          }}
+        />
+      </PropsGroup>
+    );
+  }
+
   private renderColumnsConfig(props: ObjProps) {
     return (
-      <PropsGroup label='columns' defaultOpen={false} defaultHeight={this.columns.length ? 200 : null} key={'cols-' + this.holder.getID()}>
+      <PropsGroup
+        label='columns'
+        defaultOpen={false}
+        defaultHeight={200}
+        key={'cols-' + this.holder.getID()}
+      >
         <ForwardProps render={(p: { height?: number }) =>
           <div className='vert-panel-1 flexcol flexgrow1' style={{ height: p.height }}>
             {this.renderColumnsView(props)}
@@ -273,7 +402,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   private renderColumnsView(props: ObjProps) {
-    const cols = this.columns;
+    let cols = this.columns;
     if (!cols.length) {
       return (
         <div>nothing to display</div>
@@ -302,6 +431,18 @@ export class DatabaseTable extends DatabaseTableClientBase {
       apply = <span className='horz-panel-1' style={{ color: 'silver' }}>{apply}</span>
     }
 
+    const colProps = cols.map(c => this.getColumnProp(c.colName));
+    colProps.sort((a, b) => {
+      if (a.order != null && b.order == null)
+        return -1;
+      if (a.order == null && b.order != null)
+        return 1;
+      if (a.order == null && b.order == null)
+        return 0;
+        
+      return a.order - b.order;
+    });
+
     return (
       <>
         <FitToParent wrapToFlex
@@ -310,7 +451,21 @@ export class DatabaseTable extends DatabaseTableClientBase {
               height={h}
               border={false}
               onSelect={s => {}}
-              values={cols.map(this.renderColumnItem)}
+              onMoveTo={args => {
+                const dragColIdx = colProps.findIndex(c => c.column == args.drag[0].value);
+                const dragCol = colProps.splice(dragColIdx, 1)[0];
+
+                const beforeColIdx = args.before ? colProps.findIndex(c => c.column == args.before.value) : -1;
+                if (beforeColIdx != -1)
+                  colProps.splice(beforeColIdx, 1, dragCol, colProps[beforeColIdx]);
+
+                colProps.forEach((c, i) => {
+                  const col = this.modifiedCols[c.column] || (this.modifiedCols[c.column] = {});
+                  col.order = i;
+                });
+                this.holder.delayedNotify();
+              }}
+              values={colProps.map(this.renderColumnItem)}
             />
           }
         />
@@ -326,6 +481,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
       <>
         {this.renderBaseConfig(props)}
         {this.renderColumnsConfig(props)}
+        {this.renderAppr(props)}
       </>
     );
   }

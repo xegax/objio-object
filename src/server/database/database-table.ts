@@ -17,11 +17,21 @@ import {
   PushDataResult
 } from '../../base/database/database-decl';
 import { DatabaseHolder } from './database-holder';
-import { SetTableNameArgs, ModifyColumnArgs, TableColumn } from '../../base/database/database-table-decl';
+import { SetTableNameArgs } from '../../base/database/database-table-decl';
+import { ApprMapServerBase } from '../../base/appr-map';
+import { makeTableAppr } from '../../base/database/database-table-appr';
 
 export class DatabaseTable extends DatabaseTableBase {
   constructor(args) {
     super(args);
+
+    this.appr = new ApprMapServerBase(makeTableAppr());
+    this.holder.addEventHandler({
+      onLoad: () => {
+        this.appr.setSchema(makeTableAppr());
+        return Promise.resolve();
+      }
+    });
 
     this.holder.setMethodsToInvoke({
       pushData: {
@@ -54,10 +64,6 @@ export class DatabaseTable extends DatabaseTableBase {
       },
       loadTableFile: {
         method: (args: IDArgs) => this.loadTableFile(args),
-        rights: 'write'
-      },
-      modifyColumns: {
-        method: (args: ModifyColumnArgs) => this.modifyColumns(args),
         rights: 'write'
       }
     });
@@ -232,15 +238,7 @@ export class DatabaseTable extends DatabaseTableBase {
         if (!t)
           return Promise.reject(`Table "${args.tableName}" not present in database`);
 
-        this.columns = t.columns.map(c => {
-          const col: TableColumn = {
-            column: c.colName,
-            show: true
-          };
-
-          return col;
-        });
-
+        this.columns = t.columns;
         this.tableName = args.tableName;
         this.holder.save();
       })
@@ -273,29 +271,5 @@ export class DatabaseTable extends DatabaseTableBase {
         this.holder.save();
       })
     );
-  }
-
-  modifyColumns(args: ModifyColumnArgs): Promise<void> {
-    let changed = 0;
-    Object.keys(args)
-    .forEach(k => {
-      const col = this.columns.find(c => c.column == k);
-      if (!col)
-        return;
-
-      Object.keys(col)
-      .forEach(f => {
-        const newValue = args[k][f];
-        if (newValue === undefined || col[f] === newValue)
-          return;
-
-        col[f] = newValue;
-        changed++;
-      });
-    });
-
-    if (changed)
-      this.holder.save(true);
-    return Promise.resolve();
   }
 }
