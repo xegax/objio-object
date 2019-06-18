@@ -1,13 +1,12 @@
-import { TableColumn } from './database-table-decl';
+import { FontAppr } from '../appr-decl';
 
-type HTMLColor = string;
-
-export interface FontAppr {
-  family: string;
-  sizePx: number;
-  bold: boolean;
-  italic: boolean;
-  color: HTMLColor;
+export interface TableColumnAppr {
+  column: string;
+  label?: string;
+  size?: number;
+  show?: boolean;
+  order?: number;
+  font?: FontAppr;
 }
 
 export type TableAppr = Partial<{
@@ -15,13 +14,13 @@ export type TableAppr = Partial<{
     show: boolean;
     height: number;
     border: boolean;
-    font: Partial<FontAppr>;
+    font: FontAppr;
   }>;
   body: Partial<{
     border: boolean;
-    font: Partial<FontAppr>;
+    font: FontAppr;
   }>;
-  columns: {[column: string]: Partial<TableColumn>};
+  columns: {[column: string]: Partial<TableColumnAppr>};
 }>;
 
 export function makeTableAppr(): TableAppr {

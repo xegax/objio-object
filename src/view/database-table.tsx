@@ -30,8 +30,21 @@ export class DatabaseTableView extends React.Component<Props> {
     if (!row)
       return null;
 
+    const colAppr = this.props.model.getColumnApprByIdx(props.col);
+    const align = colAppr.font.align;
+    if (align)
+      props.className = 'cell-align-' + align;
+
     return (
-      <span>{row.cell[props.col]}</span>
+      <span
+        style={{
+          fontFamily: colAppr.font.family,
+          fontWeight: colAppr.font.bold ? 'bold' : null,
+          fontStyle: colAppr.font.italic ? 'italic' : null
+        }}
+      >
+        {row.cell[props.col]}
+      </span>
     );
   }
 

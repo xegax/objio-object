@@ -12,7 +12,7 @@ import {
 import { DatabaseHolder } from './database-holder';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
 import { TableDesc } from '../../base/database/database-decl';
-import { TableColumn } from '../../base/database/database-table-decl';
+import { TableColumnAppr } from '../../base/database/database-table-appr';
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
@@ -20,9 +20,9 @@ import { ObjLink } from '../../control/obj-link';
 import { ForwardProps } from 'ts-react-ui/forward-props';
 import { ListView, Item } from 'ts-react-ui/list-view';
 import { FitToParent } from 'ts-react-ui/fittoparent';
-
-interface ColumnItem extends Item {
-}
+import { Popover } from 'ts-react-ui/popover';
+import { FontPanel } from '../../control/font-panel';
+import { FontAppr } from '../../base/appr-decl';
 
 export class DatabaseTable extends DatabaseTableClientBase {
   private grid: GridLoadableModel;
@@ -30,7 +30,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private tables = Array<string>();
   private tableDesc: TableDesc;
   private guid: string;
-  private modifiedCols: {[col: string]: Partial<TableColumn>} = {};
+  private modifiedCols: {[col: string]: Partial<TableColumnAppr>} = {};
 
   private dbChangeHandler = {
     onObjChange: () => {
@@ -106,6 +106,26 @@ export class DatabaseTable extends DatabaseTableClientBase {
     return this.grid;
   }
 
+  getColumnApprByIdx(col: number): Partial<TableColumnAppr> {
+    const colsMap = this.appr.get().columns;
+    const cols = this.columns.filter(c => {
+      return !colsMap[c.colName] || colsMap[c.colName].show == null || colsMap[c.colName].show;
+    })
+    .map(c => c.colName)
+    .sort((a, b) => {
+      const ac = this.getColumnProp(a);
+      const bc = this.getColumnProp(b);
+      if (ac.order == null || bc.order == null)
+        return 0;
+
+      return ac.order - bc.order;
+    });
+
+    const colName = cols[col];
+    const colAppr = {font: {}, ...this.appr.get().columns[colName]};
+    return colAppr;
+  }
+
   private applyColsTask: Promise<void>;
 
   private onApplyColumns() {
@@ -152,7 +172,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private onColResized = () => {
     const colMap = this.appr.get().columns;
 
-    let modified: {[name: string]: Partial<TableColumn>} = {};
+    let modified: {[name: string]: Partial<TableColumnAppr>} = {};
     this.getColsToShow().forEach((c, index) => {
       const col = colMap[c] || {};
       const w = this.grid.isColFixed(index) ? this.grid.getColWidth({ index }) : null;
@@ -320,14 +340,21 @@ export class DatabaseTable extends DatabaseTableClientBase {
     );
   }
 
-  private renderColumnItem = (c: Partial<TableColumn>): Item => {
+  private renderColumnItem = (c: Partial<TableColumnAppr>): Item => {
     let mc = {...c, ...this.modifiedCols[c.column]};
+    let defaultFont: FontAppr = {
+      color: '#000000',
+      align: 'center',
+      family: 'Segoe UI'
+    };
+
     return {
       value: c.column,
       render: () => {
         return (
           <div className='horz-panel-1'>
             <CheckIcon
+              style={{ width: '1em' }}
               showOnHover
               value
               faIcon={mc.show ? 'fa fa-check-square-o' : 'fa fa-square-o'}
@@ -338,6 +365,20 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 this.holder.delayedNotify();
               }}
             />
+            <Popover>
+              <CheckIcon
+                showOnHover
+                value
+                faIcon='fa fa-font'
+              />
+              <FontPanel
+                column={c}
+                defaultFont={defaultFont}
+                modify={appr => {
+                  this.appr.sendProps({ columns: {[c.column]: {...appr}} });
+                }}
+              />
+            </Popover>
             <span style={{ color: mc.show ? null : 'silver' }}>{c.column}</span>
           </div>
         );
@@ -345,9 +386,9 @@ export class DatabaseTable extends DatabaseTableClientBase {
     };
   }
 
-  getColumnProp(column: string): Partial<TableColumn> {
+  getColumnProp(column: string): Partial<TableColumnAppr> {
     const colMap = this.appr.get().columns;
-    const tc: TableColumn = {
+    const tc: TableColumnAppr = {
       column,
       show: true,
       ...colMap[column],
@@ -439,7 +480,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
         return 1;
       if (a.order == null && b.order == null)
         return 0;
-        
+
       return a.order - b.order;
     });
 

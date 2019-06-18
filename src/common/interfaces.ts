@@ -1,5 +1,8 @@
 import { ObjectBase } from '../base/object-base';
 
+export type AlignHorz = 'left' | 'center' | 'right';
+export type AlignVert = 'top' | 'middle' | 'bottom';
+
 export interface ObjectToCreate {
   name: string;
   icon?: JSX.Element;
