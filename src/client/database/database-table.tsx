@@ -7,12 +7,13 @@ import {
   PropsGroup,
   DropDownPropItem,
   PropItem,
-  SwitchPropItem
+  SwitchPropItem,
+  TextPropItem
 } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database-holder';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
 import { TableDesc } from '../../base/database/database-decl';
-import { TableColumnAppr } from '../../base/database/database-table-appr';
+import { TableAppr, TableColumnAppr } from '../../base/database/database-table-appr';
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
@@ -21,8 +22,15 @@ import { ForwardProps } from 'ts-react-ui/forward-props';
 import { ListView, Item } from 'ts-react-ui/list-view';
 import { FitToParent } from 'ts-react-ui/fittoparent';
 import { Popover } from 'ts-react-ui/popover';
-import { FontPanel } from '../../control/font-panel';
+import { FontPanel, FontValue } from '../../control/font-panel';
 import { FontAppr } from '../../base/appr-decl';
+
+let defaultFont: FontAppr = {
+  color: '#000000',
+  align: 'center',
+  family: 'Segoe UI',
+  sizePx: 14
+};
 
 export class DatabaseTable extends DatabaseTableClientBase {
   private grid: GridLoadableModel;
@@ -41,7 +49,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private apprHandler = {
     onObjChange: () => {
-      this.applyAppr();
+      this.onApprChanged();
     }
   };
 
@@ -51,14 +59,14 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.holder.addEventHandler({
       onCreate: () => {
         this.listenToAppr();
-        this.applyAppr();
+        this.onApprChanged();
         return Promise.resolve();
       },
       onLoad: () => {
         this.listenToAppr();
         this.onChangeOrLoad();
         this.updateDatabaseData();
-        this.applyAppr();
+        this.onApprChanged();
         return Promise.resolve();
       },
       onObjChange: this.onChangeOrLoad
@@ -73,7 +81,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   private prevColsToShow = Array<string>();
-  private applyAppr() {
+  private onApprChanged() {
     if (!this.grid)
       return null;
 
@@ -94,20 +102,33 @@ export class DatabaseTable extends DatabaseTableClientBase {
         this.grid.setColSize(sz.idx, sz.size);
       });
     }
+
     const nextColsToShow = this.getColsToShow();
     if (JSON.stringify(this.prevColsToShow) != JSON.stringify(nextColsToShow)) {
       this.loadTableDataImpl();
     }
 
     this.prevColsToShow = nextColsToShow;
+    let maxFontSizePx: number = appr.body.font.sizePx;
+    nextColsToShow.forEach(c => {
+      const col = appr.columns[c];
+      const font = { ...appr.body.font, ...col.font };
+      maxFontSizePx = Math.max(font.sizePx, maxFontSizePx);
+    });
+    this.grid.setRowSize(maxFontSizePx + 8);
   }
 
   getGrid(): GridLoadableModel {
     return this.grid;
   }
 
+  getAppr(): TableAppr {
+    return this.appr.get();
+  }
+
   getColumnApprByIdx(col: number): Partial<TableColumnAppr> {
-    const colsMap = this.appr.get().columns;
+    const appr = this.appr.get();
+    const colsMap = appr.columns;
     const cols = this.columns.filter(c => {
       return !colsMap[c.colName] || colsMap[c.colName].show == null || colsMap[c.colName].show;
     })
@@ -122,7 +143,15 @@ export class DatabaseTable extends DatabaseTableClientBase {
     });
 
     const colName = cols[col];
-    const colAppr = {font: {}, ...this.appr.get().columns[colName]};
+    const colAppr = {
+      ...appr.columns[colName]
+    };
+
+    colAppr.font = {
+      ...appr.body.font,
+      ...colAppr.font
+    };
+
     return colAppr;
   }
 
@@ -212,7 +241,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
         colsCount: table.desc.columns.length,
         prev: this.grid
       });
-      this.applyAppr();
+      this.onApprChanged();
       this.grid.subscribe(this.onColResized, 'col-resized');
 
       this.grid.setLoader((from, count) => {
@@ -341,25 +370,24 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   private renderColumnItem = (c: Partial<TableColumnAppr>): Item => {
-    let mc = {...c, ...this.modifiedCols[c.column]};
-    let defaultFont: FontAppr = {
-      color: '#000000',
-      align: 'center',
-      family: 'Segoe UI'
+    let mc = {
+      font: {},
+      ...c,
+      ...this.modifiedCols[c.column]
     };
 
     return {
       value: c.column,
       render: () => {
         return (
-          <div className='horz-panel-1'>
+          <div className='horz-panel-1 flexrow'>
             <CheckIcon
               style={{ width: '1em' }}
               showOnHover
               value
               faIcon={mc.show ? 'fa fa-check-square-o' : 'fa fa-square-o'}
               onClick={() => {
-                const newc = this.modifiedCols[c.column] || (this.modifiedCols[c.column]={ show: c.show });
+                const newc = this.modifiedCols[c.column] || (this.modifiedCols[c.column] = { show: c.show });
                 newc.show = !newc.show;
 
                 this.holder.delayedNotify();
@@ -372,14 +400,31 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 faIcon='fa fa-font'
               />
               <FontPanel
-                column={c}
-                defaultFont={defaultFont}
-                modify={appr => {
-                  this.appr.sendProps({ columns: {[c.column]: {...appr}} });
+                font={{...defaultFont, ...c.font}}
+                onChange={font => {
+                  this.appr.sendProps({ columns: {[c.column]: { font }} });
                 }}
               />
             </Popover>
-            <span style={{ color: mc.show ? null : 'silver' }}>{c.column}</span>
+            <div
+              style={{
+                textOverflow: 'ellipsis',
+                overflow: 'hidden',
+                flexGrow: 1,
+                color: mc.show ? null : 'silver'
+              }}
+            >
+              {c.column}
+            </div>
+            {this.appr.isModified('columns', c.column, 'font') ? <CheckIcon
+              faIcon='fa fa-refresh'
+              showOnHover
+              value
+              onClick={() => {
+                this.appr.sendProps({ columns: {[c.column]: { font: null }} });
+                this.onApprChanged();
+              }}
+            /> : null}
           </div>
         );
       }
@@ -401,21 +446,46 @@ export class DatabaseTable extends DatabaseTableClientBase {
     if (!this.appr)
       return null;
 
+    const appr = this.appr.get();
     return (
       <PropsGroup
         label='appearance'
         defaultOpen={false}
         key={'appr-' + this.holder.getID()}
       >
+        <PropItem label='font'>
+          <div className='horz-panel-1'>
+            <Popover>
+              <FontValue
+                {...defaultFont}
+                {...appr.body.font}
+              />
+              <FontPanel
+                font={{...defaultFont, ...appr.body.font}}
+                onChange={font => {
+                  this.appr.sendProps({ body: { font } });
+                }}
+              />
+            </Popover>
+            {this.appr.isModified('body', 'font') ? <CheckIcon
+              value
+              faIcon='fa fa-refresh'
+              onClick={() => {
+                this.appr.sendProps({ body: { font: null }});
+                this.onApprChanged();
+              }}
+            /> : null}
+          </div>
+        </PropItem>
         <SwitchPropItem
-          label='show header'
+          label='header'
           value={this.appr.get().header.show}
           onChanged={show => {
             this.appr.sendProps({ header: { show }});
           }}
         />
         <SwitchPropItem
-          label='show border'
+          label='border'
           value={this.appr.get().body.border}
           onChanged={border => {
             this.appr.sendProps({ body: { border }});
@@ -469,7 +539,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
         </a>
       );
     } else {
-      apply = <span className='horz-panel-1' style={{ color: 'silver' }}>{apply}</span>
+      apply = <span className='horz-panel-1' style={{ color: 'silver' }}>{apply}</span>;
     }
 
     const colProps = cols.map(c => this.getColumnProp(c.colName));

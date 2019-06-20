@@ -14,10 +14,23 @@ export type FontAppr = Partial<{
 export function getFontList(): Array<string> {
   return [
     'Arial',
-    'Arial black',
-    'Tahoma',
-    'Verdana',
+    'Book Antiqua',
+    'Courier New',
+    'Georgia',
+    'Helvetica',
+    'Lucida Console',
+    'Lucida Grande',
+    'Lucida Sans Unicode',
+    'Palatino',
+    'Palatino Linotype',
     'Segoe UI',
-    'Times new Roman'
+    'Tahoma',
+    'Times New Roman',
+    'Trebuchet MS',
+    'Verdana'
   ];
+}
+
+export function getFontSize() {
+  return [ 6, 7, 8, 9, 10, 11, 12, 14, 18, 24, 30 ];
 }

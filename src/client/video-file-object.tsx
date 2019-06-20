@@ -168,7 +168,7 @@ export class VideoFileObject extends VideoFileBase {
           faIcon='fa fa-trash'
           value={false}
           onChange={() => {
-            confirm({ text: 'Are you sure to delete?', actions: [ actRemoveAll, actRemoveObjectOnly, actCancel] })
+            confirm({ body: 'Are you sure to delete?', actions: [ actRemoveAll, actRemoveObjectOnly, actCancel] })
             .then(action => {
               if (action == actCancel)
                 return;
@@ -240,7 +240,7 @@ export class VideoFileObject extends VideoFileBase {
           faIcon='fa fa-trash'
           value={false}
           onChange={() => {
-            confirm({ text: 'Are you sure to delete?', actions: [ actRemoveAll, actRemoveObjectOnly, actCancel] })
+            confirm({ body: 'Are you sure to delete?', actions: [ actRemoveAll, actRemoveObjectOnly, actCancel] })
             .then(action => {
               if (action == actCancel)
                 return;

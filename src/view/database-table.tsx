@@ -38,9 +38,11 @@ export class DatabaseTableView extends React.Component<Props> {
     return (
       <span
         style={{
+          color: colAppr.font.color,
           fontFamily: colAppr.font.family,
           fontWeight: colAppr.font.bold ? 'bold' : null,
-          fontStyle: colAppr.font.italic ? 'italic' : null
+          fontStyle: colAppr.font.italic ? 'italic' : null,
+          fontSize: colAppr.font.sizePx
         }}
       >
         {row.cell[props.col]}

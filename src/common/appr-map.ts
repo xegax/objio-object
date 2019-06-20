@@ -39,6 +39,24 @@ export class ApprMap<T = Object> extends OBJIOItem implements ApprMapIface<T> {
     return this.bake;
   }
 
+  isModified<
+    K1 extends keyof T,
+    K2 extends keyof T[K1],
+    K3 extends keyof T[K1][K2],
+    K4 extends keyof T[K1][K2][K3],
+    K5 extends keyof T[K1][K2][K3][K4],
+    K6 extends keyof T[K1][K2][K3][K4][K5]
+  >(k1: K1, k2?: K2, k3?: K3, k4?: K4, k5?: K5): boolean {
+    let p = this.mods;
+    for (let n = 0; n < arguments.length; n++) {
+      p = p[arguments[n]];
+      if (p === null || p === undefined)
+        return false;
+    }
+
+    return p !== null && p !== undefined;
+  }
+
   setSchema(schema: T): void {
     this.schema = schema;
     this.bake = null;

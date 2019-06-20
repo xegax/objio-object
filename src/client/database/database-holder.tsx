@@ -185,7 +185,7 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
             value
             faIcon='fa fa-trash'
             onClick={() => {
-              confirm({ text: `Are you sure to delete database "${db}" ?`, intent: Intent.WARNING })
+              confirm({ body: `Are you sure to delete database "${db}" ?`, intent: Intent.WARNING })
               .then(() => {
                 this.deleteDatabase(this.getDatabase());
               });
@@ -284,7 +284,7 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
                         return;
 
                       confirm({
-                        text: `Are you sure to delete table "${this.selectTable.tableName}" ?`,
+                        body: `Are you sure to delete table "${this.selectTable.tableName}" ?`,
                         intent: Intent.WARNING
                       })
                       .then(() => this.deleteTable({ table: this.selectTable.tableName }))
