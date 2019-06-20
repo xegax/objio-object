@@ -111,7 +111,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.prevColsToShow = nextColsToShow;
     let maxFontSizePx: number = appr.body.font.sizePx;
     nextColsToShow.forEach(c => {
-      const col = appr.columns[c];
+      const col = appr.columns[c] || {};
       const font = { ...appr.body.font, ...col.font };
       maxFontSizePx = Math.max(font.sizePx, maxFontSizePx);
     });
