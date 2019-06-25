@@ -55,8 +55,10 @@ export class DatabaseTableView extends React.Component<Props> {
     if (!table || !table.columns[props.col])
       return null;
 
+    const colName = table.columns[props.col].colName;
+    const c = this.props.model.getAppr().columns[colName] || {};
     return (
-      <span>{table.columns[props.col].colName}</span>
+      <span>{c.label || colName}</span>
     );
   }
 

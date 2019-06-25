@@ -24,6 +24,7 @@ import { Popover } from 'ts-react-ui/popover';
 import { FontPanel, FontValue } from '../../control/font-panel';
 import { FontAppr } from '../../base/appr-decl';
 import { ContextMenu, Menu, MenuItem } from 'ts-react-ui/blueprint';
+import { prompt } from 'ts-react-ui/prompt';
 
 let defaultFont: FontAppr = {
   color: '#000000',
@@ -380,17 +381,57 @@ export class DatabaseTable extends DatabaseTableClientBase {
     );
   }
 
+  private onColumnProps(column: string) {
+    const c = this.appr.get().columns[column] || {};
+    prompt({
+      title: 'Column label',
+      value: c.label || column
+    })
+    .then(label => {
+      label = label.trim();
+      if (label == c.column)
+        return;
+
+      this.appr.setProps({ columns: {[column]: { label }} });
+    });
+  }
+
   private onColumnCtxMenu(column: string) {
     return (evt: React.MouseEvent) => {
       evt.preventDefault();
       evt.stopPropagation();
 
+      const sort = { order: [], ...this.appr.get().sort };
+      const alreadySort = !!sort.order.find(c => c.column == column);
       ContextMenu.show(
         <Menu>
-          <MenuItem
-            text={`sort by "${column}"`}
+          {!evt.ctrlKey && sort.order.length <= 1 && !alreadySort && <MenuItem
+            text={`Sort only by "${column}"`}
             onClick={() => {
               this.appr.setProps({ sort: { order: [{ column }] } });
+            }}
+          />}
+          {evt.ctrlKey && !alreadySort && <MenuItem
+            text={`Add sort by "${column}"`}
+            onClick={() => {
+              if (sort.order.find(c => c.column == column))
+                return;
+
+              const order = [...sort.order, { column }];
+              this.appr.setProps({ sort: { order } });
+            }}
+          />}
+          {alreadySort && <MenuItem
+            text={`Do not sort by "${column}"`}
+            onClick={() => {
+              const order = sort.order.filter(c => c.column != column);
+              this.appr.setProps({ sort: { order } });
+            }}
+          />}
+          <MenuItem
+            text='Reset sort'
+            onClick={() => {
+              this.appr.resetToDefaultKey('sort', 'order');
             }}
           />
         </Menu>,
@@ -408,6 +449,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
     return {
       value: c.column,
+      title: c.label ? `${c.column} (${c.label})` : c.column,
       render: () => {
         return (
           <div
@@ -418,6 +460,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
               style={{ width: '1em' }}
               showOnHover
               value
+              title=''
               faIcon={mc.show ? 'fa fa-check-square-o' : 'fa fa-square-o'}
               onClick={() => {
                 const newc = this.modifiedCols[c.column] || (this.modifiedCols[c.column] = { show: c.show });
@@ -431,6 +474,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 showOnHover
                 value
                 faIcon='fa fa-font'
+                title={`Font of "${c.column}"`}
               />
               <FontPanel
                 font={{...defaultFont, ...c.font}}
@@ -439,6 +483,13 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 }}
               />
             </Popover>
+            <CheckIcon
+              showOnHover
+              value
+              title={`Properties of "${c.column}"`}
+              faIcon='fa fa-cog'
+              onClick={() => this.onColumnProps(c.column)}
+            />
             <div
               style={{
                 textOverflow: 'ellipsis',
@@ -447,10 +498,12 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 color: mc.show ? null : 'silver'
               }}
             >
-              {c.column}
+              {c.column + (c.label ? ` (${c.label})` : '') }
             </div>
-            {this.appr.isModified('columns', c.column, 'font') ? <CheckIcon
+            {this.appr.isModified('columns', c.column, 'font') ?
+            <CheckIcon
               faIcon='fa fa-refresh'
+              title='Reset to default'
               showOnHover
               value
               onClick={() => {
@@ -522,7 +575,8 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 }}
               />
             </Popover>
-            {this.appr.isModified('body', 'font') ? <CheckIcon
+            {this.appr.isModified('body', 'font') ? 
+            <CheckIcon
               value
               faIcon='fa fa-refresh'
               onClick={() => {
@@ -646,8 +700,8 @@ export class DatabaseTable extends DatabaseTableClientBase {
     return (
       <>
         {this.renderBaseConfig(props)}
-        {this.renderColumnsConfig(props)}
         {this.renderAppr(props)}
+        {this.renderColumnsConfig(props)}
         {this.renderSort(props)}
       </>
     );
