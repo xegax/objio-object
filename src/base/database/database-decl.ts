@@ -15,6 +15,11 @@ export interface CompoundCond {
   table?: string;
 }
 
+export interface ColOrder {
+  column: string;
+  reverse?: boolean;
+}
+
 export interface TableDescShort {
   columns: Array<ColumnInfo>;
   rowsNum: number;
@@ -101,6 +106,7 @@ export interface CreateTempTableArgs {
   tmpTableName: string;
   cond?: CompoundCond;
   columns?: Array<string>;
+  order?: Array<ColOrder>;
 }
 
 export interface DeleteTableArgs {

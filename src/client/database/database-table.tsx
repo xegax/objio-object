@@ -7,12 +7,11 @@ import {
   PropsGroup,
   DropDownPropItem,
   PropItem,
-  SwitchPropItem,
-  TextPropItem
+  SwitchPropItem
 } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database-holder';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
-import { TableDesc } from '../../base/database/database-decl';
+import { TableDesc, ColOrder } from '../../base/database/database-decl';
 import { TableAppr, TableColumnAppr } from '../../base/database/database-table-appr';
 import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
@@ -24,6 +23,7 @@ import { FitToParent } from 'ts-react-ui/fittoparent';
 import { Popover } from 'ts-react-ui/popover';
 import { FontPanel, FontValue } from '../../control/font-panel';
 import { FontAppr } from '../../base/appr-decl';
+import { ContextMenu, Menu, MenuItem } from 'ts-react-ui/blueprint';
 
 let defaultFont: FontAppr = {
   color: '#000000',
@@ -81,6 +81,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   private prevColsToShow = Array<string>();
+  private prevSortCols = Array<{ column: string; revers?: boolean }>();
   private onApprChanged() {
     if (!this.grid)
       return null;
@@ -103,12 +104,16 @@ export class DatabaseTable extends DatabaseTableClientBase {
       });
     }
 
+    const nextSortCols = appr.sort.order || [];
     const nextColsToShow = this.getColsToShow();
-    if (JSON.stringify(this.prevColsToShow) != JSON.stringify(nextColsToShow)) {
+    if (JSON.stringify(this.prevColsToShow) != JSON.stringify(nextColsToShow) ||
+      JSON.stringify(this.prevSortCols) != JSON.stringify(nextSortCols)) {
       this.loadTableDataImpl();
     }
 
     this.prevColsToShow = nextColsToShow;
+    this.prevSortCols = nextSortCols;
+
     let maxFontSizePx: number = appr.body.font.sizePx;
     nextColsToShow.forEach(c => {
       const col = appr.columns[c] || {};
@@ -116,6 +121,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
       maxFontSizePx = Math.max(font.sizePx, maxFontSizePx);
     });
     this.grid.setRowSize(maxFontSizePx + 8);
+    this.grid.setReverse(!!appr.sort.reverse);
   }
 
   getGrid(): GridLoadableModel {
@@ -161,7 +167,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
     if (this.applyColsTask)
       return;
 
-    this.applyColsTask = this.appr.sendProps({ columns: this.modifiedCols })
+    this.applyColsTask = this.appr.setProps({ columns: this.modifiedCols })
     .then(() => {
       this.applyColsTask = null;
       this.modifiedCols = {};
@@ -212,7 +218,11 @@ export class DatabaseTable extends DatabaseTableClientBase {
     });
 
     if (Object.keys(modified).length)
-      this.appr.sendProps({ columns: modified });
+      this.appr.setProps({ columns: modified });
+  }
+
+  private getSortOrder(): Array<ColOrder> {
+    return this.appr.get().sort.order || [];
   }
 
   private loadTableDataImpl(): Promise<void> {
@@ -222,9 +232,10 @@ export class DatabaseTable extends DatabaseTableClientBase {
     if (this.loadTableTask)
       return this.loadTableTask;
 
+    const order = this.getSortOrder();
     this.tableDesc = null;
     const columns = this.getColsToShow();
-    this.loadTableTask = this.loadTableGuid({ table: this.tableName, desc: true, columns })
+    this.loadTableTask = this.loadTableGuid({ table: this.tableName, desc: true, columns, order })
     .then(table => {
       this.loadTableTask = null;
 
@@ -369,6 +380,25 @@ export class DatabaseTable extends DatabaseTableClientBase {
     );
   }
 
+  private onColumnCtxMenu(column: string) {
+    return (evt: React.MouseEvent) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+
+      ContextMenu.show(
+        <Menu>
+          <MenuItem
+            text={`sort by "${column}"`}
+            onClick={() => {
+              this.appr.setProps({ sort: { order: [{ column }] } });
+            }}
+          />
+        </Menu>,
+        { left: evt.pageX, top: evt.pageY }
+      );
+    };
+  };
+
   private renderColumnItem = (c: Partial<TableColumnAppr>): Item => {
     let mc = {
       font: {},
@@ -380,7 +410,10 @@ export class DatabaseTable extends DatabaseTableClientBase {
       value: c.column,
       render: () => {
         return (
-          <div className='horz-panel-1 flexrow'>
+          <div
+            className='horz-panel-1 flexrow'
+            onContextMenu={this.onColumnCtxMenu(c.column)}
+          >
             <CheckIcon
               style={{ width: '1em' }}
               showOnHover
@@ -402,7 +435,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
               <FontPanel
                 font={{...defaultFont, ...c.font}}
                 onChange={font => {
-                  this.appr.sendProps({ columns: {[c.column]: { font }} });
+                  this.appr.setProps({ columns: {[c.column]: { font }} });
                 }}
               />
             </Popover>
@@ -421,7 +454,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
               showOnHover
               value
               onClick={() => {
-                this.appr.sendProps({ columns: {[c.column]: { font: null }} });
+                this.appr.resetToDefaultKey('columns', c.column, 'font');
                 this.onApprChanged();
               }}
             /> : null}
@@ -440,6 +473,28 @@ export class DatabaseTable extends DatabaseTableClientBase {
       ...this.modifiedCols[column]
     };
     return tc;
+  }
+
+  private renderSort(props: ObjProps) {
+    if (!this.appr)
+      return null;
+
+    const appr = this.appr.get();
+    return (
+      <PropsGroup
+        label='sort'
+        defaultOpen={false}
+        key={'sort-' + this.holder.getID()}
+      >
+        <SwitchPropItem
+          label='reverse'
+          value={!!appr.sort.reverse}
+          onChanged={reverse => {
+            this.appr.setProps({ sort: { reverse }});
+          }}
+        />
+      </PropsGroup>
+    );
   }
 
   private renderAppr(props: ObjProps) {
@@ -463,7 +518,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
               <FontPanel
                 font={{...defaultFont, ...appr.body.font}}
                 onChange={font => {
-                  this.appr.sendProps({ body: { font } });
+                  this.appr.setProps({ body: { font } });
                 }}
               />
             </Popover>
@@ -471,7 +526,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
               value
               faIcon='fa fa-refresh'
               onClick={() => {
-                this.appr.sendProps({ body: { font: null }});
+                this.appr.resetToDefaultKey('body', 'font');
                 this.onApprChanged();
               }}
             /> : null}
@@ -481,14 +536,14 @@ export class DatabaseTable extends DatabaseTableClientBase {
           label='header'
           value={this.appr.get().header.show}
           onChanged={show => {
-            this.appr.sendProps({ header: { show }});
+            this.appr.setProps({ header: { show }});
           }}
         />
         <SwitchPropItem
           label='border'
           value={this.appr.get().body.border}
           onChanged={border => {
-            this.appr.sendProps({ body: { border }});
+            this.appr.setProps({ body: { border }});
           }}
         />
       </PropsGroup>
@@ -593,6 +648,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
         {this.renderBaseConfig(props)}
         {this.renderColumnsConfig(props)}
         {this.renderAppr(props)}
+        {this.renderSort(props)}
       </>
     );
   }

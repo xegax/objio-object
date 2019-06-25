@@ -2,13 +2,15 @@ import {
   CompoundCond,
   AggregationFunc,
   TableDesc,
-  TableDescShort
+  TableDescShort,
+  ColOrder
 } from './database-decl';
 
 export interface LoadTableGuidArgs {
   table: string;
   cond?: CompoundCond;
   columns?: Array<string>;
+  order?: Array<ColOrder>;
   desc?: boolean;   // include table description to result
 }
 

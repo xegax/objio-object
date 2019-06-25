@@ -9,6 +9,11 @@ export interface TableColumnAppr {
   font?: FontAppr;
 }
 
+export interface TableSortAppr {
+  order: Array<{column: string; reverse?: boolean}>;
+  reverse: boolean;
+}
+
 export type TableAppr = Partial<{
   header: Partial<{
     show: boolean;
@@ -21,6 +26,7 @@ export type TableAppr = Partial<{
     font: FontAppr;
   }>;
   columns: {[column: string]: Partial<TableColumnAppr>};
+  sort: Partial<TableSortAppr>;
 }>;
 
 export function makeTableAppr(): TableAppr {
@@ -46,6 +52,7 @@ export function makeTableAppr(): TableAppr {
         color: '#000000'
       }
     },
-    columns: {}
+    columns: {},
+    sort: {}
   };
 }

@@ -32,7 +32,8 @@ function getArgsKey(args: LoadTableGuidArgs): string {
   return [
     args.table,
     args.cond,
-    args.columns.join(',')
+    (args.columns || []).join(','),
+    (args.order || [])
   ].map(k => JSON.stringify(k)).join('-');
 }
 
@@ -333,7 +334,8 @@ export class DatabaseHolder extends DatabaseHolderBase {
         table: data.desc.table,
         tmpTableName: data.tmpTable,
         cond: data.args.cond,
-        columns: data.args.columns
+        columns: data.args.columns,
+        order: data.args.order
       })
       .then(res => {
         data.invalid = false;
