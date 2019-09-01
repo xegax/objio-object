@@ -9,8 +9,13 @@ export interface ValueCond {
   inverse?: boolean;
 }
 
+export interface RangeCond {
+  column: string;
+  range: Array<number>;
+}
+
 export interface CompoundCond {
-  values: Array<ValueCond | CompoundCond>;
+  values: Array<ValueCond | CompoundCond | RangeCond>;
   op: 'or' | 'and';
   table?: string;
 }
@@ -107,6 +112,7 @@ export interface CreateTempTableArgs {
   cond?: CompoundCond;
   columns?: Array<string>;
   order?: Array<ColOrder>;
+  distinct?: string;
 }
 
 export interface DeleteTableArgs {

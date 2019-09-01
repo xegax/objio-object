@@ -9,6 +9,7 @@ import { DatabaseHolder } from './database/database-holder';
 import { DatabaseTable } from './database/database-table';
 import { FileStorage } from './file-storage';
 import { ApprMapClientBase } from '../base/appr-map';
+import { Youtube } from './youtube';
 
 export function createFileObject(args: FileArgs): FileObject {
   const ext = getExt(args.name).toLowerCase();
@@ -40,6 +41,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     ImageFile,
     DatabaseTable,
     FileStorage,
-    ApprMapClientBase
+    ApprMapClientBase,
+    Youtube
   ];
 }

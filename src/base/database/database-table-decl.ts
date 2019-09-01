@@ -1,5 +1,8 @@
+export type LoadTableFileMethod = 'replace' | 'append' | 'newtable';
+
 export interface LoadTableFileArgs {
-  id: string;
+  tableFileId: string;
+  method: LoadTableFileMethod;
 }
 
 export interface SetTableNameArgs {

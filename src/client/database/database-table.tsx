@@ -10,10 +10,10 @@ import {
   SwitchPropItem
 } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database-holder';
+import { LoadTableGuidResult } from '../../base/database/database-holder-decl';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
-import { TableDesc, ColOrder } from '../../base/database/database-decl';
+import { TableDesc, ColOrder, CompoundCond } from '../../base/database/database-decl';
 import { TableAppr, TableColumnAppr } from '../../base/database/database-table-appr';
-import { CSVTableFile, JSONTableFile } from '../table-file/index';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 import { ObjLink } from '../../control/obj-link';
@@ -25,6 +25,21 @@ import { FontPanel, FontValue } from '../../control/font-panel';
 import { FontAppr } from '../../base/appr-decl';
 import { ContextMenu, Menu, MenuItem } from 'ts-react-ui/blueprint';
 import { prompt } from 'ts-react-ui/prompt';
+import { FilterPanel, FilterPanelView } from 'ts-react-ui/panel/filter-panel';
+import { DBColType, ColItem, getCatFilter, FilterHolder, getRangeFilter } from 'ts-react-ui/panel/filter-panel-decl';
+import { ValueCond, RangeCond } from '../../base/database/database-decl';
+
+function conv2DBColType(type: string): DBColType {
+  if (type.startsWith('VARCHAR'))
+    return 'varchar';
+  if (type == 'INTEGER')
+    return 'integer';
+  if (type == 'REAL')
+    return 'real';
+  if (type == 'TEXT')
+    return 'text';
+  throw 'unknown type';
+}
 
 let defaultFont: FontAppr = {
   color: '#000000',
@@ -33,6 +48,42 @@ let defaultFont: FontAppr = {
   sizePx: 14
 };
 
+function makeCond(filters: Array<FilterHolder>): CompoundCond {
+  let cf: CompoundCond = { op: 'and', values: [] };
+
+  for (let h of filters) {
+    let cat = getCatFilter(h.filter);
+    if (cat && cat.values.length) {
+      let cats: CompoundCond = { op: 'or', values: [] as Array<ValueCond> };
+
+      for (let v of cat.values)
+        cats.values.push({ column: h.column.name, value: v });
+
+      if (cats.values.length == 1)
+        cf.values.push(cats.values[0]);
+      else if (cats.values.length > 1)
+        cf.values.push(cats);
+
+      continue;
+    }
+
+    let range = getRangeFilter(h.filter);
+    if (range && (range.range[0] != null || range.range[1] != null)) {
+      let cond: RangeCond = {
+        column: h.column.name,
+        range: range.rangeFull
+      };
+      cf.values.push(cond);
+      continue;
+    }
+  }
+
+  if (cf.values.length == 0)
+    return null;
+
+  return cf;
+}
+
 export class DatabaseTable extends DatabaseTableClientBase {
   private grid: GridLoadableModel;
   private prevDB: DatabaseHolderBase;
@@ -40,6 +91,8 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private tableDesc: TableDesc;
   private guid: string;
   private modifiedCols: {[col: string]: Partial<TableColumnAppr>} = {};
+  private filter = new FilterPanel([]);
+  private filterExpr: CompoundCond;
 
   private dbChangeHandler = {
     onObjChange: () => {
@@ -72,6 +125,13 @@ export class DatabaseTable extends DatabaseTableClientBase {
       },
       onObjChange: this.onChangeOrLoad
     });
+
+    this.filter.subscribe(() => {
+      const filters = this.filter.getFiltersArr('include');
+      this.filterExpr = makeCond(filters);
+
+      this.loadTableDataImpl();
+    }, 'change-filter-values');
   }
 
   private listenToAppr() {
@@ -187,6 +247,75 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.db.holder.addEventHandler(this.dbChangeHandler);
     this.loadTableDataImpl();
 
+    try {
+      const filterCols = this.columns.map(c => {
+        const col: ColItem = {
+          name: c.colName,
+          type: conv2DBColType(c.colType)
+        };
+
+        if (col.type == 'varchar') {
+          let order: Array<ColOrder> = [ { column: col.name } ];
+          col.setSort = type => {
+            order = [ type == 'value' ? { column: col.name } : { column: col.name + '_count' } ];
+            return this.db.loadTableGuid({
+              table: this.tableName,
+              distinct: col.name,
+              desc: true,
+              order
+            }).then(() => {});
+          };
+          col.getValues = args => {
+            let desc: LoadTableGuidResult = null;
+            let p = this.db.loadTableGuid({
+              table: this.tableName,
+              distinct: col.name,
+              desc: true,
+              cond: makeCond(args.filters),
+              order
+            })
+            .then(r => desc = r)
+            .then(desc => this.db.loadTableData({ guid: desc.guid, from: args.from, count: args.count }))
+            .then(r => ({
+              values: r.rows.map(row => {
+                return { value: row[col.name], count: +row[col.name + '_count'] };
+              }),
+              total: desc.desc.rowsNum
+            }));
+
+            return p;
+          };
+        } else if (col.type == 'integer' || col.type == 'real') {
+          col.getNumRange = args => {
+            let p = (this.loadTableTask || Promise.resolve())
+            .then(() => this.db.loadTableGuid({
+              table: this.tableName,
+              cond: makeCond(args.filters)
+            }))
+            .then(r => {
+              return this.db.loadAggrData({
+                guid: r.guid,
+                values: [
+                  { column: col.name, aggs: 'min' },
+                  { column: col.name, aggs: 'max' }
+                ]
+              })
+              .then(r => {
+                return { minMax: [ r.values[0].value, r.values[1].value ] };
+              });
+            });
+            return p;
+          };
+        }
+
+        return col;
+      });
+
+      this.filter.setColumns(filterCols);
+    } catch (e) {
+      console.error('filter.setColumn fail');
+    }
+
     return Promise.resolve();
   }
 
@@ -236,7 +365,14 @@ export class DatabaseTable extends DatabaseTableClientBase {
     const order = this.getSortOrder();
     this.tableDesc = null;
     const columns = this.getColsToShow();
-    this.loadTableTask = this.loadTableGuid({ table: this.tableName, desc: true, columns, order })
+    console.log('loadTableGuid', this.filterExpr);
+    this.loadTableTask = this.loadTableGuid({
+      table: this.tableName,
+      desc: true,
+      columns,
+      order,
+      cond: this.filterExpr
+    })
     .then(table => {
       this.loadTableTask = null;
 
@@ -345,36 +481,6 @@ export class DatabaseTable extends DatabaseTableClientBase {
           }
           onSelect={table => {
             this.setTableName({ tableName: table.value });
-          }}
-        />
-        <PropItem
-          label='rows'
-          value={this.tableDesc ? this.tableDesc.rowsNum : '?'}
-        />
-        <DropDownPropItem
-          right={[
-            <CheckIcon
-              showOnHover
-              faIcon='fa fa-upload'
-              value={this.tableFileId != null}
-              onClick={() => {
-                if (!this.tableFileId)
-                  return;
-
-                this.loadTableFile({ id: this.tableFileId });
-              }}
-            />
-          ]}
-          label='file'
-          value={{ value: this.tableFileId }}
-          values={props.objects([CSVTableFile, JSONTableFile]).map(item => {
-            return {
-              value: item.getID(),
-              render: item.getName()
-            };
-          })}
-          onSelect={file => {
-            this.setTableFile({ id: file.value });
           }}
         />
       </PropsGroup>
@@ -696,6 +802,14 @@ export class DatabaseTable extends DatabaseTableClientBase {
     );
   }
 
+  renderFilter(props: ObjProps) {
+    return (
+      <FilterPanelView
+        model={this.filter}
+      />
+    );
+  }
+
   getObjPropGroups(props: ObjProps) {
     return (
       <>
@@ -703,6 +817,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
         {this.renderAppr(props)}
         {this.renderColumnsConfig(props)}
         {this.renderSort(props)}
+        {this.renderFilter(props)}
       </>
     );
   }

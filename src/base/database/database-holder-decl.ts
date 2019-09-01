@@ -8,10 +8,16 @@ import {
 
 export interface LoadTableGuidArgs {
   table: string;
+  distinct?: string;
   cond?: CompoundCond;
   columns?: Array<string>;
   order?: Array<ColOrder>;
   desc?: boolean;   // include table description to result
+}
+
+export interface ImportTableArgs {
+  tableFileId: string;
+  tableName: string;
 }
 
 export interface LoadTableGuidResult {

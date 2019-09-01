@@ -23,6 +23,7 @@ import { ObjectToCreate } from '../common/interfaces';
 import { DatabaseTable, DatabaseTableView } from '../view/database-table';
 export { registerViews };
 import { FileStorage, FileStorageView, Props as FileStorageViewProps } from './file-storage';
+import { Youtube, YoutubeView, YTProps }  from '../view/youtube';
 
 export function getObjectsToCreate(): Array<ObjectToCreate> {
   return [
@@ -40,11 +41,22 @@ export function getObjectsToCreate(): Array<ObjectToCreate> {
       desc: 'files storage',
       icon: <Icon src={FSIcon}/>,
       create: () => new FileStorage()
+    }, {
+      name: 'youtube',
+      desc: 'youtube',
+      create: () => new Youtube()
     }
   ];
 }
 
 export function getViews(): Array<OBJIOItemClassViewable> {
+  registerViews({
+    classObj: Youtube,
+    views: [{
+      view: (props: YTProps) => <YoutubeView {...props}/>
+    }]
+  });
+
   registerViews({
     classObj: FileStorage,
     icons: { item: <Icon src={FSIcon} /> },
@@ -153,6 +165,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     ImageFile,
     DatabaseHolder,
     DatabaseTable,
-    FileStorage
+    FileStorage,
+    Youtube
   ];
 }

@@ -37,7 +37,7 @@ export abstract class DatabaseTableBase extends ObjectBase {
   protected appr: ApprMapBase<TableAppr>;
   protected columns = Array<ColumnInfo>();
 
-  abstract loadTableFile(args: LoadTableFileArgs): Promise<void>;
+  // abstract loadTableFile(args: LoadTableFileArgs): Promise<void>;
 
   abstract loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult>;
   abstract loadTableRowsNum(args: TableGuid): Promise<number>;
@@ -73,9 +73,9 @@ export class DatabaseTableClientBase extends DatabaseTableBase {
     return this.holder.invokeMethod({ method: 'pushData', args });
   }
 
-  loadTableFile(args: IDArgs): Promise<void> {
+  /*loadTableFile(args: LoadTableFileArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'loadTableFile', args });
-  }
+  }*/
 
   loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult> {
     return this.holder.invokeMethod<LoadTableGuidResult>({ method: 'loadTableGuid', args });

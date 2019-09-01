@@ -18,7 +18,8 @@ import {
   LoadTableGuidArgs,
   LoadTableDataArgs,
   LoadAggrDataArgs,
-  LoadAggrDataResult
+  LoadAggrDataResult,
+  ImportTableArgs
 } from './database-holder-decl';
 import { DatabaseBase, RemoteDatabaseBase } from './database';
 
@@ -49,6 +50,7 @@ export abstract class DatabaseHolderBase extends ObjectBase {
 
   abstract loadDatabaseList(): Promise<Array<string>>;
 
+  abstract importTable(arsg: ImportTableArgs): Promise<void>;
   abstract createTable(args: CreateTableArgs): Promise<TableDesc>;
   abstract deleteTable(args: DeleteTableArgs): Promise<void>;
   abstract pushData(args: PushDataArgs): Promise<PushDataResult>;
@@ -148,6 +150,10 @@ export class DatabaseHolderClientBase extends DatabaseHolderBase {
 
   deleteData(args: DeleteDataArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'deleteData', args });
+  }
+
+  importTable(args: ImportTableArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'importTable', args });
   }
 
   static SERIALIZE: SERIALIZER = () => ({

@@ -9,6 +9,7 @@ import { ObjProps } from '../../base/object-base';
 import { prompt, confirm, Intent } from 'ts-react-ui/prompt';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 import { ObjLink } from '../../control/obj-link';
+import { importTable } from './import';
 
 interface TableItem extends DDItem {
 }
@@ -275,7 +276,23 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
                       this.setTable(sel.value);
                     }}
                   />
-                  {this.selectTable && <CheckIcon
+                  <CheckIcon
+                    title='Import table'
+                    showOnHover
+                    value
+                    faIcon='fa fa-plus'
+                    onClick={() => {
+                      importTable({ objProps, method: false })
+                      .then(res => {
+                        this.importTable({
+                          tableFileId: res.source.getID(),
+                          tableName: res.tableName
+                        });
+                      });
+                    }}
+                  />
+                  <CheckIcon
+                    title='Delete table'
                     showOnHover
                     value={this.selectTable != null}
                     faIcon='fa fa-trash'
@@ -293,7 +310,7 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
                         this.holder.delayedNotify();
                       });
                     }}
-                  />}
+                  />
                 </div>
               </div>
             );

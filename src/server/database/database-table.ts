@@ -20,6 +20,7 @@ import { DatabaseHolder } from './database-holder';
 import { SetTableNameArgs } from '../../base/database/database-table-decl';
 import { ApprMapServerBase } from '../../base/appr-map';
 import { makeTableAppr } from '../../base/database/database-table-appr';
+import { LoadTableFileArgs } from '../../base/database/database-table-decl';
 
 export class DatabaseTable extends DatabaseTableBase {
   constructor(args) {
@@ -63,7 +64,7 @@ export class DatabaseTable extends DatabaseTableBase {
         rights: 'write'
       },
       loadTableFile: {
-        method: (args: IDArgs) => this.loadTableFile(args),
+        method: (args: LoadTableFileArgs) => this.loadTableFile(args),
         rights: 'write'
       }
     });
@@ -116,13 +117,13 @@ export class DatabaseTable extends DatabaseTableBase {
     );
   }
 
-  loadTableFile(args: IDArgs): Promise<void> {
+  loadTableFile(args: LoadTableFileArgs): Promise<void> {
     if (!this.db)
       return Promise.reject('Database is not selected');
 
     let tableFile: TableFileBase;
     return (
-      this.holder.getObject<TableFileBase>(args.id)
+      this.holder.getObject<TableFileBase>(args.tableFileId)
       .then(table => {
         if (!(table instanceof TableFileBase))
           return Promise.reject(`Object is not valid`);
@@ -241,6 +242,9 @@ export class DatabaseTable extends DatabaseTableBase {
         this.columns = t.columns;
         this.tableName = args.tableName;
         this.holder.save();
+
+        this.appr.resetToDefaultKey('sort', 'order');
+        this.appr.holder.save();
       })
     );
   }

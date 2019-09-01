@@ -5,7 +5,8 @@ import {
   LoadTableGuidResult,
   LoadTableDataArgs,
   LoadAggrDataResult,
-  TableGuid
+  TableGuid,
+  ImportTableArgs
 } from '../../base/database/database-holder-decl';
 import {
   DeleteTableArgs,
@@ -22,6 +23,8 @@ import {
 } from '../../base/database/database-decl';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
 import { IDArgs } from '../../common/interfaces';
+import { TableFileBase } from '../../base/table-file';
+import { OnRowsArgs } from '../../base/table-file/data-reading';
 
 export {
   ColumnInfo,
@@ -33,7 +36,8 @@ function getArgsKey(args: LoadTableGuidArgs): string {
     args.table,
     args.cond,
     (args.columns || []).join(','),
-    (args.order || [])
+    (args.order || []),
+    (args.distinct || '')
   ].map(k => JSON.stringify(k)).join('-');
 }
 
@@ -107,6 +111,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
       loadTableGuid: {
         method: (args: LoadTableGuidArgs) => this.loadTableGuid(args),
         rights: 'read'
+      },
+      importTable: {
+        method: (args: ImportTableArgs) => this.importTable(args),
+        rights: 'write'
       }
     });
   }
@@ -128,6 +136,103 @@ export class DatabaseHolder extends DatabaseHolderBase {
         if (remote.getDatabase() == database)
           remote.setDatabase('');
         this.holder.save(true);
+      })
+    );
+  }
+
+  importTable(args: ImportTableArgs): Promise<void> {
+    let tableFile: TableFileBase;
+    const { tableName, tableFileId } = args;
+    return (
+      this.holder.getObject<TableFileBase>(tableFileId)
+      .then(table => {
+        if (!(table instanceof TableFileBase))
+          return Promise.reject(`Object is not valid`);
+
+        tableFile = table;
+        // drop table
+        if (args.tableName) {
+          return (
+            this.deleteTable({ table: tableName })
+            .then(() => tableName)
+          );
+        }
+
+        // generate table name
+        return (
+          this.loadTableList()
+          .then(tables => {
+            let objName = table.getName().toLowerCase().replace(/[\?\-\,\.]/g, '_');
+            let tableName = objName;
+            let idx = 0;
+            while (tables.some(t => tableName == t.table)) {
+              tableName = objName + '_' + idx++;
+            }
+
+            return tableName;
+          })
+        );
+      })
+      .then(tableName => {
+        const columns = tableFile.getColumns().map(col => {
+          return {
+            colName: col.name,
+            colType: col.type
+          };
+        });
+
+        // start to push data from file
+        this.createTable({ table: tableName, columns })
+        .then(() => {
+          this.holder.save();
+          return this.pushDataFromFile(tableFile, 20, tableName);
+        });
+      })
+    );
+  }
+
+  private pushDataFromFile(fo: TableFileBase, rowsPerBunch: number, tableName: string): Promise<{ skipRows: number }> {
+    if (!(fo instanceof TableFileBase))
+      return Promise.reject('unknown type of source file');
+
+    const result = { skipRows: 0 };
+    const onRows = (args: OnRowsArgs) => {
+      return (
+        this.pushData({
+          table: tableName,
+          rows: args.rows as any,
+          updateVersion: false
+        })
+        .then(res => {
+          result.skipRows += args.rows.length - res.pushRows;
+          this.setProgress(args.progress);
+        })
+        .catch(e => {
+          this.setStatus('error');
+          this.addError(e.toString());
+          return Promise.reject(e);
+        })
+      );
+    };
+
+    this.setStatus('in progress');
+    return (
+      fo.getDataReading().readRows({
+        onRows,
+        linesPerBunch: rowsPerBunch
+      })
+      .then(() => {
+        // need update version
+        this.holder.save(true);
+        this.invalidateGuids(tableName);
+        this.setStatus('ok');
+        return result;
+      })
+      .catch(e => {
+        this.holder.save(true);
+        this.addError(e.toString());
+        this.setStatus('ok');
+        return result;
       })
     );
   }
@@ -335,7 +440,8 @@ export class DatabaseHolder extends DatabaseHolderBase {
         tmpTableName: data.tmpTable,
         cond: data.args.cond,
         columns: data.args.columns,
-        order: data.args.order
+        order: data.args.order,
+        distinct: data.args.distinct
       })
       .then(res => {
         data.invalid = false;

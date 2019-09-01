@@ -9,6 +9,7 @@ import { DatabaseHolder } from './database/database-holder';
 import { DatabaseTable } from './database/database-table';
 import { FileStorage } from './file-storage';
 import { ApprMapServerBase } from '../base/appr-map';
+import { Youtube } from './youtube';
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
@@ -23,6 +24,7 @@ export function getClasses(): Array<OBJIOItemClass> {
     DatabaseHolder,
     DatabaseTable,
     FileStorage,
-    ApprMapServerBase
+    ApprMapServerBase,
+    Youtube
   ];
 }
