@@ -26,7 +26,14 @@ import { FontAppr } from '../../base/appr-decl';
 import { ContextMenu, Menu, MenuItem } from 'ts-react-ui/blueprint';
 import { prompt } from 'ts-react-ui/prompt';
 import { FilterPanel, FilterPanelView } from 'ts-react-ui/panel/filter-panel';
-import { DBColType, ColItem, getCatFilter, FilterHolder, getRangeFilter } from 'ts-react-ui/panel/filter-panel-decl';
+import {
+  DBColType,
+  ColItem,
+  getCatFilter,
+  FilterHolder,
+  getRangeFilter,
+  SortType
+} from 'ts-react-ui/panel/filter-panel-decl';
 import { ValueCond, RangeCond } from '../../base/database/database-decl';
 
 function conv2DBColType(type: string): DBColType {
@@ -39,6 +46,14 @@ function conv2DBColType(type: string): DBColType {
   if (type == 'TEXT')
     return 'text';
   throw 'unknown type';
+}
+
+function getSortOrder(column: string, sort: SortType): Array<ColOrder> | undefined {
+  if (sort == 'value')
+    return [{ column }];
+
+  if (sort == 'count')
+    return [{ column: `${column}_count` }];
 }
 
 let defaultFont: FontAppr = {
@@ -255,14 +270,14 @@ export class DatabaseTable extends DatabaseTableClientBase {
         };
 
         if (col.type == 'varchar') {
-          let order: Array<ColOrder> = [ { column: col.name } ];
-          col.setSort = type => {
-            order = [ type == 'value' ? { column: col.name } : { column: col.name + '_count' } ];
+          let sort: SortType;
+          col.setSort = (sortType: SortType) => {
+            sort = sortType;
             return this.db.loadTableGuid({
               table: this.tableName,
               distinct: col.name,
               desc: true,
-              order
+              order: getSortOrder(col.name, sortType)
             }).then(() => {});
           };
           col.getValues = args => {
@@ -272,7 +287,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
               distinct: col.name,
               desc: true,
               cond: makeCond(args.filters),
-              order
+              order: getSortOrder(col.name, sort)
             })
             .then(r => desc = r)
             .then(desc => this.db.loadTableData({ guid: desc.guid, from: args.from, count: args.count }))

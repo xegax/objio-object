@@ -68,16 +68,21 @@ export class DatabaseTableView extends React.Component<Props> {
       return null;
 
     return (
-      <div style={{ position: 'relative', flexGrow: 1}}>
-        <Grid
-          model={grid}
-          renderHeader={this.renderHeader}
-          renderCell={this.renderCell}
-          onScrollToBottom={() => {
-            grid.loadNext();
-          }}
-        />
-      </div>
+      <>
+        <div style={{ position: 'relative', flexGrow: 1 }}>
+          <Grid
+            model={grid}
+            renderHeader={this.renderHeader}
+            renderCell={this.renderCell}
+            onScrollToBottom={() => {
+              grid.loadNext();
+            }}
+          />
+        </div>
+        <div style={{ flexGrow: 0 }}>
+          Number of rows: {grid.getTotalRowsCount()}
+        </div>
+      </>
     );
   }
 
@@ -91,7 +96,7 @@ export class DatabaseTableView extends React.Component<Props> {
 
     return (
       <div style={{ position: 'relative', flexGrow: 1 }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, display: 'flex' }}>
+        <div className='flexcol' style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 }}>
           {jsx}
         </div>
       </div>
