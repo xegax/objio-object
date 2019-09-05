@@ -35,6 +35,7 @@ import {
   SortType
 } from 'ts-react-ui/panel/filter-panel-decl';
 import { ValueCond, RangeCond } from '../../base/database/database-decl';
+import { ObjTab } from '../../base/object-base';
 
 function conv2DBColType(type: string): DBColType {
   if (type.startsWith('VARCHAR'))
@@ -817,12 +818,21 @@ export class DatabaseTable extends DatabaseTableClientBase {
     );
   }
 
-  renderFilter(props: ObjProps) {
+  renderFilter() {
     return (
       <FilterPanelView
         model={this.filter}
       />
     );
+  }
+
+  getObjTabs(): Array<ObjTab> {
+    return [
+      {
+        icon: 'fa fa-filter',
+        render: () => this.renderFilter()
+      }
+    ];
   }
 
   getObjPropGroups(props: ObjProps) {
@@ -832,7 +842,6 @@ export class DatabaseTable extends DatabaseTableClientBase {
         {this.renderAppr(props)}
         {this.renderColumnsConfig(props)}
         {this.renderSort(props)}
-        {this.renderFilter(props)}
       </>
     );
   }

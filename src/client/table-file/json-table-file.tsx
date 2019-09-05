@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { JSONTableFile as Base } from '../../base/table-file/json-table-file';
 import { PropsGroup, PropItem } from 'ts-react-ui/prop-sheet';
-import { TableFileView } from '../../view/table-file-view';
+import { TableFileProps } from '../../view/table-file-props';
 
 export class JSONTableFile extends Base {
-  getDataReading() {
+  getDataReader() {
     return null;
   }
 
@@ -14,14 +14,9 @@ export class JSONTableFile extends Base {
 
   getObjPropGroups() {
     return (
-      <>
-      <PropsGroup label='rows'>
-        <PropItem label='rows' value={this.getRows()}/>
-      </PropsGroup>
-      <PropsGroup label='columns'>
-        <TableFileView model={this}/>
-      </PropsGroup>
-      </>
+      <TableFileProps
+        model={this}
+      />
     );
   }
 }

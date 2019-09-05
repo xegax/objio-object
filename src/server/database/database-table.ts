@@ -5,7 +5,7 @@ import {
 } from '../../base/database/database-table';
 import { IDArgs } from '../../common/interfaces';
 import { TableFileBase } from '../../base/table-file';
-import { OnRowsArgs } from '../../base/table-file/data-reading';
+import { OnRowsArgs } from '../../base/table-file/data-reading-decl';
 import {
   LoadTableGuidArgs,
   TableGuid,
@@ -97,7 +97,7 @@ export class DatabaseTable extends DatabaseTableBase {
 
     this.setStatus('in progress');
     return (
-      fo.getDataReading().readRows({
+      fo.getDataReader().readRows({
         onRows,
         linesPerBunch: rowsPerBunch
       })

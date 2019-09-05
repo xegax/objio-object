@@ -46,6 +46,11 @@ export interface ObjectsFolder {
   objects: Array<ObjectBase>;
 }
 
+export interface ObjTab {
+  icon: string;
+  render(props: ObjProps): JSX.Element;
+}
+
 export class ObjectBase extends OBJIOItem {
   protected name: string;
   protected progress: number = 0;
@@ -175,6 +180,10 @@ export class ObjectBase extends OBJIOItem {
 
   getObjPropGroups(props: ObjProps): JSX.Element {
     return null;
+  }
+
+  getObjTabs(): Array<ObjTab> {
+    return [];
   }
 
   sendFile(args: SendFileArgs): Promise<any> {

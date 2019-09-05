@@ -1,7 +1,7 @@
 import { SERIALIZER } from 'objio';
 import { FileObjectBase, SendFileArgs } from '../file-object';
 import { ColumnAttr } from './table-file-decl';
-import { DataReading } from './data-reading';
+import { DataReader } from './data-reading-decl';
 import { StatMap } from 'objio/common/reader/statistics';
 
 export { SendFileArgs };
@@ -60,7 +60,7 @@ export abstract class TableFileBase extends FileObjectBase {
   }
 
   // server side implementation
-  abstract getDataReading(): DataReading;
+  abstract getDataReader(): DataReader;
 
   static SERIALIZE: SERIALIZER = () => ({
     ...FileObjectBase.SERIALIZE(),

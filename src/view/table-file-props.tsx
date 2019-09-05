@@ -6,36 +6,87 @@ import { CheckBox } from 'ts-react-ui/checkbox';
 import { ListView } from 'ts-react-ui/list-view';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { Icon } from 'ts-react-ui/icon';
+import { Popover } from 'ts-react-ui/popover';
+import { Menu, MenuItem } from 'ts-react-ui/blueprint';
 import * as numIcon from '../images/num.png';
 import * as intIcon from '../images/int.png';
 import * as strIcon from '../images/str.png';
 import * as naIcon from '../images/na.png';
+import * as textIcon from '../images/text.png';
+import { CSSIcon } from 'ts-react-ui/cssicon';
+import { PropsGroup, PropItem } from 'ts-react-ui/prop-sheet';
 
 export { TableFile };
 
-export interface TableFileProps {
+export interface Props {
   onlyContent?: boolean;
   model: TableFile;
+  renderSpecificProps?(): JSX.Element;
 }
 
 export interface State {
   stats: boolean;
 }
 
-const allColumTypes = [
-  'TEXT',
-  'LONGTEXT',
-  'INTEGER',
-  'REAL',
-  'DATE',
-  'VARCHAR(16)',
-  'VARCHAR(32)',
-  'VARCHAR(64)',
-  'VARCHAR(128)',
-  'VARCHAR(256)'
-].map(type => ({ value: type }));
+function getTypeIcon(type: string): JSX.Element {
+  if (type == 'TEXT') {
+    return (
+      <Icon
+        width='1em'
+        height='1em'
+        src={textIcon}
+      />
+    );
+  }
 
-export class TableFileView extends React.Component<TableFileProps, Partial<State>> {
+  if (type.startsWith('VARCHAR')) {
+    return (
+      <Icon
+        width='1em'
+        height='1em'
+        src={strIcon}
+      />
+    );
+  }
+
+  if (type == 'REAL') {
+    return (
+      <Icon
+        width='1em'
+        height='1em'
+        src={numIcon}
+      />
+    );
+  }
+
+  if (type == 'INTEGER') {
+    return (
+      <Icon
+        width='1em'
+        height='1em'
+        src={intIcon}
+      />
+    );
+  }
+
+  if (type == 'DATE') {
+    return (
+      <CSSIcon
+        style={{ width: '1em', height: '1em' }}
+        icon='fa fa-calendar'
+      />
+    );
+  }
+
+  return (
+    <CSSIcon
+      icon='fa fa-square'
+      style={{ width: '1em', height: '1em' }}
+    />
+  );
+}
+
+export class TableFileProps extends React.Component<Props, Partial<State>> {
   state: Partial<State> = {};
 
   subscriber = () => {
@@ -79,18 +130,23 @@ export class TableFileView extends React.Component<TableFileProps, Partial<State
   }
 
   renderType(col: ColumnAttr) {
+    const onChange = (type: string) => {
+      return () => {
+        this.props.model.setColumn({ name: col.name, type });
+      };
+    };
+
     return (
-      <DropDown
-        width={80}
-        value={{ value: col.type }}
-        values={allColumTypes}
-        onSelect={value => {
-          this.props.model.setColumn({
-            name: col.name,
-            type: value.value
-          });
-        }}
-      />
+      <Popover targetClassName='flexcol'>
+        {getTypeIcon(col.type)}
+        <Menu>
+          <MenuItem onClick={onChange('TEXT')} text='TEXT'/>
+          <MenuItem onClick={onChange('VARCHAR')} text='VARCHAR'/>
+          <MenuItem onClick={onChange('INTEGER')} text='INTEGER'/>
+          <MenuItem onClick={onChange('REAL')} text='REAL'/>
+          <MenuItem onClick={onChange('DATE')} text='DATE'/>
+        </Menu>
+      </Popover>
     );
   }
 
@@ -113,29 +169,29 @@ export class TableFileView extends React.Component<TableFileProps, Partial<State
       <>
         <Icon
           src={naIcon}
-          width={18}
-          height={18}
+          width='1em'
+          height='1em'
           style={{ opacity: stat.nulls ? 1 : opacity, display: nulls ? null : 'none' }}
           title={stat.nulls ? `count: ${stat.nulls}` : ''}
         />
         <Icon
           src={numIcon}
-          width={18}
-          height={18}
+          width='1em'
+          height='1em'
           style={{ opacity: stat.nums ? 1 : opacity, display: nums ? null : 'none' }}
           title={stat.nums ? `count: ${stat.nums}; range: [${stat.minValue} ; ${stat.maxValue}]` : ''}
         />
         <Icon
           src={intIcon}
-          width={18}
-          height={18}
+          width='1em'
+          height='1em'
           style={{ opacity: stat.ints ? 1 : opacity, display: ints ? null : 'none' }}
           title={stat.ints ? `count: ${stat.ints}; range: [${stat.minValue} ; ${stat.maxValue}]` : ''}
         />
         <Icon
           src={strIcon}
-          width={18}
-          height={18}
+          width='1em'
+          height='1em'
           style={{ opacity: stat.strs ? 1 : opacity, display: strs ? null : 'none' }}
           title={stat.strs ? `count: ${stat.strs}; size range: [${stat.minSize} ; ${stat.maxSize}]` : ''}
         />
@@ -153,7 +209,7 @@ export class TableFileView extends React.Component<TableFileProps, Partial<State
     return (
       <div className='horz-panel-5px' style={style}>
         <CheckBox
-          title='toggle on/off all'
+          title='Include'
           value={true}
           onChange={() => {
             let discards = 0;
@@ -167,7 +223,7 @@ export class TableFileView extends React.Component<TableFileProps, Partial<State
           }}
         />
         <CheckIcon
-          title='column will be indexed'
+          title='Indexing'
           faIcon='fa fa-info-circle'
           value={true}
           onChange={() => {
@@ -182,7 +238,7 @@ export class TableFileView extends React.Component<TableFileProps, Partial<State
           }}
         />
         <CheckIcon
-          title='toggle statistics'
+          title='Statistics'
           faIcon='fa fa-pie-chart'
           value={true}
           onChange={() => {
@@ -202,17 +258,18 @@ export class TableFileView extends React.Component<TableFileProps, Partial<State
 
     return {
       value: col.name,
+      title: `${col.name}, ${col.type}${col.size ? '(' + col.size + ')' : ''}`,
       render: (
         <div className='horz-panel-5px' style={style}>
           <CheckBox
-            title='toggle on/off'
+            title='Include'
             value={!col.discard}
             onChange={show => {
               this.props.model.setColumn({ name: col.name, discard: !show });
             }}
           />
           <CheckIcon
-            title='column will be indexed'
+            title='Indexing'
             faIcon='fa fa-info-circle'
             value={col.index}
             onChange={index => {
@@ -228,16 +285,33 @@ export class TableFileView extends React.Component<TableFileProps, Partial<State
   }
 
   render() {
+    const header = {
+      value: '',
+      render: this.renderHeader()
+    };
+
     const values = [
-      { value: '', render: this.renderHeader() },
-      ...this.props.model.getColumns({ discard: true }).map(this.renderColumn)
+      ...this.props.model.getColumns({ discard: true })
+      .map(this.renderColumn)
     ];
 
     return (
-      <ListView
-        border={false}
-        values={values}
-      />
+      <>
+        <PropsGroup label='Properties'>
+          {this.props.renderSpecificProps && this.props.renderSpecificProps()}
+          <PropItem
+            label='Rows count'
+            value={this.props.model.getRows()}
+          />
+        </PropsGroup>
+        <PropsGroup label='Columns' padding={false}>
+          <ListView
+            header={header}
+            border={false}
+            values={values}
+          />
+        </PropsGroup>
+      </>
     );
   }
 }

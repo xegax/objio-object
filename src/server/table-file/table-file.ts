@@ -8,20 +8,24 @@ export function onFileUpload(obj: TableFileBase, userId: string) {
   obj.setRows(0);
   obj.holder.save();
 
-  const reading = obj.getDataReading();
+  const reader = obj.getDataReader();
   let rows = 0;
   return (
-    reading.readCols()
+    reader.readCols()
       .then(cols => {
         obj.setColumns(cols);
         obj.holder.save();
         return (
-          reading.readRows({
+          reader.readRows({
             linesPerBunch: 100,
             onRows: args => {
               obj.setProgress(args.progress);
               rows += args.rows.length;
-              pushStat({objs: args.rows as Array<Object>, statMap, emptyStrIsNull: true});
+              pushStat({
+                objs: args.rows as Array<Object>,
+                statMap,
+                emptyStrIsNull: true
+              });
               return Promise.resolve();
             }
           })
@@ -30,7 +34,8 @@ export function onFileUpload(obj: TableFileBase, userId: string) {
       .then(() => {
         obj.setRows(rows);
         obj.setStatMap(statMap);
-        obj.getColumns({ discard: true }).forEach(col => {
+        obj.getColumns({ discard: true })
+        .forEach(col => {
           const stat = statMap[col.name];
           if (!stat)
             return;
@@ -40,20 +45,14 @@ export function onFileUpload(obj: TableFileBase, userId: string) {
           else if (stat.nums && !stat.strs)
             col.type = 'REAL';
           else if (stat.strs) {
-            if (stat.maxSize < 16)
-              col.type = 'VARCHAR(16)';
-            else if (stat.maxSize < 32)
-              col.type = 'VARCHAR(32)';
-            else if (stat.maxSize < 64)
-              col.type = 'VARCHAR(64)';
-            else if (stat.maxSize < 128)
-              col.type = 'VARCHAR(128)';
-            else if (stat.maxSize < 256)
-              col.type = 'VARCHAR(256)';
-            else if (stat.maxSize < 65536)
-              col.type = 'TEXT';
-            else
+            if (stat.maxSize > 65536) {
               col.type = 'LONGTEXT';
+            } else if (stat.maxSize > 512 ) {
+              col.type = 'TEXT';
+            } else {
+              col.size = stat.maxSize;
+              col.type = 'VARCHAR';
+            }
           }
         });
         obj.holder.save();

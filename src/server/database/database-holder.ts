@@ -24,7 +24,7 @@ import {
 import { DatabaseHolderBase } from '../../base/database/database-holder';
 import { IDArgs } from '../../common/interfaces';
 import { TableFileBase } from '../../base/table-file';
-import { OnRowsArgs } from '../../base/table-file/data-reading';
+import { OnRowsArgs } from '../../base/table-file/data-reading-decl';
 
 export {
   ColumnInfo,
@@ -175,9 +175,13 @@ export class DatabaseHolder extends DatabaseHolderBase {
       })
       .then(tableName => {
         const columns = tableFile.getColumns().map(col => {
+          let colType = col.type;
+          if (col.type == 'VARCHAR' && col.size != null)
+            colType =  `${col.type}(${col.size})`;
+
           return {
             colName: col.name,
-            colType: col.type
+            colType
           };
         });
 
@@ -217,7 +221,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
 
     this.setStatus('in progress');
     return (
-      fo.getDataReading().readRows({
+      fo.getDataReader().readRows({
         onRows,
         linesPerBunch: rowsPerBunch
       })

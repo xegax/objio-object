@@ -12,7 +12,7 @@ export interface ReadLinesArgs {
 
 export type ReadRowsResult = Array<{[key: string]: string | number}>;
 
-export interface DataReading {
+export interface DataReader {
   readRows(args: ReadLinesArgs): Promise<any>;
   readCols(): Promise<Array<ColumnAttr>>;
 }
