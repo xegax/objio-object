@@ -32,7 +32,8 @@ import {
   getCatFilter,
   FilterHolder,
   getRangeFilter,
-  SortType
+  SortType,
+  getTextFilter
 } from 'ts-react-ui/panel/filter-panel-decl';
 import { ValueCond, RangeCond } from '../../base/database/database-decl';
 import { ObjTab } from '../../base/object-base';
@@ -64,16 +65,16 @@ let defaultFont: FontAppr = {
   sizePx: 14
 };
 
-function makeCond(filters: Array<FilterHolder>): CompoundCond {
+function makeCond(filters: Array<FilterHolder>, inverse: boolean): CompoundCond {
   let cf: CompoundCond = { op: 'and', values: [] };
 
   for (let h of filters) {
-    let cat = getCatFilter(h.filter);
+    const cat = getCatFilter(h.filter);
     if (cat && cat.values.length) {
       let cats: CompoundCond = { op: 'or', values: [] as Array<ValueCond> };
 
       for (let v of cat.values)
-        cats.values.push({ column: h.column.name, value: v });
+        cats.values.push({ column: h.column.name, value: v, inverse });
 
       if (cats.values.length == 1)
         cf.values.push(cats.values[0]);
@@ -83,7 +84,7 @@ function makeCond(filters: Array<FilterHolder>): CompoundCond {
       continue;
     }
 
-    let range = getRangeFilter(h.filter);
+    const range = getRangeFilter(h.filter);
     if (range && (range.range[0] != null || range.range[1] != null)) {
       let cond: RangeCond = {
         column: h.column.name,
@@ -91,6 +92,30 @@ function makeCond(filters: Array<FilterHolder>): CompoundCond {
       };
       cf.values.push(cond);
       continue;
+    }
+
+    const text = getTextFilter(h.filter);
+    if (text && text.filterText) {
+      const words = text.filterText.split(' ');
+      if (words.length == 1) {
+        cf.values.push({
+          column: h.column.name,
+          value: text.filterText,
+          like: true,
+          inverse
+        } as ValueCond);
+      } else {
+        const comp: CompoundCond = {
+          op: 'or',
+          values: words.map(w => ({
+            column: h.column.name,
+            value: w,
+            like: true,
+            inverse
+          }))
+        };
+        cf.values.push(comp);
+      }
     }
   }
 
@@ -144,7 +169,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
     this.filter.subscribe(() => {
       const filters = this.filter.getFiltersArr('include');
-      this.filterExpr = makeCond(filters);
+      this.filterExpr = makeCond(filters, false);
 
       this.loadTableDataImpl();
     }, 'change-filter-values');
@@ -287,7 +312,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
               table: this.tableName,
               distinct: col.name,
               desc: true,
-              cond: makeCond(args.filters),
+              cond: makeCond(args.filters, false),
               order: getSortOrder(col.name, sort)
             })
             .then(r => desc = r)
@@ -306,7 +331,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
             let p = (this.loadTableTask || Promise.resolve())
             .then(() => this.db.loadTableGuid({
               table: this.tableName,
-              cond: makeCond(args.filters)
+              cond: makeCond(args.filters, false)
             }))
             .then(r => {
               return this.db.loadAggrData({
