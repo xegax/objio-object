@@ -39,13 +39,14 @@ import { ValueCond, RangeCond } from '../../base/database/database-decl';
 import { ObjTab } from '../../base/object-base';
 
 function conv2DBColType(type: string): DBColType {
-  if (type.startsWith('VARCHAR'))
+  type = type.toLowerCase();
+  if (type.startsWith('varchar'))
     return 'varchar';
-  if (type == 'INTEGER')
+  if (type == 'integer')
     return 'integer';
-  if (type == 'REAL')
+  if (type == 'real')
     return 'real';
-  if (type == 'TEXT')
+  if (type == 'text' || type == 'longtext')
     return 'text';
   throw 'unknown type';
 }
@@ -297,6 +298,17 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
         if (col.type == 'varchar') {
           let sort: SortType;
+          /*col.setFilter = (str: string) => {
+            return (
+              this.db.loadTableGuid({
+                table: this.tableName,
+                distinct: col.name,
+                desc: true,
+                cond: { op: 'and', values: [{ column: col.name, value: str, like: true }] } as CompoundCond,
+                order: getSortOrder(col.name, sort)
+              }).then(r => ({ total: r.desc.rowsNum }))
+            );
+          };*/
           col.setSort = (sortType: SortType) => {
             sort = sortType;
             return this.db.loadTableGuid({

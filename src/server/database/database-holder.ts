@@ -22,7 +22,7 @@ import {
   LoadTableDataResult
 } from '../../base/database/database-decl';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
-import { IDArgs } from '../../common/interfaces';
+import { IDArgs, StrMap } from '../../common/interfaces';
 import { TableFileBase } from '../../base/table-file';
 import { OnRowsArgs } from '../../base/table-file/data-reading-decl';
 
@@ -204,7 +204,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
       return (
         this.pushData({
           table: tableName,
-          rows: args.rows as any,
+          rows: args.rows as Array<StrMap>,
           updateVersion: false
         })
         .then(res => {
@@ -328,6 +328,19 @@ export class DatabaseHolder extends DatabaseHolderBase {
         if (args.updateVersion != false)
           this.holder.save(true);
         return res;
+      })
+      .catch(() => {
+        let pushRows = 0;
+        let p = Promise.resolve();
+        for (let r of args.rows) {
+          p = p.then(() => this.impl.pushData({ ...args, rows: [ r ] }))
+          .then(() => {
+            pushRows += 1;
+          })
+          .catch(() => {});
+        }
+        
+        return p.then(() => ({ pushRows }));
       })
     );
   }

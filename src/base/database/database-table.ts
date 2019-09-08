@@ -16,7 +16,6 @@ import {
 import { DatabaseHolderBase } from './database-holder';
 import { IDArgs } from '../../common/interfaces';
 import {
-  LoadTableFileArgs,
   SetTableNameArgs
 } from './database-table-decl';
 import { ApprMapBase } from '../appr-map';
@@ -32,12 +31,9 @@ export {
 
 export abstract class DatabaseTableBase extends ObjectBase {
   protected db: DatabaseHolderBase;
-  protected tableFileId: string;
   protected tableName: string;
   protected appr: ApprMapBase<TableAppr>;
   protected columns = Array<ColumnInfo>();
-
-  // abstract loadTableFile(args: LoadTableFileArgs): Promise<void>;
 
   abstract loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult>;
   abstract loadTableRowsNum(args: TableGuid): Promise<number>;
@@ -47,7 +43,6 @@ export abstract class DatabaseTableBase extends ObjectBase {
 
   abstract setDatabase(args: IDArgs): Promise<void>;
   abstract setTableName(args: SetTableNameArgs): Promise<void>;
-  abstract setTableFile(args: IDArgs): Promise<void>;
 
   getTableName(): string {
     return this.tableName;
@@ -62,7 +57,6 @@ export abstract class DatabaseTableBase extends ObjectBase {
     ...ObjectBase.SERIALIZE(),
     db:           { type: 'object', const: true },
     tableName:    { type: 'string', const: true },
-    tableFileId:  { type: 'string', const: true },
     appr:         { type: 'object', const: true },
     columns:      { type: 'json', const: true }
   })
@@ -72,10 +66,6 @@ export class DatabaseTableClientBase extends DatabaseTableBase {
   pushData(args: PushDataArgs): Promise<PushDataResult> {
     return this.holder.invokeMethod({ method: 'pushData', args });
   }
-
-  /*loadTableFile(args: LoadTableFileArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'loadTableFile', args });
-  }*/
 
   loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult> {
     return this.holder.invokeMethod<LoadTableGuidResult>({ method: 'loadTableGuid', args });
@@ -95,9 +85,5 @@ export class DatabaseTableClientBase extends DatabaseTableBase {
 
   setTableName(args: SetTableNameArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'setTableName', args });
-  }
-
-  setTableFile(args: IDArgs): Promise<void> {
-    return this.holder.invokeMethod({ method: 'setTableFile', args });
   }
 }

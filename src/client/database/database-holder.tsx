@@ -256,7 +256,7 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
 
   getObjPropGroups(objProps: ObjProps) {
     return (
-      <PropsGroup label='tables' defaultHeight={200} key={this.holder.getID()}>
+      <PropsGroup label='Tables' defaultHeight={200} key={this.holder.getID()}>
         <ForwardProps
           render={(props: { height?: number }) => {
             return (
@@ -265,7 +265,7 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
                 <div className='horz-panel-1 flexrow' style={{ alignItems: 'center' }}>
                   <i
                     className={this.updateTablesTask ? 'fa fa-spinner fa-spin' : 'fa fa-table'}
-                    title='table'
+                    title='Table'
                     style={{ width: '1em' }}
                   />
                   <DropDown
