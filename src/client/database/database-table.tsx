@@ -42,7 +42,7 @@ function conv2DBColType(type: string): DBColType {
   type = type.toLowerCase();
   if (type.startsWith('varchar'))
     return 'varchar';
-  if (type == 'integer')
+  if (type == 'integer' || type.startsWith('int'))
     return 'integer';
   if (type == 'real')
     return 'real';
@@ -298,17 +298,25 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
         if (col.type == 'varchar') {
           let sort: SortType;
-          /*col.setFilter = (str: string) => {
+          col.setFilter = args => {
+            let cond = makeCond([
+              ...args.filters,
+              {
+                column: col,
+                filter: { filterText: args.filter }
+              }
+            ], false);
+
             return (
               this.db.loadTableGuid({
                 table: this.tableName,
                 distinct: col.name,
                 desc: true,
-                cond: { op: 'and', values: [{ column: col.name, value: str, like: true }] } as CompoundCond,
+                cond,
                 order: getSortOrder(col.name, sort)
               }).then(r => ({ total: r.desc.rowsNum }))
             );
-          };*/
+          };
           col.setSort = (sortType: SortType) => {
             sort = sortType;
             return this.db.loadTableGuid({
@@ -766,7 +774,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private renderColumnsConfig(props: ObjProps) {
     return (
       <PropsGroup
-        label='columns'
+        label='Columns'
         defaultOpen={false}
         defaultHeight={200}
         key={'cols-' + this.holder.getID()}
