@@ -44,7 +44,7 @@ function conv2DBColType(type: string): DBColType {
     return 'varchar';
   if (type == 'integer' || type.startsWith('int'))
     return 'integer';
-  if (type == 'real')
+  if (type == 'real' || type == 'double')
     return 'real';
   if (type == 'text' || type == 'longtext')
     return 'text';
@@ -296,7 +296,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
           type: conv2DBColType(c.colType)
         };
 
-        if (col.type == 'varchar') {
+        if (col.type == 'varchar' || col.type == 'integer' || col.type == 'real') {
           let sort: SortType;
           col.setFilter = args => {
             let cond = makeCond([
@@ -346,7 +346,8 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
             return p;
           };
-        } else if (col.type == 'integer' || col.type == 'real') {
+        }
+        if (col.type == 'integer' || col.type == 'real') {
           col.getNumRange = args => {
             let p = (this.loadTableTask || Promise.resolve())
             .then(() => this.db.loadTableGuid({

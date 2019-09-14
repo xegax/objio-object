@@ -127,3 +127,7 @@ export interface LoadAggrDataArgs {
 export interface LoadAggrDataResult {
   values: Array<{ column: string; aggs: AggregationFunc; value: number }>;
 }
+
+export interface DatabaseProps {
+  valuesPerQuery: number;
+}

@@ -14,7 +14,8 @@ import {
   UpdateDataArgs,
   LoadTableDataArgs,
   CreateTempTableArgs,
-  TableArgs
+  TableArgs,
+  DatabaseProps
 } from './database-decl';
 import { ConnectionBase } from './connection';
 import { IDArgs } from '../../common/interfaces';
@@ -35,6 +36,12 @@ export abstract class DatabaseBase extends ObjectBase {
   abstract updateData(args: UpdateDataArgs): Promise<void>;
   abstract deleteData(args: DeleteDataArgs): Promise<void>;
   abstract deleteTable(args: DeleteTableArgs): Promise<void>;
+
+  getDBProps(): DatabaseProps {
+    return {
+      valuesPerQuery: 500
+    };
+  }
 
   static TYPE_ID: string = null;
   static SERIALIZE: SERIALIZER = () => ({

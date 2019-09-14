@@ -320,9 +320,52 @@ export class DatabaseHolder extends DatabaseHolderBase {
     );
   }
 
+  private pushDataImpl(args: PushDataArgs): Promise<PushDataResult> {
+    let p: Promise<void> = Promise.resolve();
+    const rows: PushDataResult = {
+      pushRows: 0
+    };
+
+    const flush = (values: Array<StrMap>) => {
+      if (values.length == 0)
+        return;
+
+      return (
+        p = p.then(() => this.impl.pushData({ ...args, rows: values }))
+        .then(() => {
+          rows.pushRows += values.length;
+        })
+        .catch(e => {
+          console.log(e);
+        })
+      );
+    };
+
+    const props = this.impl.getDBProps();
+    let buf = Array<StrMap>();
+    let vals = 0;
+    args.rows.forEach(r => {
+      const colsOnRow = Object.keys(r).length;
+
+      if (vals + colsOnRow >= props.valuesPerQuery) {
+        flush(buf);
+        buf = [r];
+        vals = colsOnRow;
+      } else {
+        vals += colsOnRow;
+        buf.push(r);
+      }
+    });
+    flush(buf);
+
+    return (
+      p.then(() => rows)
+    );
+  }
+
   pushData(args: PushDataArgs): Promise<PushDataResult> {
     return (
-      this.impl.pushData(args)
+      this.pushDataImpl(args)
       .then(res => {
         this.invalidateGuids(args.table);
         if (args.updateVersion != false)
