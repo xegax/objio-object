@@ -291,8 +291,10 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
     try {
       const filterCols = this.columns.map(c => {
+        const colp = this.getColumnProp(c.colName);
         const col: ColItem = {
           name: c.colName,
+          label: colp.label,
           type: conv2DBColType(c.colType)
         };
 
