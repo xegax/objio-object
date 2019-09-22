@@ -12,9 +12,10 @@ import {
 import { DatabaseHolder } from './database-holder';
 import { LoadTableGuidResult } from '../../base/database/database-holder-decl';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
-import { TableDesc, ColOrder, CompoundCond } from '../../base/database/database-decl';
+import { TableDesc, ColOrder, CompoundCond, ColumnInfo } from '../../base/database/database-decl';
 import { TableAppr, TableColumnAppr } from '../../base/database/database-table-appr';
 import { CheckIcon } from 'ts-react-ui/checkicon';
+import { CSSIcon } from 'ts-react-ui/cssicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 import { ObjLink } from '../../control/obj-link';
 import { ForwardProps } from 'ts-react-ui/forward-props';
@@ -37,6 +38,8 @@ import {
 } from 'ts-react-ui/panel/filter-panel-decl';
 import { ValueCond, RangeCond } from '../../base/database/database-decl';
 import { ObjTab } from '../../base/object-base';
+import { KeyValue } from '../../common/interfaces';
+import { selectCategory } from 'ts-react-ui/panel/select-category';
 
 function conv2DBColType(type: string): DBColType {
   type = type.toLowerCase();
@@ -126,15 +129,20 @@ function makeCond(filters: Array<FilterHolder>, inverse: boolean): CompoundCond 
   return cf;
 }
 
+export type SelectionData = Array<KeyValue>;
+
 export class DatabaseTable extends DatabaseTableClientBase {
   private grid: GridLoadableModel;
   private prevDB: DatabaseHolderBase;
   private tables = Array<string>();
   private tableDesc: TableDesc;
   private guid: string;
+  private selectionGuid: string;
   private modifiedCols: {[col: string]: Partial<TableColumnAppr>} = {};
   private filter = new FilterPanel([]);
   private filterExpr: CompoundCond;
+  private selection: SelectionData;
+  private pSelection: Promise<void>;
 
   private dbChangeHandler = {
     onObjChange: () => {
@@ -171,6 +179,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.filter.subscribe(() => {
       const filters = this.filter.getFiltersArr('include');
       this.filterExpr = makeCond(filters, false);
+      this.updateSelectionData(true);
 
       this.loadTableDataImpl();
     }, 'change-filter-values');
@@ -183,6 +192,17 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.appr.holder.addEventHandler(this.apprHandler);
   }
 
+  private itemFromColumnInfo = (c: ColumnInfo): Item => {
+    const p = this.getColumnProp(c.colName);
+    return { value: c.colName, render: p.label };
+  }
+
+  private itemFromColumn = (value: string): Item => {
+    const p = this.getColumnProp(value);
+    return { value, render: p.label };
+  }
+
+  private prevSelCols: string;
   private prevColsToShow = Array<string>();
   private prevSortCols = Array<{ column: string; revers?: boolean }>();
   private onApprChanged() {
@@ -224,7 +244,14 @@ export class DatabaseTable extends DatabaseTableClientBase {
       maxFontSizePx = Math.max(font.sizePx, maxFontSizePx);
     });
     this.grid.setRowSize(maxFontSizePx + 8);
-    this.grid.setReverse(!!appr.sort.reverse);
+    if (this.grid.setReverse(!!appr.sort.reverse))
+      this.prevSelCols = '';
+
+    const newSelCols = JSON.stringify(appr.cols4details);
+    if (this.prevSelCols != newSelCols) {
+      this.updateSelectionData(true);
+    }
+    this.prevSelCols = newSelCols;
   }
 
   getGrid(): GridLoadableModel {
@@ -447,14 +474,17 @@ export class DatabaseTable extends DatabaseTableClientBase {
       this.guid = table.guid;
 
       this.grid && this.grid.unsubscribe(this.onColResized, 'col-resized');
+      this.grid && this.grid.unsubscribe(this.onSelChanged, 'select');
 
       this.grid = new GridLoadableModel({
         rowsCount: table.desc.rowsNum,
         colsCount: table.desc.columns.length,
         prev: this.grid
       });
+      this.prevSelCols = '';  // need to update selection
       this.onApprChanged();
       this.grid.subscribe(this.onColResized, 'col-resized');
+      this.grid.subscribe(this.onSelChanged, 'select');
 
       this.grid.setLoader((from, count) => {
         return (
@@ -472,7 +502,12 @@ export class DatabaseTable extends DatabaseTableClientBase {
       return Promise.reject(e);
     });
 
+    this.updateSelectionData(true);
     return this.loadTableTask;
+  }
+
+  private onSelChanged = () => {
+    this.updateSelectionData();
   }
 
   private updateDatabaseData() {
@@ -883,12 +918,106 @@ export class DatabaseTable extends DatabaseTableClientBase {
     ];
   }
 
+  getSelectionData() {
+    return this.selection;
+  }
+
+  isSelectionDataEnabled() {
+    return this.appr.get().cols4details.length > 0;
+  }
+
+  private updateSelectionData(invalide?: boolean) {
+    if (!this.isSelectionDataEnabled())
+      return;
+
+    if (this.pSelection)
+      this.pSelection.cancel();
+
+    if (invalide)
+      this.selectionGuid = null;
+
+    let p = Promise.resolve();
+
+    if (!this.selectionGuid) {
+      p = p.then(() => this.db.loadTableGuid({
+        table: this.tableName,
+        columns: this.appr.get().cols4details,
+        order: this.getSortOrder(),
+        cond: this.filterExpr
+      }))
+      .then(res => {
+        this.selectionGuid = res.guid;
+      });
+    }
+
+    const select = this.grid ? this.grid.getSelectRows() : [];
+    if (select.length) {
+      p = p.then(() => {
+        let from = select[0];
+        if (this.appr.get().sort.reverse)
+          from = this.tableDesc.rowsNum - 1 - from;
+
+        this.db.loadTableData({ guid: this.selectionGuid, from, count: 1 })
+        .then(res => {
+          this.selection = Object.keys(res.rows[0])
+          .map(key => {
+            return { key, value: res.rows[0][key] };
+          });
+          this.pSelection = null;
+          this.holder.delayedNotify();
+        })
+        .catch(() => {
+          this.selection = [];
+          this.pSelection = null;
+          this.holder.delayedNotify();
+        });
+      });
+    }
+
+    this.pSelection = p;
+    this.holder.delayedNotify();
+  }
+
+  renderSelectionConfig(props: ObjProps) {
+    const cols4details = this.appr.get().cols4details;
+    return (
+      <PropsGroup
+        label='Selection'
+        defaultOpen={false}
+        defaultHeight={200}
+        icon={
+          <CSSIcon
+            icon='fa fa-cog'
+            showOnHover
+            onClick={() => {
+              const select = new Set(cols4details);
+              const values = this.columns.map(this.itemFromColumnInfo);
+              selectCategory({ select, values })
+              .then(select => {
+                this.appr.setProps({ cols4details: Array.from(select) });
+              });
+            }}
+          />
+        }
+        key={'sel-' + this.holder.getID()}
+      >
+        <ListView
+          values={cols4details.map(this.itemFromColumn)}
+          onMoveTo={args => {
+            this.appr.setProps({ cols4details: args.newArr.map(arr => arr.value) });
+          }}
+        />
+      </PropsGroup>
+    );
+  }
+
   getObjPropGroups(props: ObjProps) {
     return (
       <>
         {this.renderBaseConfig(props)}
         {this.renderAppr(props)}
         {this.renderColumnsConfig(props)}
+        {this.renderSelectionConfig(props)}
         {this.renderSort(props)}
       </>
     );

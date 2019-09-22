@@ -29,3 +29,4 @@ export interface Range {
 }
 
 export type StrMap = { [key: string]: string };
+export type KeyValue = { key: string; value: string };

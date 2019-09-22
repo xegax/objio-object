@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { DatabaseTable } from '../client/database/database-table';
 import { Grid, CellProps, HeaderProps } from 'ts-react-ui/grid/grid';
+import { HorizontalResizer } from 'ts-react-ui/resizer';
 
 export { DatabaseTable };
 
@@ -8,7 +9,15 @@ export interface Props {
   model: DatabaseTable;
 }
 
-export class DatabaseTableView extends React.Component<Props> {
+interface State {
+  detailsSize: number;
+}
+
+export class DatabaseTableView extends React.Component<Props, State> {
+  state: State = {
+    detailsSize: 100
+  };
+
   notify = () => {
     this.setState({});
   }
@@ -62,6 +71,44 @@ export class DatabaseTableView extends React.Component<Props> {
     );
   }
 
+  renderDetails() {
+    if (!this.props.model.isSelectionDataEnabled())
+      return null;
+
+    const s = {
+      height: this.state.detailsSize,
+      flexGrow: 0,
+      backgroundColor: 'white',
+      overflow: 'auto',
+      padding: 5
+    };
+
+    return (
+      <>
+        <div style={s}>
+          {(this.props.model.getSelectionData() || []).map(f => {
+            return (
+              <div key={f.key}>
+                <span style={{ fontWeight: 'bold' }}>
+                  {this.props.model.getColumnProp(f.key).label || f.key}
+                </span>: {f.value}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ flexGrow: 0, height: 5, position: 'relative' }}>
+          <HorizontalResizer
+            side='center'
+            size={this.state.detailsSize}
+            onResizing={size => {
+              this.setState({ detailsSize: size });
+            }}
+          />
+        </div>
+      </>
+    );
+  }
+
   renderTable() {
     const grid = this.props.model.getGrid();
     if (!grid)
@@ -69,6 +116,10 @@ export class DatabaseTableView extends React.Component<Props> {
 
     return (
       <>
+        <div style={{ flexGrow: 0 }}>
+          Number of rows: {grid.getTotalRowsCount()}
+        </div>
+        {this.renderDetails()}
         <div style={{ position: 'relative', flexGrow: 1 }}>
           <Grid
             model={grid}
@@ -78,9 +129,6 @@ export class DatabaseTableView extends React.Component<Props> {
               grid.loadNext();
             }}
           />
-        </div>
-        <div style={{ flexGrow: 0 }}>
-          Number of rows: {grid.getTotalRowsCount()}
         </div>
       </>
     );

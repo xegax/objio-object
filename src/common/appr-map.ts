@@ -93,22 +93,31 @@ export class ApprMap<T = Object> extends OBJIOItem implements ApprMapIface<T> {
   })
 }
 
-function copyKeys(dst: Object, src: Object, p?: Array<string>) {
-  p = p || [];
+function copyKeys(dst: Object, src: Object) {
+  if (Array.isArray(src)) {
+    if (!Array.isArray(dst))
+      throw `src and dst should be the same type`;
+
+    dst.length = src.length;
+    for (let k = 0; k < src.length; k++) {
+      if (typeof src[k] == 'object' && src[k] != null)
+        dst[k] = JSON.parse(JSON.stringify(src[k]));
+      else
+        dst[k] = src[k];
+    }
+
+    return;
+  }
+
   Object.keys(src)
   .forEach(k => {
-    const arr = [...p, k];
     if (typeof src[k] == 'object' && src[k] !== null) {
       let dst2 = dst[k] || (dst[k] = Array.isArray(src[k]) ? [] : {});
-      copyKeys(dst2, src[k], arr);
+      copyKeys(dst2, src[k]);
     } else {
-      /*if (typeof dst[k] == 'object' && dst[k] !== null)
-        console.log(`"${arr.join('/')}" object can not be replaced by this type`);
-      else {*/
-        dst[k] = src[k];
-        if (dst[k] === null || dst[k] === undefined)
-          delete dst[k];
-      //}
+      dst[k] = src[k];
+      if (dst[k] === null || dst[k] === undefined)
+        delete dst[k];
     }
   });
 }

@@ -24,7 +24,7 @@ export abstract class ApprMapBase<T> extends ApprMap<T> {
   resetToDefaultAll(): Promise<void> {
     return this.resetToDefaultAllImpl();
   }
-  
+
   resetToDefaultKey<
     K1 extends keyof T,
     K2 extends keyof T[K1],

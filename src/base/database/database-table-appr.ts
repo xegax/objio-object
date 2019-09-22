@@ -26,6 +26,7 @@ export type TableAppr = Partial<{
     font: FontAppr;
   }>;
   columns: {[column: string]: Partial<TableColumnAppr>};
+  cols4details: Array<string>;
   sort: Partial<TableSortAppr>;
 }>;
 
@@ -53,6 +54,7 @@ export function makeTableAppr(): TableAppr {
       }
     },
     columns: {},
-    sort: {}
+    sort: {},
+    cols4details: []
   };
 }
