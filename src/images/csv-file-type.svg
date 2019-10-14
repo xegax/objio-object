@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xml:space="preserve"
+   style="enable-background:new 0 0 58 58;"
+   viewBox="0 0 58 58"
+   y="0px"
+   x="0px"
+   id="Capa_1"
+   version="1.1"><metadata
+   id="metadata4626"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+   id="defs4624" />
+<path
+   id="path4641"
+   d="M 2.0572347,1.6641853 44.599726,0.91381126 56.383315,11.807243 56.043926,35.61878 H 2.0031369 Z"
+   style="fill:#ffffff;fill-opacity:0.7761194;stroke:none;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" /><rect
+   y="35.886368"
+   x="2.0031369"
+   height="20.873011"
+   width="54.040791"
+   id="rect4639"
+   style="fill:#ffe6d5;fill-opacity:1;stroke:none;stroke-width:1.15084898;stroke-linecap:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" /><path
+   id="path4573"
+   d="M 57.049,12.187 55.688,10.826 46.184,1.321 C 46.183,1.32 46.183,1.32 46.182,1.32 L 45.412,0.549 C 45.057,0.195 44.586,0 44.085,0 H 3.0625 C 1.8755,0 0.5995,0.916 0.5995,2.926 V 34.6 55.537 56 c 0,0.837 0.841,1.652 1.836,1.909 0.051,0.014 0.1,0.033 0.152,0.043 C 2.7435,57.983 2.9025,58 3.0625,58 H 55.137 c 0.16,0 0.319,-0.017 0.475,-0.048 0.052,-0.01 0.101,-0.029 0.152,-0.043 C 56.759,57.652 57.6,56.837 57.6,56 V 55.537 34.6 13.978 c 0,-0.767 -0.093,-1.334 -0.551,-1.791 z M 45.6,3.565 54.035,12 H 45.6 Z M 3.0625,56 C 2.9915,56 2.9275,55.975 2.8645,55.951 2.7095,55.877 2.5982343,55.720996 2.5995,55.537 V 36.6 H 55.6 v 18.937 c 0,0.184 -0.11,0.34 -0.265,0.414 C 55.272,55.975 55.208,56 55.137,56 Z M 2.5995,34.6 V 2.926 C 2.5995,2.709 2.6325,2 3.0625,2 H 43.658 C 43.625,2.126 43.6,2.256 43.6,2.391 V 13.78 L 43.82,14 h 11.389 c 0.135,0 0.265,-0.025 0.391,-0.058 0,0.015 10e-4,0.021 10e-4,0.036 V 34.6 Z" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<text
+   transform="matrix(0.95529076,-0.00414529,0,1.0468017,0,0)"
+   id="text4645"
+   y="51.147163"
+   x="11.805181"
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.88842392px;line-height:1.25;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:6.68114996;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+   xml:space="preserve"><tspan
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:18.88842392px;font-family:Arial;-inkscape-font-specification:'Arial, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke:none;stroke-width:6.68114996;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+     y="51.147163"
+     x="11.805181"
+     id="tspan4643">CSV</tspan></text>
+<g
+   style="fill:#aa4400"
+   id="layer1"
+   transform="matrix(0.50729762,0,0,0.50729762,12.766476,-138.21026)"><path
+     style="fill:#aa4400;stroke-width:0.08203125"
+     d="M 49.0625,293.69164 H 14.937501 C 12.762852,293.69164 11,295.4545 11,297.62914 v 28.875 c 0,2.17464 1.762852,3.9375 3.937501,3.9375 H 49.0625 c 2.174648,0 3.9375,-1.76286 3.9375,-3.9375 v -28.875 c 0,-2.17464 -1.762852,-3.9375 -3.9375,-3.9375 z m -24.937499,34.125 h -9.1875 c -0.724914,0 -1.312501,-0.58759 -1.312501,-1.3125 v -6.5625 h 10.500001 z m 0,-10.5 H 13.625 v -7.875 h 10.500001 z m 0,-10.5 H 13.625 v -7.875 h 10.500001 z m 13.124999,21 h -10.5 v -7.875 h 10.5 z m 0,-10.5 h -10.5 v -7.875 h 10.5 z m 0,-10.5 h -10.5 v -7.875 h 10.5 z m 13.125,13.125 v 6.5625 c 0,0.72491 -0.58759,1.3125 -1.3125,1.3125 H 39.875 v -7.875 z m 0,-2.625 h -10.5 v -7.875 h 10.5 z m 0,-10.5 h -10.5 v -7.875 h 10.5 z"
+     class=""
+     id="path5795" /></g></svg>

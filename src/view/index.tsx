@@ -7,8 +7,8 @@ import { DatabaseHolder, DatabaseHolderView } from './database-holder-view';
 import { SpriteSheet, SpriteSheetView, SpriteConfig } from './sprite-sheet';
 import 'ts-react-ui/typings';
 import { Icon } from 'ts-react-ui/icon';
-import * as CSVIcon from '../images/csv-icon.png';
-import * as JSONIcon from '../images/json-icon.png';
+import * as CSVIcon from '../images/csv-file-type.svg';
+import * as JSONIcon from '../images/json-file-type.svg';
 import * as FSIcon from '../images/file-storage.svg';
 import * as TableIcon from '../images/table.svg';
 import * as DatabaseIcon from '../images/database.svg';
@@ -24,6 +24,7 @@ import { DatabaseTable, DatabaseTableView } from '../view/database-table';
 export { registerViews };
 import { FileStorage, FileStorageView, Props as FileStorageViewProps } from './file-storage';
 import { Youtube, YoutubeView, YTProps }  from '../view/youtube';
+import { IconSVG } from 'ts-react-ui/icon-svg';
 
 export function getObjectsToCreate(): Array<ObjectToCreate> {
   return [
@@ -39,7 +40,7 @@ export function getObjectsToCreate(): Array<ObjectToCreate> {
     }, {
       name: 'file-storage',
       desc: 'files storage',
-      icon: <Icon src={FSIcon}/>,
+      icon: <IconSVG icon={FSIcon}/>,
       create: () => new FileStorage()
     }, {
       name: 'youtube',
@@ -59,7 +60,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: FileStorage,
-    icons: { item: <Icon src={FSIcon} /> },
+    icons: { item: <IconSVG icon={FSIcon} /> },
     views: [{
       view: (props: FileStorageViewProps) => <FileStorageView {...props}/>
     }]
@@ -74,7 +75,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: ImageFile,
-    icons: { item: <Icon src={ImageIcon}/> },
+    icons: { item: <IconSVG icon={ImageIcon}/> },
     views: [{
       view: (props: FileViewProps) => <FileObjectView {...props}/>
     }]
@@ -82,7 +83,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: CSVTableFile,
-    icons: { item: <Icon src={CSVIcon}/> },
+    icons: { item: <IconSVG icon={CSVIcon}/> },
     views: [{
       view: () => null
     }]
@@ -90,7 +91,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: JSONTableFile,
-    icons: { item: <Icon src={JSONIcon}/> },
+    icons: { item: <IconSVG icon={JSONIcon}/> },
     views: [{
       view: () => null
     }]
@@ -98,7 +99,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: VideoFileObject,
-    icons: { item: <Icon src={MP4Icon}/> },
+    icons: { item: <IconSVG icon={MP4Icon}/> },
     views: [{
       view: (props: VideoViewProps) => <VideoFileView {...props}/>
     }]
@@ -140,7 +141,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: DatabaseHolder,
-    icons: { item: <Icon src={DatabaseIcon}/> },
+    icons: { item: <IconSVG icon={DatabaseIcon}/> },
     views: [{
       view: (props: {model: DatabaseHolder}) => <DatabaseHolderView {...props}/>
     }]
@@ -148,7 +149,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: DatabaseTable,
-    icons: { item: <Icon src={TableIcon}/> },
+    icons: { item: <IconSVG icon={TableIcon}/> },
     views: [{
       view: (props: {model: DatabaseTable, objects: any}) => <DatabaseTableView {...props}/>
     }]
