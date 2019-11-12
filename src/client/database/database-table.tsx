@@ -206,7 +206,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private prevColsToShow = Array<string>();
   private prevSortCols = Array<{ column: string; revers?: boolean }>();
   private onApprChanged() {
-    if (!this.grid)
+    if (!this.grid || !this.appr)
       return null;
 
     const appr = this.appr.get();
@@ -259,6 +259,9 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   getAppr(): TableAppr {
+    if (!this.appr)
+      return null;
+
     return this.appr.get();
   }
 
@@ -923,6 +926,9 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   isSelectionDataEnabled() {
+    if (!this.appr)
+      return false;
+
     return this.appr.get().cols4details.length > 0;
   }
 
@@ -979,6 +985,9 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   renderSelectionConfig(props: ObjProps) {
+    if (!this.appr)
+      return null;
+
     const cols4details = this.appr.get().cols4details;
     return (
       <PropsGroup
