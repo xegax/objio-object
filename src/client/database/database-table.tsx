@@ -445,7 +445,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
       this.appr.setProps({ columns: modified });
   }
 
-  private getSortOrder(): Array<ColOrder> {
+  getSortOrder(): Array<ColOrder> {
     return this.appr.get().sort.order || [];
   }
 
@@ -756,6 +756,31 @@ export class DatabaseTable extends DatabaseTableClientBase {
         />
       </PropsGroup>
     );
+  }
+
+  getColumns() {
+    return this.columns || [];
+  }
+
+  setSortBy(column: string) {
+    if (!this.appr)
+      return;
+
+    this.appr.setProps({ sort: { order: [{ column }] } });
+  }
+
+  isReverse() {
+    if (!this.appr)
+      return false;
+
+    return !!this.appr.get().sort.reverse;
+  }
+
+  setReverse(reverse: boolean) {
+    if (!this.appr)
+      return;
+
+    this.appr.setProps({ sort: { reverse }});
   }
 
   private renderAppr(props: ObjProps) {

@@ -2,6 +2,9 @@ import * as React from 'react';
 import { DatabaseTable } from '../client/database/database-table';
 import { Grid, CellProps, HeaderProps } from 'ts-react-ui/grid/grid';
 import { HorizontalResizer } from 'ts-react-ui/resizer';
+import { CSSIcon } from 'ts-react-ui/cssicon';
+import { Popover, Position } from 'ts-react-ui/popover';
+import { ListView } from 'ts-react-ui/list-view';
 
 export { DatabaseTable };
 
@@ -109,6 +112,53 @@ export class DatabaseTableView extends React.Component<Props, State> {
     );
   }
 
+  renderToolbar() {
+    const m = this.props.model;
+    const grid = m.getGrid();
+    if (!grid)
+      return null;
+
+    const sort = m.getSortOrder();
+    let sortColumn: React.ReactChild;
+    if (sort.length)
+      sortColumn = <span>{sort[0].column}</span>;
+    else
+      sortColumn = <span>unsorted</span>;
+
+    const columns = m.getColumns().map(col => ({ value: col.colName }));
+    const sortCol = sort.length ? columns.find(c => c.value == sort[0].column) : null;
+
+    return (
+      <div style={{ flexGrow: 0, display: 'flex' }}>
+        <div style={{ flexGrow: 1 }}>
+          Number of rows: {grid.getTotalRowsCount()}
+        </div>
+        <div className='horz-panel-1' style={{ flexGrow: 0 }}>
+          <CSSIcon
+            icon={m.isReverse() ? 'fa fa-arrow-up' : 'fa fa-arrow-down'}
+            showOnHover
+            onClick={() => {
+              m.setReverse(!m.isReverse());
+            }}
+          />
+          {
+            <Popover position={Position.BOTTOM_RIGHT}>
+              {sortColumn}
+              <ListView
+                itemsPerPage={10}
+                value={sortCol}
+                values={columns}
+                onSelect={col => {
+                  m.setSortBy(col.value);
+                }}
+              />
+            </Popover>
+          }
+        </div>
+      </div>
+    );
+  }
+
   renderTable() {
     const grid = this.props.model.getGrid();
     if (!grid)
@@ -116,9 +166,7 @@ export class DatabaseTableView extends React.Component<Props, State> {
 
     return (
       <>
-        <div style={{ flexGrow: 0 }}>
-          Number of rows: {grid.getTotalRowsCount()}
-        </div>
+        {this.renderToolbar()}
         {this.renderDetails()}
         <div style={{ position: 'relative', flexGrow: 1 }}>
           <Grid
