@@ -143,6 +143,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private filterExpr: CompoundCond;
   private selection: SelectionData;
   private pSelection: Promise<void>;
+  private sorting = Array<{ value: string; desc: boolean }>();
 
   private dbChangeHandler = {
     onObjChange: () => {
@@ -236,6 +237,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
     this.prevColsToShow = nextColsToShow;
     this.prevSortCols = nextSortCols;
+    this.sorting = nextSortCols.map(col => ({ value: col.column, desc: !!col.reverse }));
 
     let maxFontSizePx: number = appr.body.font.sizePx;
     nextColsToShow.forEach(c => {
@@ -256,6 +258,18 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   getGrid(): GridLoadableModel {
     return this.grid;
+  }
+
+  getSorting() {
+    return this.sorting;
+  }
+
+  setSorting(sorting: Array<{ value: string; desc: boolean }>) {
+    this.appr.setProps({
+      sort: {
+        order: sorting.map(item => ({ column: item.value, reverse: item.desc }))
+      }
+    });
   }
 
   getAppr(): TableAppr {

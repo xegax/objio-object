@@ -5,6 +5,7 @@ import { HorizontalResizer } from 'ts-react-ui/resizer';
 import { CSSIcon } from 'ts-react-ui/cssicon';
 import { Popover, Position } from 'ts-react-ui/popover';
 import { ListView } from 'ts-react-ui/list-view';
+import { SortingCtrl } from 'ts-react-ui/sorting-ctrl';
 
 export { DatabaseTable };
 
@@ -125,36 +126,25 @@ export class DatabaseTableView extends React.Component<Props, State> {
     else
       sortColumn = <span>unsorted</span>;
 
-    const columns = m.getColumns().map(col => ({ value: col.colName }));
-    const sortCol = sort.length ? columns.find(c => c.value == sort[0].column) : null;
+    const columns = m.getColumns().map(col => col.colName);
 
     return (
-      <div style={{ flexGrow: 0, display: 'flex' }}>
+      <div style={{ flexGrow: 0, display: 'flex', alignItems: 'center' }}>
         <div style={{ flexGrow: 1 }}>
           Number of rows: {grid.getTotalRowsCount()}
         </div>
-        <div className='horz-panel-1' style={{ flexGrow: 0 }}>
-          <CSSIcon
-            icon={m.isReverse() ? 'fa fa-arrow-up' : 'fa fa-arrow-down'}
-            showOnHover
-            onClick={() => {
-              m.setReverse(!m.isReverse());
-            }}
-          />
-          {
-            <Popover position={Position.BOTTOM_RIGHT}>
-              {sortColumn}
-              <ListView
-                itemsPerPage={10}
-                value={sortCol}
-                values={columns}
-                onSelect={col => {
-                  m.setSortBy(col.value);
-                }}
-              />
-            </Popover>
-          }
-        </div>
+        <SortingCtrl
+          style={{ flexGrow: 0 }}
+          available={columns}
+          sorting={m.getSorting()}
+          reverse={m.isReverse()}
+          onReverse={reverse => {
+            m.setReverse(reverse);
+          }}
+          onApply={sorting => {
+            m.setSorting(sorting);
+          }}
+        />
       </div>
     );
   }
