@@ -773,7 +773,11 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   getColumns() {
-    return this.columns || [];
+    const appr = this.appr.get();
+    return (this.columns || []).map(col => {
+      const render = (appr.columns[col.colName] || { label: undefined }).label;
+      return { column: col.colName, render };
+    });
   }
 
   setSortBy(column: string) {

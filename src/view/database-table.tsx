@@ -126,7 +126,7 @@ export class DatabaseTableView extends React.Component<Props, State> {
     else
       sortColumn = <span>unsorted</span>;
 
-    const columns = m.getColumns().map(col => col.colName);
+    const columns = m.getColumns().map(col => ({ value: col.column, render: col.render }));
 
     return (
       <div style={{ flexGrow: 0, display: 'flex', alignItems: 'center' }}>
