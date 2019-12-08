@@ -18,9 +18,9 @@ export class ApprMap<T = Object> extends OBJIOItem implements ApprMapIface<T> {
   protected mods: Partial<T> = {};  // modifications of schema
   protected bake: T = null;         // schema + modifications = bake
 
-  constructor(schema: T) {
+  constructor(schema?: T) {
     super();
-    this.schema = schema;
+    this.schema = schema || this.schema;
   }
 
   private makeBake(): T {

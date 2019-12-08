@@ -76,7 +76,7 @@ export class DatabaseTableView extends React.Component<Props, State> {
   }
 
   renderDetails() {
-    if (!this.props.model.isSelectionDataEnabled())
+    if (!this.props.model.isSelPanelAllowed())
       return null;
 
     const s = {
@@ -90,7 +90,7 @@ export class DatabaseTableView extends React.Component<Props, State> {
     return (
       <>
         <div style={s}>
-          {(this.props.model.getSelectionData() || []).map(f => {
+          {(this.props.model.getSelData() || []).map(f => {
             return (
               <div key={f.key}>
                 <span style={{ fontWeight: 'bold' }}>
@@ -154,6 +154,7 @@ export class DatabaseTableView extends React.Component<Props, State> {
     if (!grid)
       return null;
 
+    const appr = this.props.model.getAppr();
     return (
       <>
         {this.renderToolbar()}
@@ -161,6 +162,8 @@ export class DatabaseTableView extends React.Component<Props, State> {
         <div style={{ position: 'relative', flexGrow: 1 }}>
           <Grid
             model={grid}
+            oddRow={appr.body.oddRow}
+            evenRow={appr.body.evenRow}
             renderHeader={this.renderHeader}
             renderCell={this.renderCell}
             onScrollToBottom={() => {

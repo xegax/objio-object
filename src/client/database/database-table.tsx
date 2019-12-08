@@ -180,16 +180,13 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.filter.subscribe(() => {
       const filters = this.filter.getFiltersArr('include');
       this.filterExpr = makeCond(filters, false);
-      this.updateSelectionData(true);
+      this.updateSelPanelData(true);
 
       this.loadTableDataImpl();
     }, 'change-filter-values');
   }
 
   private listenToAppr() {
-    if (!this.appr)
-      return;
-
     this.appr.holder.addEventHandler(this.apprHandler);
   }
 
@@ -207,7 +204,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private prevColsToShow = Array<string>();
   private prevSortCols = Array<{ column: string; revers?: boolean }>();
   private onApprChanged() {
-    if (!this.grid || !this.appr)
+    if (!this.grid)
       return null;
 
     const appr = this.appr.get();
@@ -249,9 +246,9 @@ export class DatabaseTable extends DatabaseTableClientBase {
     if (this.grid.setReverse(!!appr.sort.reverse))
       this.prevSelCols = '';
 
-    const newSelCols = JSON.stringify(appr.cols4details);
+    const newSelCols = JSON.stringify(appr.selPanel.columns);
     if (this.prevSelCols != newSelCols) {
-      this.updateSelectionData(true);
+      this.updateSelPanelData(true);
     }
     this.prevSelCols = newSelCols;
   }
@@ -273,9 +270,6 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   getAppr(): TableAppr {
-    if (!this.appr)
-      return null;
-
     return this.appr.get();
   }
 
@@ -519,12 +513,12 @@ export class DatabaseTable extends DatabaseTableClientBase {
       return Promise.reject(e);
     });
 
-    this.updateSelectionData(true);
+    this.updateSelPanelData(true);
     return this.loadTableTask;
   }
 
   private onSelChanged = () => {
-    this.updateSelectionData();
+    this.updateSelPanelData();
   }
 
   private updateDatabaseData() {
@@ -550,7 +544,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private renderBaseConfig(props: ObjProps) {
     return (
-      <PropsGroup label='config' key={'base-' + this.holder.getID()}>
+      <PropsGroup label='Config' key={'base-' + this.holder.getID()}>
         <DropDownPropItem
           left={[
             <ObjLink
@@ -750,28 +744,6 @@ export class DatabaseTable extends DatabaseTableClientBase {
     return tc;
   }
 
-  private renderSort(props: ObjProps) {
-    if (!this.appr)
-      return null;
-
-    const appr = this.appr.get();
-    return (
-      <PropsGroup
-        label='sort'
-        defaultOpen={false}
-        key={'sort-' + this.holder.getID()}
-      >
-        <SwitchPropItem
-          label='reverse'
-          value={!!appr.sort.reverse}
-          onChanged={reverse => {
-            this.appr.setProps({ sort: { reverse }});
-          }}
-        />
-      </PropsGroup>
-    );
-  }
-
   getColumns() {
     const appr = this.appr.get();
     return (this.columns || []).map(col => {
@@ -781,38 +753,26 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   setSortBy(column: string) {
-    if (!this.appr)
-      return;
-
     this.appr.setProps({ sort: { order: [{ column }] } });
   }
 
   isReverse() {
-    if (!this.appr)
-      return false;
-
     return !!this.appr.get().sort.reverse;
   }
 
   setReverse(reverse: boolean) {
-    if (!this.appr)
-      return;
-
     this.appr.setProps({ sort: { reverse }});
   }
 
   private renderAppr(props: ObjProps) {
-    if (!this.appr)
-      return null;
-
     const appr = this.appr.get();
     return (
       <PropsGroup
-        label='appearance'
+        label='Appearance'
         defaultOpen={false}
         key={'appr-' + this.holder.getID()}
       >
-        <PropItem label='font'>
+        <PropItem label='Font'>
           <div className='horz-panel-1'>
             <Popover>
               <FontValue
@@ -826,7 +786,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 }}
               />
             </Popover>
-            {this.appr.isModified('body', 'font') ? 
+            {this.appr.isModified('body', 'font') ?
             <CheckIcon
               value
               faIcon='fa fa-refresh'
@@ -838,17 +798,24 @@ export class DatabaseTable extends DatabaseTableClientBase {
           </div>
         </PropItem>
         <SwitchPropItem
-          label='header'
+          label='Header'
           value={this.appr.get().header.show}
           onChanged={show => {
             this.appr.setProps({ header: { show }});
           }}
         />
         <SwitchPropItem
-          label='border'
+          label='Border'
           value={this.appr.get().body.border}
           onChanged={border => {
             this.appr.setProps({ body: { border }});
+          }}
+        />
+        <SwitchPropItem
+          label='Selection panel'
+          value={this.appr.get().selPanel.enable}
+          onChanged={enable => {
+            this.appr.setProps({ selPanel: { enable } });
           }}
         />
       </PropsGroup>
@@ -964,19 +931,21 @@ export class DatabaseTable extends DatabaseTableClientBase {
     ];
   }
 
-  getSelectionData() {
+  getSelData() {
     return this.selection;
   }
 
-  isSelectionDataEnabled() {
-    if (!this.appr)
-      return false;
-
-    return this.appr.get().cols4details.length > 0;
+  isSelPanelAllowed() {
+    const appr = this.appr.get();
+    return appr.selPanel.enable && appr.selPanel.columns.length > 0;
   }
 
-  private updateSelectionData(invalide?: boolean) {
-    if (!this.isSelectionDataEnabled())
+  allowSelPanel(enable: boolean) {
+    this.appr.setProps({ selPanel: { enable } });
+  }
+
+  private updateSelPanelData(invalide?: boolean) {
+    if (!this.isSelPanelAllowed())
       return;
 
     if (this.pSelection)
@@ -990,7 +959,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
     if (!this.selectionGuid) {
       p = p.then(() => this.db.loadTableGuid({
         table: this.tableName,
-        columns: this.appr.get().cols4details,
+        columns: this.appr.get().selPanel.columns,
         order: this.getSortOrder(),
         cond: this.filterExpr
       }))
@@ -1027,11 +996,11 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.holder.delayedNotify();
   }
 
-  renderSelectionConfig(props: ObjProps) {
-    if (!this.appr)
+  private renderSelectionConfig(props: ObjProps) {
+    if (!this.isSelPanelAllowed())
       return null;
 
-    const cols4details = this.appr.get().cols4details;
+    const selPanelCols = this.appr.get().selPanel.columns;
     return (
       <PropsGroup
         label='Selection'
@@ -1042,11 +1011,11 @@ export class DatabaseTable extends DatabaseTableClientBase {
             icon='fa fa-cog'
             showOnHover
             onClick={() => {
-              const select = new Set(cols4details);
+              const select = new Set(selPanelCols);
               const values = this.columns.map(this.itemFromColumnInfo);
               selectCategory({ select, values })
               .then(select => {
-                this.appr.setProps({ cols4details: Array.from(select) });
+                this.appr.setProps({ selPanel: { columns: Array.from(select) } });
               });
             }}
           />
@@ -1054,9 +1023,9 @@ export class DatabaseTable extends DatabaseTableClientBase {
         key={'sel-' + this.holder.getID()}
       >
         <ListView
-          values={cols4details.map(this.itemFromColumn)}
+          values={selPanelCols.map(this.itemFromColumn)}
           onMoveTo={args => {
-            this.appr.setProps({ cols4details: args.newArr.map(arr => arr.value) });
+            this.appr.setProps({ selPanel: { columns: args.newArr.map(arr => arr.value) } });
           }}
         />
       </PropsGroup>
@@ -1070,7 +1039,6 @@ export class DatabaseTable extends DatabaseTableClientBase {
         {this.renderAppr(props)}
         {this.renderColumnsConfig(props)}
         {this.renderSelectionConfig(props)}
-        {this.renderSort(props)}
       </>
     );
   }

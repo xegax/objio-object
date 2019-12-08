@@ -18,7 +18,7 @@ import { IDArgs } from '../../common/interfaces';
 import {
   SetTableNameArgs
 } from './database-table-decl';
-import { ApprMapBase } from '../appr-map';
+import { ApprMapBase, ApprMapClientBase } from '../appr-map';
 import { TableAppr } from './database-table-appr';
 
 export {
@@ -63,6 +63,12 @@ export abstract class DatabaseTableBase extends ObjectBase {
 }
 
 export class DatabaseTableClientBase extends DatabaseTableBase {
+  constructor() {
+    super();
+
+    this.appr = new ApprMapClientBase();
+  }
+
   pushData(args: PushDataArgs): Promise<PushDataResult> {
     return this.holder.invokeMethod({ method: 'pushData', args });
   }

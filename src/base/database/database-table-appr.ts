@@ -24,9 +24,14 @@ export type TableAppr = Partial<{
   body: Partial<{
     border: boolean;
     font: FontAppr;
+    oddRow: string;
+    evenRow: string;
   }>;
   columns: {[column: string]: Partial<TableColumnAppr>};
-  cols4details: Array<string>;
+  selPanel: Partial<{
+    enable: boolean;
+    columns: Array<string>;
+  }>;
   sort: Partial<TableSortAppr>;
 }>;
 
@@ -45,6 +50,7 @@ export function makeTableAppr(): TableAppr {
     },
     body: {
       border: true,
+      oddRow: '#f1f3f4',
       font: {
         family: 'Tahoma',
         sizePx: 14,
@@ -55,6 +61,9 @@ export function makeTableAppr(): TableAppr {
     },
     columns: {},
     sort: {},
-    cols4details: []
+    selPanel: {
+      enable: true,
+      columns: []
+    }
   };
 }

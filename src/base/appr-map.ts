@@ -1,7 +1,7 @@
 import { ApprMap } from '../common/appr-map';
 
 export abstract class ApprMapBase<T> extends ApprMap<T> {
-  constructor(schema: T) {
+  constructor(schema?: T) {
     super(schema);
 
     this.holder.addEventHandler({
@@ -65,7 +65,7 @@ export class ApprMapClientBase<T> extends ApprMapBase<T> {
 }
 
 export class ApprMapServerBase<T> extends ApprMapBase<T> {
-  constructor(schema: T) {
+  constructor(schema?: T) {
     super(schema);
 
     this.holder.setMethodsToInvoke({
