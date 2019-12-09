@@ -22,8 +22,8 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "test",
-      "program": "${workspaceFolder}/test.js"
+      "name": "appr-map",
+      "program": "${workspaceFolder}/common/appr-map.js"
     }
   ]
 }

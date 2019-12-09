@@ -935,17 +935,9 @@ export class DatabaseTable extends DatabaseTableClientBase {
     return this.selection;
   }
 
-  isSelPanelAllowed() {
-    const appr = this.appr.get();
-    return appr.selPanel.enable && appr.selPanel.columns.length > 0;
-  }
-
-  allowSelPanel(enable: boolean) {
-    this.appr.setProps({ selPanel: { enable } });
-  }
-
   private updateSelPanelData(invalide?: boolean) {
-    if (!this.isSelPanelAllowed())
+    const appr = this.appr.get();
+    if (!appr.selPanel.enable || !appr.selPanel.columns.length)
       return;
 
     if (this.pSelection)
@@ -997,10 +989,11 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   private renderSelectionConfig(props: ObjProps) {
-    if (!this.isSelPanelAllowed())
+    const appr = this.appr.get();
+    if (!appr.selPanel.enable)
       return null;
 
-    const selPanelCols = this.appr.get().selPanel.columns;
+    const selPanelCols = appr.selPanel.columns;
     return (
       <PropsGroup
         label='Selection'

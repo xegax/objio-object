@@ -16,6 +16,7 @@ export interface VideoDataExt extends VideoData {
   hflip?: boolean;
   vflip?: boolean;
   speed?: number;
+  noaudio?: boolean;
 }
 
 export interface Props {
@@ -52,7 +53,8 @@ export class VideoFileView extends React.Component<Props, State> {
           fps: filter.fps,
           hflip: filter.hflip,
           vflip: filter.vflip,
-          speed: filter.speed
+          speed: filter.speed,
+          noaudio: filter.noaudio
         };
       }
     } else {
@@ -95,7 +97,8 @@ export class VideoFileView extends React.Component<Props, State> {
       fps: data.fps,
       speed: data.speed,
       hflip: data.hflip,
-      vflip: data.vflip
+      vflip: data.vflip,
+      noaudio: data.noaudio
     };
 
     return filter;
@@ -236,6 +239,18 @@ export class VideoFileView extends React.Component<Props, State> {
             this.setState({});
           }}
         />
+      ),
+      data.noaudio && (
+        <Tag
+          icon='fa fa-volume-off'
+          color='#e9ffdd'
+          onRemove={() => {
+            data.noaudio = null;
+            this.setState({});
+          }}
+        >
+          No audio
+        </Tag>
       )
     ] as Array<React.ReactElement<Tag>>;
   }
@@ -351,6 +366,20 @@ export class VideoFileView extends React.Component<Props, State> {
             data.speed = 1;
           } else {
             data.speed = null;
+          }
+          this.setState({});
+        }}
+      />,
+      <CheckIcon
+        title='no audio'
+        faIcon='fa fa-volume-off'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          if (!data.noaudio) {
+            data.noaudio = true;
+          } else {
+            data.noaudio = null;
           }
           this.setState({});
         }}

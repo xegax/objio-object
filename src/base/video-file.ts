@@ -30,6 +30,7 @@ export interface FilterArgs {
   speed?: number;
   hflip?: boolean;
   vflip?: boolean;
+  noaudio?: boolean;
 }
 
 export interface AppendImageArgs {

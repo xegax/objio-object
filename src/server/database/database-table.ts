@@ -22,7 +22,7 @@ export class DatabaseTable extends DatabaseTableBase {
   constructor(args) {
     super(args);
 
-    this.appr = new ApprMapServerBase();
+    this.appr = new ApprMapServerBase(makeTableAppr());
     this.holder.addEventHandler({
       onLoad: () => {
         this.appr.setSchema(makeTableAppr());

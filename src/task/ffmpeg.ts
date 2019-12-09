@@ -6,6 +6,7 @@ import { MediaStream } from './media-desc';
 import { Rect } from '../common/point';
 import { Size } from 'ts-react-ui/common/point';
 import * as p from './parser';
+import * as process from 'process';
 
 function parseDuration(info: InputInfo): Time {
   const t = info.duration.split(', ')[0];
@@ -112,7 +113,7 @@ export function parseMedia(file: string): Promise<FileInfo> {
 
   return (
     runTask({
-      cmd: process.env['FFMPEG'] || 'ffmpeg.exe',
+      cmd: process.env['FFMPEG'] || 'ffmpeg',
       args: ['-i', `"${normalize(file)}"`],
       handleOutput: args => {
         bufs.push(args.data);
@@ -144,6 +145,7 @@ export interface EncodeArgs {
   vflip?: boolean;
   codecA?: string;
   codecV?: string;
+  noaudio?: boolean;
   onProgress?(t: number): void;
 }
 
@@ -230,6 +232,9 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
       if (args.codecA)
         argsArr.push(`-c:a ${args.codecA}`);
 
+      if (args.noaudio)
+        argsArr.push('-an');
+
       if (args.resize)
         argsArr.push(`-s ${args.resize.width}x${args.resize.height}`);
 
@@ -241,7 +246,7 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
 
       argsArr.push(normalize(args.outFile));
       return runTask({
-        cmd: process.env['FFMPEG'] || 'ffmpeg.exe',
+        cmd: process.env['FFMPEG'] || 'ffmpeg',
         args: argsArr,
         handleOutput: out => {
           const s = out.data.toString();

@@ -1,7 +1,7 @@
-import { ApprMap } from '../common/appr-map';
+import { ApprMap, ApprObject } from '../common/appr-map';
 
 export abstract class ApprMapBase<T> extends ApprMap<T> {
-  constructor(schema?: T) {
+  constructor(schema?: ApprObject<T>) {
     super(schema);
 
     this.holder.addEventHandler({
@@ -34,7 +34,7 @@ export abstract class ApprMapBase<T> extends ApprMap<T> {
   >(k1: K1, k2?: K2, k3?: K3, k4?: K4, k5?: K5): boolean {
     let obj: Partial<T> = {};
 
-    let p = this.mods;
+    let p = this.modify1.obj;
     let objp = obj;
     for (let n = 0; n < arguments.length; n++) {
       const key = arguments[n];
@@ -65,7 +65,7 @@ export class ApprMapClientBase<T> extends ApprMapBase<T> {
 }
 
 export class ApprMapServerBase<T> extends ApprMapBase<T> {
-  constructor(schema?: T) {
+  constructor(schema?: ApprObject<T>) {
     super(schema);
 
     this.holder.setMethodsToInvoke({

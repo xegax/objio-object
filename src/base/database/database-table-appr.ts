@@ -1,4 +1,5 @@
 import { FontAppr } from '../appr-decl';
+import { ApprObject } from '../../common/appr-map';
 
 export interface TableColumnAppr {
   column: string;
@@ -35,35 +36,40 @@ export type TableAppr = Partial<{
   sort: Partial<TableSortAppr>;
 }>;
 
-export function makeTableAppr(): TableAppr {
+export function makeTableAppr(): ApprObject<TableAppr> {
   return {
-    header: {
-      border: true,
-      show: true,
-      font: {
-        family: 'Tahoma',
-        sizePx: 14,
-        bold: false,
-        italic: false,
-        color: '#000000'
+    obj: {
+      header: {
+        border: true,
+        show: true,
+        font: {
+          family: 'Tahoma',
+          sizePx: 14,
+          bold: false,
+          italic: false,
+          color: '#000000'
+        }
+      },
+      body: {
+        border: true,
+        oddRow: '#f1f3f4',
+        font: {
+          family: 'Tahoma',
+          sizePx: 14,
+          bold: false,
+          italic: false,
+          color: '#000000'
+        }
+      },
+      columns: {},
+      sort: {},
+      selPanel: {
+        enable: true,
+        columns: []
       }
     },
-    body: {
-      border: true,
-      oddRow: '#f1f3f4',
-      font: {
-        family: 'Tahoma',
-        sizePx: 14,
-        bold: false,
-        italic: false,
-        color: '#000000'
-      }
-    },
-    columns: {},
-    sort: {},
-    selPanel: {
-      enable: true,
-      columns: []
+    version: {
+      'selPanel': 1
     }
   };
 }

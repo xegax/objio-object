@@ -19,7 +19,7 @@ import {
   SetTableNameArgs
 } from './database-table-decl';
 import { ApprMapBase, ApprMapClientBase } from '../appr-map';
-import { TableAppr } from './database-table-appr';
+import { makeTableAppr, TableAppr } from './database-table-appr';
 
 export {
   TableDataArgs,
@@ -66,7 +66,7 @@ export class DatabaseTableClientBase extends DatabaseTableBase {
   constructor() {
     super();
 
-    this.appr = new ApprMapClientBase();
+    this.appr = new ApprMapClientBase(makeTableAppr());
   }
 
   pushData(args: PushDataArgs): Promise<PushDataResult> {
