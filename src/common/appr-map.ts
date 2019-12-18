@@ -47,7 +47,7 @@ export class ApprMap<T = Object> extends OBJIOItem implements ApprMapIface<T> {
     path = path || '';
     Object.keys(obj).forEach(key => {
       const currPath = path ? path + '/' + key : key;
-      if (typeof obj[key] == 'object')
+      if (obj[key] && typeof obj[key] == 'object')
         this.updateVersions(obj[key], currPath);
       if (this.schema1.version[currPath] != null)
         this.modify1.version[currPath] = this.schema1.version[currPath];
@@ -185,6 +185,9 @@ function test() {
   );
   appr.setProps({ body: { enable: '34234', font: '!' } as any });
   const bake1 = appr.get();
+
+  appr.resetToDefaultKey('body');
+  const bake11 = appr.get();
 
   appr.setSchema({ obj: { body: { enable: true, font: '#'} }, version: { 'body': 1, 'body/enable': 1 } });
   const bake2 = appr.get();
