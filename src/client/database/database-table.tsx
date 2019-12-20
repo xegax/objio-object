@@ -766,6 +766,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private renderAppr(props: ObjProps) {
     const appr = this.appr.get();
+    const selPanelCols = appr.selPanel.columns;
     return (
       <PropsGroup
         label='Appearance'
@@ -799,25 +800,52 @@ export class DatabaseTable extends DatabaseTableClientBase {
         </PropItem>
         <SwitchPropItem
           label='Header'
-          value={this.appr.get().header.show}
+          value={appr.header.show}
           onChanged={show => {
             this.appr.setProps({ header: { show }});
           }}
         />
         <SwitchPropItem
           label='Border'
-          value={this.appr.get().body.border}
+          value={appr.body.border}
           onChanged={border => {
             this.appr.setProps({ body: { border }});
           }}
         />
         <SwitchPropItem
           label='Selection panel'
-          value={this.appr.get().selPanel.enable}
+          value={appr.selPanel.enable}
           onChanged={enable => {
             this.appr.setProps({ selPanel: { enable } });
           }}
-        />
+        >
+          {appr.selPanel.enable && (
+            <CSSIcon
+              title='Select columns'
+              icon='fa fa-plus'
+              onClick={() => {
+                const select = new Set(selPanelCols);
+                const values = this.columns.map(this.itemFromColumnInfo);
+                selectCategory({ select, values, title: 'Select columns' })
+                .then(select => {
+                  this.appr.setProps({ selPanel: { columns: Array.from(select) } });
+                });
+              }}
+            />
+          )}
+        </SwitchPropItem>
+        {appr.selPanel.enable && (
+          <div>
+            <ListView
+              border
+              height={100}
+              values={selPanelCols.map(this.itemFromColumn)}
+              onMoveTo={args => {
+                this.appr.setProps({ selPanel: { columns: args.newArr.map(arr => arr.value) } });
+              }}
+            />
+          </div>
+        )}
       </PropsGroup>
     );
   }
@@ -988,50 +1016,12 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.holder.delayedNotify();
   }
 
-  private renderSelectionConfig(props: ObjProps) {
-    const appr = this.appr.get();
-    if (!appr.selPanel.enable)
-      return null;
-
-    const selPanelCols = appr.selPanel.columns;
-    return (
-      <PropsGroup
-        label='Selection'
-        defaultOpen={false}
-        defaultHeight={200}
-        icon={
-          <CSSIcon
-            icon='fa fa-cog'
-            showOnHover
-            onClick={() => {
-              const select = new Set(selPanelCols);
-              const values = this.columns.map(this.itemFromColumnInfo);
-              selectCategory({ select, values })
-              .then(select => {
-                this.appr.setProps({ selPanel: { columns: Array.from(select) } });
-              });
-            }}
-          />
-        }
-        key={'sel-' + this.holder.getID()}
-      >
-        <ListView
-          values={selPanelCols.map(this.itemFromColumn)}
-          onMoveTo={args => {
-            this.appr.setProps({ selPanel: { columns: args.newArr.map(arr => arr.value) } });
-          }}
-        />
-      </PropsGroup>
-    );
-  }
-
   getObjPropGroups(props: ObjProps) {
     return (
       <>
         {this.renderBaseConfig(props)}
         {this.renderAppr(props)}
         {this.renderColumnsConfig(props)}
-        {this.renderSelectionConfig(props)}
       </>
     );
   }

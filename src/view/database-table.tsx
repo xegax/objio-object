@@ -76,7 +76,8 @@ export class DatabaseTableView extends React.Component<Props, State> {
   }
 
   renderDetails() {
-    if (!this.props.model.getAppr().selPanel.enable)
+    const appr = this.props.model.getAppr();
+    if (!appr.selPanel.enable || !appr.selPanel.columns.length)
       return null;
 
     const s = {
