@@ -48,6 +48,8 @@ export interface ObjectsFolder {
 
 export interface ObjTab {
   icon: string;
+  title?: string;
+  id?: string;
   render(props: ObjProps): JSX.Element;
 }
 

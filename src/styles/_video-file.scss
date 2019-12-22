@@ -1,0 +1,26 @@
+.list-item {
+  .video-preview {
+    border: 1px solid gray;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: white;
+
+    .video-preview-image {
+      display: flex;
+      height: 128px;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+    }
+    .video-preview-footer {
+      display: flex;
+      padding: 5px;
+      background-color: #efefef;
+    }
+  }
+  &.select {
+    .video-preview-footer {
+      background-color: #a3daff;
+    }
+  }
+}

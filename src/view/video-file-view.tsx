@@ -267,7 +267,10 @@ export class VideoFileView extends React.Component<Props, State> {
           if (!cut || !(cut instanceof VideoFileBase))
             return;
 
-          cut.save(this.getCurrentFilter());
+          cut.save({
+            ...this.getCurrentFilter(),
+            sourceId: this.props.model.getID()
+          });
         }}
       />,
       <CheckIcon

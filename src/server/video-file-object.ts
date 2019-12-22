@@ -1,6 +1,6 @@
 import { parseMedia, encodeFile, parseStream, EncodeArgs, FileInfo } from '../task/ffmpeg';
 import { lstatSync, existsSync, unlinkSync, readFileSync } from 'fs';
-import { VideoFileBase, FilterArgs, RemoveArgs, AppendImageArgs, VideoFileExportData } from '../base/video-file';
+import { VideoFileBase, FilterArgs, SaveArgs, RemoveArgs, AppendImageArgs, VideoFileExportData } from '../base/video-file';
 import { getTimeFromSeconds } from '../common/time';
 import { FileObject } from './file-object';
 import { ImageFile, ImageFileBase } from './image-file';
@@ -44,7 +44,7 @@ export class VideoFileObject extends VideoFileBase {
         rights: 'write'
       },
       append: {
-        method: (args: FilterArgs) => this.append(args),
+        method: (args: FilterArgs, userId) => this.append(args, userId),
         rights: 'write'
       },
       appendImage: {
@@ -52,7 +52,7 @@ export class VideoFileObject extends VideoFileBase {
         rights: 'write'
       },
       save: {
-        method: (args: FilterArgs) => this.save(args),
+        method: (args: SaveArgs, userId) => this.save(args, userId),
         rights: 'write'
       },
       export: {
@@ -79,14 +79,54 @@ export class VideoFileObject extends VideoFileBase {
     return Promise.resolve( data );
   }
 
-  save(args: FilterArgs) {
+  save(args: SaveArgs, userId?: string) {
+    const timeChanged = (this.filter.trim || { from: -1 }).from != (args.trim || { from: -1 }).from;
+    const cropChanged = JSON.stringify(this.filter.crop || {}) != JSON.stringify(args.crop || {});
+    const flipChanged = this.filter.hflip != args.hflip || this.filter.vflip != args.vflip;
     this.filter = {...args};
     this.holder.save();
+
+    if (timeChanged || cropChanged || flipChanged) {
+      return (
+        this.holder.getObject<VideoFileObject>(args.sourceId)
+        .then(source => {
+          return this.updatePreview(source, this.filter.trim.from, userId);
+        })
+        .then(() => {})
+      )
+    };
+
     return Promise.resolve();
   }
 
-  append(args: FilterArgs) {
-    let obj = new VideoFileObject({...args});
+  private updatePreview(source: VideoFileObject, time: number, userId?: string) {
+    return new Promise(resolve => {
+      const outFile = this.getPath('.preview-128.jpg');
+      const encArgs: EncodeArgs = {
+        inFile: [ source.getPath() ],
+        outFile,
+        overwrite: true
+      };
+
+      const frame = source.getFrameSize();
+      if (this.filter.crop) {
+        frame.width = this.filter.crop.width;
+        frame.height = this.filter.crop.height;
+        encArgs.crop = this.filter.crop;
+      }
+      encArgs.range = { from: getTimeFromSeconds(time) };
+      encArgs.resize = { width: Math.round((128 * frame.width) / frame.height) , height: 128 };
+      encArgs.vframes = 1;
+
+      this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId)
+      .then(() => {
+        return this.holder.save(true);
+      }).then(resolve);
+    });
+  }
+
+  append(args: FilterArgs, userId?: string) {
+    const obj = new VideoFileObject({...args});
     return this.holder.createObject(obj)
     .then(() => {
       obj.origName = this.origName;
@@ -95,7 +135,11 @@ export class VideoFileObject extends VideoFileBase {
       this.files.push(obj);
       this.files.holder.save();
       this.holder.save(true);
-    });
+    })
+    .then(() => {
+      return obj.updatePreview(this, args.trim.from, userId);
+    })
+    .then(() => {});
   }
 
   appendImage(args: AppendImageArgs, userId?: string) {
@@ -119,6 +163,21 @@ export class VideoFileObject extends VideoFileBase {
       encArgs.crop = args.crop;
       encArgs.vframes = 1;
 
+      return this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId);
+    })
+    .then(() => {
+      const outFile = obj.getPath('.preview-128.jpg');
+      const encArgs: EncodeArgs = {
+        inFile: [ this.getPath() ],
+        outFile,
+        overwrite: true
+      };
+
+      const frame = this.getFrameSize();
+      encArgs.range = { from: getTimeFromSeconds(args.time) };
+      encArgs.resize = { width: Math.round((128 * frame.width) / frame.height) , height: 128 };
+      encArgs.crop = args.crop;
+      encArgs.vframes = 1;
       return this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId);
     })
     .then(() => parseMedia(obj.getPath()))

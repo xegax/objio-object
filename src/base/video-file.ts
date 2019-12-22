@@ -42,6 +42,10 @@ export interface AppendImageArgs {
   resize?: Size;
 }
 
+export interface SaveArgs extends FilterArgs {
+  sourceId: string;
+}
+
 export interface ExecuteArgs {
   filter?: FilterArgs;
   id?: string;
@@ -104,7 +108,7 @@ export abstract class VideoFileBase extends FileObjectBase {
     return this.images.get(idx);
   }
 
-  abstract save(args: FilterArgs): Promise<void>;
+  abstract save(args: SaveArgs): Promise<void>;
   abstract append(args: FilterArgs): Promise<void>;
   abstract appendImage(args: AppendImageArgs): Promise<void>;
   abstract execute(args: RemoveArgs): Promise<void>;
