@@ -330,8 +330,10 @@ export class VideoFileObject extends VideoFileBase {
       <PropsGroup
         label='Cuts'
         itemWrap={false}
+        grow
       >
         <ListView
+          className='abs-fit'
           value={selectFile ? { value: selectFile.holder.getID() } : null}
           values={files.map(this.makeCutItem)}
           onSelect={(item: CutItem) => {
@@ -349,8 +351,10 @@ export class VideoFileObject extends VideoFileBase {
       <PropsGroup
         label='Images'
         itemWrap={false}
+        grow
       >
         <ListView
+          className='abs-fit'
           value={selectFile ? { value: selectFile.holder.getID() } : null}
           values={images.map(this.makeImageItem)}
           onSelect={(item: ImageItem) => {
