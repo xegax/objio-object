@@ -238,7 +238,7 @@ export class VideoFileObject extends VideoFileBase {
           <CSSIcon
             title='Play'
             style={{ fontSize: '200%' }}
-            hidden={file.getSize() == 0}
+            hidden={file.getSize() == 0 || file.isStatusInProgess()}
             showOnHover
             icon='fa fa-play-circle'
             onClick={() => {
