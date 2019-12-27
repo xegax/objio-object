@@ -1,14 +1,15 @@
 import * as React from 'react';
-import { VideoFileBase, SendFileArgs, RemoveArgs, FilterArgs, AppendImageArgs, SaveArgs } from '../base/video-file';
+import { VideoFileBase, RemoveArgs, FilterArgs, AppendImageArgs, SaveArgs } from '../base/video-file';
 import { PropsGroup, PropItem, TextPropItem } from 'ts-react-ui/prop-sheet';
 import { ListView, Item } from 'ts-react-ui/list-view';
 import { CheckIcon } from 'ts-react-ui/checkicon';
-import { confirm, Action } from 'ts-react-ui/prompt';
+import { confirm, Action, OK, Cancel } from 'ts-react-ui/prompt';
 import { MediaStream } from '../task/media-desc';
 import { ObjectsFolder, ObjTab } from '../base/object-base';
 import { ImageFileBase } from '../base/image-file';
 import { PropGroup2 } from 'ts-react-ui/prop-sheet/props-group2';
 import { cn } from 'ts-react-ui/common/common';
+import { CSSIcon } from 'ts-react-ui/cssicon';
 
 const actRemoveAll: Action = {
   text: 'Remove all',
@@ -233,13 +234,14 @@ export class VideoFileObject extends VideoFileBase {
         <div
           className='video-preview-image'
           style={{ backgroundImage: `url(${file.getPath(`.preview-128.jpg?${file.getVersion()}`)})` }}
-        />
-        <div className={cn('horz-panel-1', 'video-preview-footer')}>
-          <CheckIcon
-            title='Result'
-            faIcon={fileID != this.playResultId ? 'fa fa-play-circle' : 'fa fa-stop-circle'}
-            value={file.getSize() != 0}
-            onChange={() => {
+        >
+          <CSSIcon
+            title='Play'
+            style={{ fontSize: '200%' }}
+            hidden={file.getSize() == 0}
+            showOnHover
+            icon='fa fa-play-circle'
+            onClick={() => {
               this.setSelectFile(fileID);
               if (file.getSize() == 0)
                 return;
@@ -250,6 +252,8 @@ export class VideoFileObject extends VideoFileBase {
                 this.setPlayResultFile(fileID);
             }}
           />
+        </div>
+        <div className={cn('horz-panel-1', 'video-preview-footer')}>
           <CheckIcon
             title='Execute'
             faIcon={file.isStatusInProgess() ? 'fa fa-spinner fa-spin' : 'fa fa-rocket'}
@@ -258,7 +262,19 @@ export class VideoFileObject extends VideoFileBase {
               if (file.isStatusInProgess())
                 return;
 
-              this.execute({ objId: fileID });
+              let p: Promise<boolean>;
+              if (file.getSize() != 0) {
+                p = confirm({ body: 'Are you sure to execute encoding', actions: [ OK, Cancel ] })
+                .then(act => act == OK)
+                .catch(() => false);
+              } else {
+                p = Promise.resolve(true);
+              }
+
+              p.then(run => {
+                if (run)
+                  this.execute({ objId: fileID });
+              });
             }}
           />
           <div

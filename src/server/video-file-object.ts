@@ -127,6 +127,7 @@ export class VideoFileObject extends VideoFileBase {
 
   append(args: FilterArgs, userId?: string) {
     const obj = new VideoFileObject({...args});
+    const from = (args.trim || { from: 0 }).from;
     return this.holder.createObject(obj)
     .then(() => {
       obj.origName = this.origName;
@@ -137,7 +138,7 @@ export class VideoFileObject extends VideoFileBase {
       this.holder.save(true);
     })
     .then(() => {
-      return obj.updatePreview(this, args.trim.from, userId);
+      return obj.updatePreview(this, from, userId);
     })
     .then(() => {});
   }
