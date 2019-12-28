@@ -286,14 +286,14 @@ export class VideoFileObject extends VideoFileBase {
 
     if (file.filter.resize)
       encArgs.resize = {...file.filter.resize};
-    
+
     if (file.filter.fps)
       encArgs.fps = file.filter.fps;
 
     file.filter.vflip && (encArgs.vflip = true);
     file.filter.hflip && (encArgs.hflip = true);
     file.filter.noaudio && (encArgs.noaudio = true);
-    
+
     const v = this.desc.streamArr.find(s => !!s.video);
     if (v) {
       const inputFPS = file.filter.speed * v.video.fps;

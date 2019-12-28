@@ -10,6 +10,8 @@ import { ImageFileBase } from '../base/image-file';
 import { PropGroup2 } from 'ts-react-ui/prop-sheet/props-group2';
 import { cn } from 'ts-react-ui/common/common';
 import { CSSIcon } from 'ts-react-ui/cssicon';
+import { getTimeIntervalString } from '../common/time';
+import { fmtBytes } from '../common/common';
 
 const actRemoveAll: Action = {
   text: 'Remove all',
@@ -343,20 +345,55 @@ export class VideoFileObject extends VideoFileBase {
     const selectFile = this.getSelectFile();
     const files = this.getFiles();
     return (
-      <PropsGroup
-        label='Cuts'
-        itemWrap={false}
-        grow
-      >
-        <ListView
-          className='abs-fit'
-          value={selectFile ? { value: selectFile.holder.getID() } : null}
-          values={files.map(this.makeCutItem)}
-          onSelect={(item: CutItem) => {
-            this.setSelectFile(item.value);
-          }}
+      <>
+        <PropsGroup
+          label='Cuts'
+          itemWrap={false}
+          grow
+        >
+          <ListView
+            className='abs-fit'
+            value={selectFile ? { value: selectFile.holder.getID() } : null}
+            values={files.map(this.makeCutItem)}
+            onSelect={(item: CutItem) => {
+              this.setSelectFile(item.value);
+            }}
+          />
+        </PropsGroup>
+        <PropsGroup
+          label='Selected'
+          open={selectFile == null ? false : undefined}
+        >
+          {this.renderSelectCut(selectFile as VideoFileBase)}
+        </PropsGroup>
+      </>
+    );
+  }
+
+  private renderSelectCut(file: VideoFileBase) {
+    if (!file)
+      return null;
+
+    let et = file.getEncodeTime();
+    if (et == 0)
+      et = Date.now() - file.getEncodeStartTime();
+
+    return (
+      <>
+        <PropItem
+          label='Name'
+          value={file.getName()}
         />
-      </PropsGroup>
+        <PropItem
+          label='Size'
+          value={fmtBytes(file.getSize())}
+        />
+        <PropItem
+          show={file.getEncodeTime() > 0}
+          label='Encode time'
+          value={getTimeIntervalString(et)}
+        />
+      </>
     );
   }
 

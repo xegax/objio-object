@@ -65,6 +65,14 @@ export abstract class VideoFileBase extends FileObjectBase {
   protected executeStartTime: number;
   protected executeTime: number;
 
+  getEncodeTime() {
+    return this.executeTime;
+  }
+
+  getEncodeStartTime() {
+    return this.executeStartTime;
+  }
+
   getFilter(): FilterArgs {
     return this.filter;
   }
@@ -112,7 +120,7 @@ export abstract class VideoFileBase extends FileObjectBase {
   abstract append(args: FilterArgs): Promise<void>;
   abstract appendImage(args: AppendImageArgs): Promise<void>;
   abstract execute(args: RemoveArgs): Promise<void>;
-  
+
   abstract export(): Promise<VideoFileExportData>;
 
   abstract remove(args: RemoveArgs): Promise<void>;
@@ -121,12 +129,12 @@ export abstract class VideoFileBase extends FileObjectBase {
   static TYPE_ID = 'VideoFileObject';
   static SERIALIZE: SERIALIZER = () => ({
     ...FileObjectBase.SERIALIZE(),
-    desc:     { type: 'json', const: true },
-    subfiles: { type: 'json', const: true },
-    files:    { type: 'object', const: true },
-    images:   { type: 'object', const: true },
-    filter:   { type: 'json', const: true },
-    executeStartTime: { type: 'integer', const: true },
-    executeTime: { type: 'integer', const: true }
+    desc:             { type: 'json',     const: true },
+    subfiles:         { type: 'json',     const: true },
+    files:            { type: 'object',   const: true },
+    images:           { type: 'object',   const: true },
+    filter:           { type: 'json',     const: true },
+    executeStartTime: { type: 'integer',  const: true },
+    executeTime:      { type: 'integer',  const: true }
   })
 }

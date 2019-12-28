@@ -34,3 +34,19 @@ export function parseTime(hmsTime: string): Time {
     second: +d[2] || 0
   };
 }
+
+export function getTimeIntervalString(msTime: number) {
+  const t = getTimeFromSeconds(msTime / 1000);
+  t.second = Math.round(t.second);
+
+  let arr = Array<string>();
+  if (t.hour)
+    arr.push(`${t.hour}H`);
+
+  if (t.hour || t.minute)
+    arr.push(`${t.minute} m`);
+
+  if (t.second)
+    arr.push(`${t.second}s`);
+  return arr.join(' ');
+}

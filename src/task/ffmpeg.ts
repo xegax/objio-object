@@ -16,27 +16,33 @@ function parseDuration(info: InputInfo): Time {
   return parseTime(t);
 }
 
+interface StreamData {
+  info: string;
+  sidedata: Array<{key: string; value: string}>;
+  metadata: Array<{key: string; value: string}>;
+}
+
 interface InputInfo {
   input: string;
   duration?: string;
-  stream: Array<string>;
+  stream: Array<StreamData>;
 }
 
 export interface FileInfo {
-  stream: Array<string>;
+  stream: Array<StreamData>;
   duration: Time;
 }
 
-export function parseStream(strm: string): MediaStream {
-  let ctx = { str: strm, pos: 0 };
+export function parseStream(strm: StreamData): MediaStream {
+  let ctx = { str: strm.info, pos: 0 };
   // p.readNext('Stream ', ctx);
   const id = p.readStreamID(ctx);
-  if (strm[ctx.pos] == '(')
+  if (ctx.str[ctx.pos] == '(')
     p.readBracet(ctx, '(', ')');
   p.readNext(': ', ctx);
   const type = p.readOneOf(['Video', 'Audio', 'Subtitle', 'Data'], ctx);
   p.readNext(': ', ctx);
-  
+
   const m: MediaStream = { id };
   if (type == 'Video') {
     const codec = p.readUntil(',', ctx);
@@ -50,12 +56,19 @@ export function parseStream(strm: string): MediaStream {
     } catch (e) {
     }
 
+    if (strm.sidedata.some(kv => kv.key == 'displaymatrix' && kv.value == 'rotation of -90.00 degrees')) {
+      let tmp = size.width;
+      size.width = size.height;
+      size.height = tmp;
+    }
+
     m.video = {
       codec,
       pixelFmt: fmt,
       width: size.width,
       height: size.height
     };
+
     const fps = other.find(v => v.endsWith('fps'));
     fps && (m.video.fps = +fps.trim().split(' ')[0]);
   } else if (type == 'Audio') {
@@ -78,17 +91,43 @@ export function parseStream(strm: string): MediaStream {
 function parseInputDetails(lines: Array<string>): Array<InputInfo> {
   let inputs = Array<InputInfo>();
   let curr: InputInfo;
-  lines.forEach(line => {
+  let currStrm: StreamData;
+  for (let n = 0; n < lines.length; n++) {
+    const line = lines[n];
     if (line.startsWith('Input #')) {
       curr = { input: line.trim().substr(6), stream: [] };
       inputs.push(curr);
     } else if (line.startsWith('  Duration:')) {
       curr.duration = line.trim().substr(10);
     } else if (line.startsWith('    Stream #')) {
-      curr.stream.push(line.trim().substr(7));
-    }
-  });
+      currStrm = { info: line.trim().substr(7), metadata: [], sidedata: [] };
+      curr.stream.push(currStrm);
+    } else if (line.startsWith('    Side data:') || line.startsWith('    Metadata:')) {
+      const key = line.trim();
+      let i = n + 1;
+      while (i < lines.length) {
+        const line = lines[i];
+        if (line.substr(0, 6) == '      ' && line[7] != ' ') {
+          const split = line.indexOf(':');
+          const keyVal = {
+            key: line.substr(0, split).trim(),
+            value: line.substr(split + 1).trim()
+          };
 
+          if (key.startsWith('Side data:'))
+            currStrm.sidedata.push(keyVal);
+          else if (key.startsWith('Metadata:'))
+            currStrm.metadata.push(keyVal);
+        } else {
+          n = i - 1;
+          break;
+        }
+        i++;
+      }
+    }
+  }
+
+  console.log(JSON.stringify(inputs, null, ' '));
   return inputs;
 }
 
