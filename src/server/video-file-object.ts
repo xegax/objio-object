@@ -80,7 +80,9 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   save(args: SaveArgs, userId?: string) {
-    const timeChanged = (this.filter.trim || { from: -1 }).from != (args.trim || { from: -1 }).from;
+    const currFrom = (this.filter.trim || { from: 0 }).from;
+    const nextFrom = (args.trim || { from: 0 }).from;
+    const timeChanged = currFrom != nextFrom;
     const cropChanged = JSON.stringify(this.filter.crop || {}) != JSON.stringify(args.crop || {});
     const flipChanged = this.filter.hflip != args.hflip || this.filter.vflip != args.vflip;
     this.filter = {...args};
@@ -90,7 +92,7 @@ export class VideoFileObject extends VideoFileBase {
       return (
         this.holder.getObject<VideoFileObject>(args.sourceId)
         .then(source => {
-          return this.updatePreview(source, this.filter.trim.from, userId);
+          return this.updatePreview(source, nextFrom, userId);
         })
         .then(() => {})
       )
@@ -293,6 +295,7 @@ export class VideoFileObject extends VideoFileBase {
     file.filter.vflip && (encArgs.vflip = true);
     file.filter.hflip && (encArgs.hflip = true);
     file.filter.noaudio && (encArgs.noaudio = true);
+    file.filter.stabilize && (encArgs.stabilize = true);
 
     const v = this.desc.streamArr.find(s => !!s.video);
     if (v) {

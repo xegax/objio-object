@@ -185,6 +185,7 @@ export interface EncodeArgs {
   codecA?: string;
   codecV?: string;
   noaudio?: boolean;
+  stabilize?: boolean;
   onProgress?(t: number): void;
 }
 
@@ -262,18 +263,6 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
       if (args.vflip)
         filterComplexArr.push('vflip');
 
-      if (filterComplexArr.length)
-        argsArr.push('-filter_complex', filterComplexArr.join(','));
-
-      if (args.codecV)
-        argsArr.push(`-c:v ${args.codecV}`);
-
-      if (args.codecA)
-        argsArr.push(`-c:a ${args.codecA}`);
-
-      if (args.noaudio)
-        argsArr.push('-an');
-
       if (args.resize)
         argsArr.push(`-s ${args.resize.width}x${args.resize.height}`);
 
@@ -283,21 +272,68 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
       if (args.fps)
         argsArr.push(`-r ${args.fps}`);
 
-      argsArr.push(normalize(args.outFile));
-      return runTask({
-        cmd: process.env['FFMPEG'] || 'ffmpeg',
-        args: argsArr,
-        handleOutput: out => {
-          const s = out.data.toString();
-          if (s.startsWith('frame=')) {
-            let f = s.indexOf('time=');
-            let e = s.indexOf(' bitrate=');
-            const t = parseTime(s.substr(f, e - f).split('=')[1]);
-            args.onProgress && args.onProgress(Math.min(1, getSeconds(t) / duration));
+      let p = Promise.resolve();
+      let stabDataFile = normalize(args.outFile) + '.trf';
+      if (args.stabilize) {
+        const filters = [
+          ...filterComplexArr,
+          `vidstabdetect=shakiness=10:accuracy=15:result="${stabDataFile}"`
+        ].join(',');
+
+        p = runTask({
+          cmd: process.env['FFMPEG'] || 'ffmpeg',
+          args: [
+            ...argsArr,
+            `-filter_complex ${filters}`,
+            `-f null -`
+          ],
+          handleOutput: out => {
+            const s = out.data.toString();
+            if (s.startsWith('frame=')) {
+              let f = s.indexOf('time=');
+              let e = s.indexOf(' bitrate=');
+              const t = parseTime(s.substr(f, e - f).split('=')[1]);
+              args.onProgress && args.onProgress(Math.min(1, getSeconds(t) / duration));
+            }
           }
-        }
+        }).then(() => {});
+      }
+
+      return p.then(() => {
+        const filters = [
+          ...filterComplexArr,
+          ...(args.stabilize ? [`vidstabtransform=zoom=5:smoothing=30:input=${stabDataFile},unsharp=5:5:0.8:3:3:0.4`] : [])
+        ].join(',');
+
+        if (filters.length)
+          argsArr.push(`-filter_complex ${filters}`);
+
+        if (args.codecV)
+          argsArr.push(`-c:v ${args.codecV}`);
+
+        if (args.codecA)
+          argsArr.push(`-c:a ${args.codecA}`);
+
+        if (args.noaudio)
+          argsArr.push('-an');
+
+        argsArr.push(normalize(args.outFile));
+
+        return runTask({
+          cmd: process.env['FFMPEG'] || 'ffmpeg',
+          args: argsArr,
+          handleOutput: out => {
+            const s = out.data.toString();
+            if (s.startsWith('frame=')) {
+              let f = s.indexOf('time=');
+              let e = s.indexOf(' bitrate=');
+              const t = parseTime(s.substr(f, e - f).split('=')[1]);
+              args.onProgress && args.onProgress(Math.min(1, getSeconds(t) / duration));
+            }
+          }
+        })
+        .then(() => infoArr[0]);
       })
-      .then(() => infoArr[0]);
     })
   );
 }

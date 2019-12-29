@@ -31,6 +31,7 @@ export interface FilterArgs {
   hflip?: boolean;
   vflip?: boolean;
   noaudio?: boolean;
+  stabilize?: boolean;
 }
 
 export interface AppendImageArgs {

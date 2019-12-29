@@ -17,6 +17,7 @@ export interface VideoDataExt extends VideoData {
   vflip?: boolean;
   speed?: number;
   noaudio?: boolean;
+  stabilize?: boolean;
 }
 
 export interface Props {
@@ -54,7 +55,8 @@ export class VideoFileView extends React.Component<Props, State> {
           hflip: filter.hflip,
           vflip: filter.vflip,
           speed: filter.speed,
-          noaudio: filter.noaudio
+          noaudio: filter.noaudio,
+          stabilize: filter.stabilize
         };
       }
     } else {
@@ -64,11 +66,6 @@ export class VideoFileView extends React.Component<Props, State> {
         };
       }
 
-      state.fileId = null;
-    }
-
-    const res = this.props.model.getPlayResultFile();
-    if (res) {
       state.fileId = null;
     }
 
@@ -98,7 +95,8 @@ export class VideoFileView extends React.Component<Props, State> {
       speed: data.speed,
       hflip: data.hflip,
       vflip: data.vflip,
-      noaudio: data.noaudio
+      noaudio: data.noaudio,
+      stabilize: data.stabilize
     };
 
     return filter;
@@ -251,6 +249,16 @@ export class VideoFileView extends React.Component<Props, State> {
         >
           No audio
         </Tag>
+      ),
+      data.stabilize && (
+        <Tag
+          icon='fa fa-flask'
+          color='#DEFFDD'
+          onRemove={() => {
+            data.stabilize = null;
+            this.setState({});
+          }}
+        />
       )
     ] as Array<React.ReactElement<Tag>>;
   }
@@ -388,6 +396,20 @@ export class VideoFileView extends React.Component<Props, State> {
         }}
       />,
       <CheckIcon
+        title='stabilize'
+        faIcon='fa fa-flask'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          if (!data.stabilize) {
+            data.stabilize = true;
+          } else {
+            data.stabilize = null;
+          }
+          this.setState({});
+        }}
+      />,
+      <CheckIcon
         title='export'
         faIcon='fa fa-upload'
         value
@@ -416,23 +438,13 @@ export class VideoFileView extends React.Component<Props, State> {
 
   renderVideo(): JSX.Element {
     const src = this.getPath();
+    const m = this.props.model;
 
     if (this.props.onlyContent) {
       return (
         <Video
-          data={{ src: [src, this.props.model.holder.getVersion()].join('?') }}
-          key={'video-' + this.props.model.holder.getID()}
-        />
-      );
-    }
-
-    const result = this.props.model.getPlayResultFile();
-    if (result) {
-      return (
-        <Video
-          data={{ src: [result.getPath(), result.holder.getVersion()].join('?') }}
-          key={'res-' + result.holder.getID()}
-          autoPlay
+          data={{ src: [src, m.holder.getVersion()].join('?') }}
+          key={'video-' + m.holder.getID()}
         />
       );
     }
@@ -452,6 +464,7 @@ export class VideoFileView extends React.Component<Props, State> {
 
     return (
       <Video
+        showToolbar
         ref={this.ref}
         data={this.state.data}
         tags={this.renderTags().filter(v => v)}
@@ -475,7 +488,7 @@ export class VideoFileView extends React.Component<Props, State> {
   import = React.createRef<HTMLInputElement>();
   onImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     this.props.model.import(e.currentTarget.files.item(0));
-  };
+  }
 
   render() {
     return (

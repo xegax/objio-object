@@ -12,6 +12,7 @@ import { cn } from 'ts-react-ui/common/common';
 import { CSSIcon } from 'ts-react-ui/cssicon';
 import { getTimeIntervalString } from '../common/time';
 import { fmtBytes } from '../common/common';
+import { showVideo } from 'ts-react-ui/video';
 
 const actRemoveAll: Action = {
   text: 'Remove all',
@@ -39,7 +40,6 @@ interface ImageItem extends Item {
 export class VideoFileObject extends VideoFileBase {
   protected selectFileId: string;
   protected editNameCutId: string;
-  protected playResultId: string;
 
   appendImage(args: AppendImageArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'appendImage', args });
@@ -97,24 +97,11 @@ export class VideoFileObject extends VideoFileBase {
       this.editNameCutId = null;
 
     this.selectFileId = id;
-    this.playResultId = null;
     this.holder.delayedNotify();
   }
 
   getSelectFile(): VideoFileBase | ImageFileBase | null {
     return this.selectFileId ? this.findFile(this.selectFileId) : null;
-  }
-
-  setPlayResultFile(id: string) {
-    if (this.playResultId == id)
-      return;
-
-    this.playResultId = id;
-    this.holder.delayedNotify();
-  }
-
-  getPlayResultFile(): VideoFileBase {
-    return this.playResultId ? (this.findFile(this.playResultId) as VideoFileBase) : null;
   }
 
   private renderStreamDesc(s: MediaStream) {
@@ -248,10 +235,7 @@ export class VideoFileObject extends VideoFileBase {
               if (file.getSize() == 0)
                 return;
 
-              if (fileID == this.playResultId)
-                this.setPlayResultFile(null);
-              else
-                this.setPlayResultFile(fileID);
+              return showVideo({ src: [ file.getPath(), file.holder.getVersion()].join('?') });
             }}
           />
         </div>
