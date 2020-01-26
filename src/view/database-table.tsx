@@ -1,13 +1,25 @@
 import * as React from 'react';
 import { DatabaseTable } from '../client/database/database-table';
-import { Grid, CellProps, HeaderProps } from 'ts-react-ui/grid/grid';
+import { Grid, CellProps, HeaderProps, CardProps } from 'ts-react-ui/grid/grid';
 import { HorizontalResizer } from 'ts-react-ui/resizer';
-import { CSSIcon } from 'ts-react-ui/cssicon';
-import { Popover, Position } from 'ts-react-ui/popover';
-import { ListView } from 'ts-react-ui/list-view';
 import { SortingCtrl } from 'ts-react-ui/sorting-ctrl';
+import { FontAppr } from '../base/appr-decl';
 
 export { DatabaseTable };
+
+function getFontStyle(font: FontAppr, align: boolean): React.CSSProperties {
+  if (!font)
+    return {};
+
+  return {
+    color: font.color,
+    fontFamily: font.family,
+    fontWeight: font.bold ? 'bold' : undefined,
+    fontStyle: font.italic ? 'italic' : undefined,
+    fontSize: font.sizePx,
+    textAlign: align ? font.align : undefined
+  };
+}
 
 export interface Props {
   model: DatabaseTable;
@@ -38,6 +50,69 @@ export class DatabaseTableView extends React.Component<Props, State> {
     return 'object not configured properly';
   }
 
+  renderCard = (props: CardProps) => {
+    const m = this.props.model;
+    const appr = m.getAppr();
+    const body = appr.cardsView.body;
+    const header = appr.cardsView.header;
+    const footer = appr.cardsView.footer;
+
+    const row = m.getGrid().getRowOrLoad(props.row);
+    let jsxHeader: JSX.Element | null = null;
+    let jsxBody: JSX.Element | null = null;
+    let jsxFooter: JSX.Element | null = null;
+
+    if (header && header.column) {
+      const c = m.getColumnProp(header.column);
+      jsxHeader = (
+        <div className='table-card-header' style={getFontStyle(header.font || c.font || appr.body.font, true)}>
+          {row.obj[c.column]}
+        </div>
+      );
+    }
+
+    if (footer && footer.column) {
+      const c = m.getColumnProp(footer.column);
+      jsxFooter = (
+        <div className='table-card-footer' style={getFontStyle(footer.font || c.font || appr.body.font, true)}>
+          {row.obj[c.column]}
+        </div>
+      );
+    }
+
+    if (body && body.column) {
+      const c = m.getColumnProp(body.column);
+      if (c.dataType == 'image') {
+        jsxBody = (
+          <div
+            style={{
+              flexGrow: 1,
+              backgroundImage: `url(${row.obj[body.column]})`,
+              backgroundRepeat: 'no-repeat',
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              backgroundOrigin: 'content-box'
+            }}
+          />
+        );
+      } else {
+        jsxBody = (
+          <div className='table-card-body' style={getFontStyle(body.font || c.font || appr.body.font, true)}>
+            {row.obj[body.column]}
+          </div>
+        );
+      }
+    }
+
+    return (
+      <div className='table-grid-card'>
+        {jsxHeader}
+        {jsxBody}
+        {jsxFooter}
+      </div>
+    );
+  }
+
   renderCell = (props: CellProps) => {
     const row = this.props.model.getGrid().getRowOrLoad(props.row);
     if (!row)
@@ -49,26 +124,16 @@ export class DatabaseTableView extends React.Component<Props, State> {
       props.className = 'cell-align-' + align;
 
     return (
-      <span
-        style={{
-          color: colAppr.font.color,
-          fontFamily: colAppr.font.family,
-          fontWeight: colAppr.font.bold ? 'bold' : null,
-          fontStyle: colAppr.font.italic ? 'italic' : null,
-          fontSize: colAppr.font.sizePx
-        }}
-      >
+      <span style={getFontStyle(colAppr.font, false)}>
         {row.cell[props.col]}
       </span>
     );
   }
 
   renderHeader = (props: HeaderProps) => {
-    const table = this.props.model.getTableInfo();
-    if (!table || !table.columns[props.col])
-      return null;
+    const cols = this.props.model.getColsToShow({ genCols: true });
 
-    const colName = table.columns[props.col].colName;
+    const colName = cols[props.col];
     const c = this.props.model.getAppr().columns[colName] || {};
     return (
       <span>{c.label || colName}</span>
@@ -92,10 +157,20 @@ export class DatabaseTableView extends React.Component<Props, State> {
       <>
         <div style={s}>
           {(this.props.model.getSelData() || []).map(f => {
+            const props = this.props.model.getColumnProp(f.key);
+
+            if (props.dataType == 'image') {
+              return (
+                <div key={f.key}>
+                  <img src={f.value}/>
+                </div>
+              );
+            }
+
             return (
               <div key={f.key}>
                 <span style={{ fontWeight: 'bold' }}>
-                  {this.props.model.getColumnProp(f.key).label || f.key}
+                  {props.label || f.key}
                 </span>: {f.value}
               </div>
             );
@@ -119,13 +194,6 @@ export class DatabaseTableView extends React.Component<Props, State> {
     const grid = m.getGrid();
     if (!grid)
       return null;
-
-    const sort = m.getSortOrder();
-    let sortColumn: React.ReactChild;
-    if (sort.length)
-      sortColumn = <span>{sort[0].column}</span>;
-    else
-      sortColumn = <span>unsorted</span>;
 
     const columns = m.getColumns().map(col => ({ value: col.column, render: col.render }));
 
@@ -167,6 +235,7 @@ export class DatabaseTableView extends React.Component<Props, State> {
             evenRow={appr.body.evenRow}
             renderHeader={this.renderHeader}
             renderCell={this.renderCell}
+            renderCard={this.renderCard}
             onScrollToBottom={() => {
               grid.loadNext();
             }}

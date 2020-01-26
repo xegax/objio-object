@@ -62,7 +62,7 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   import(file: File) {
-    return this.sendFile({ file, fileId: '.import' });
+    // return this.sendFile({ file, fileId: '.import' });
   }
 
   remove(args: RemoveArgs): Promise<void> {
@@ -170,14 +170,11 @@ export class VideoFileObject extends VideoFileBase {
       <div className='video-preview'>
         <div
           className='video-preview-image'
-          style={{ backgroundImage: `url(${file.getPath(`.preview-128.jpg?${file.getVersion()}`)})` }}
+          style={{ backgroundImage: `url(${file.getPath('preview-128')})` }}
         />
         <div className={cn('horz-panel-1', 'video-preview-footer')}>
           <div
             style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
-            /*onClick={() => {
-              this.setSelectFile(fileID);
-            }}*/
             onDoubleClick={() => {
               this.editNameCutId = fileID;
               this.holder.delayedNotify();
@@ -222,7 +219,7 @@ export class VideoFileObject extends VideoFileBase {
       <div className='video-preview'>
         <div
           className='video-preview-image'
-          style={{ backgroundImage: `url(${file.getPath(`.preview-128.jpg?${file.getVersion()}`)})` }}
+          style={{ backgroundImage: `url(${file.getPath('preview-128')})` }}
         >
           <CSSIcon
             title='Play'
@@ -235,7 +232,7 @@ export class VideoFileObject extends VideoFileBase {
               if (file.getSize() == 0)
                 return;
 
-              return showVideo({ src: [ file.getPath(), file.holder.getVersion()].join('?') });
+              return showVideo({ src: file.getPath('content') });
             }}
           />
         </div>
@@ -394,9 +391,6 @@ export class VideoFileObject extends VideoFileBase {
           className='abs-fit'
           value={selectFile ? { value: selectFile.holder.getID() } : null}
           values={images.map(this.makeImageItem)}
-          onSelect={(item: ImageItem) => {
-            this.setSelectFile(item.value);
-          }}
         />
       </PropsGroup>
     );

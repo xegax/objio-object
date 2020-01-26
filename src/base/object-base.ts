@@ -1,18 +1,10 @@
-import { OBJIOItem, SERIALIZER, OBJIOItemClass } from 'objio';
+import { OBJIOItem, SERIALIZER, OBJIOItemClass, FileSystemSimple } from 'objio';
 import { Flag, ConfigProps } from '../common/view-factory';
 
 export type Status = 'ok' | 'error' | 'not configured' | 'in progress';
 export interface ObjProps {
   objects(filter?: Array<OBJIOItemClass>): Array<ObjectBase>;
   append(newObj: ObjectBase): Promise<void>; 
-}
-
-export interface SendFileArgs {
-  file: File;
-  fileId?: string;
-  other?: string;
-  dest?: any;       // getFileDropDest
-  onProgress?(value: number): void;
 }
 
 export interface ObjectBaseArgs {
@@ -58,6 +50,7 @@ export class ObjectBase extends OBJIOItem {
   protected progress: number = 0;
   protected status: Status = 'ok';
   protected errors = Array<string>();
+  protected fs: FileSystemSimple;
 
   constructor(args?: Partial<ObjectBaseArgs>) {
     super();
@@ -66,6 +59,13 @@ export class ObjectBase extends OBJIOItem {
       this.status = args.status || this.status;
       this.progress = args.progress || this.progress;
     }
+  }
+
+  getPath(key?: string) {
+    if (!this.fs)
+      return '';
+
+    return this.fs.getPath(key);
   }
 
   // sendFile dest parameter
@@ -101,13 +101,12 @@ export class ObjectBase extends OBJIOItem {
     return this.holder.getVersion();
   }
 
-  getName(ext?: string): string {
+  getName(): string {
     let name = this.name;
-    if (ext) {
-      const i = name.lastIndexOf('.');
-      if (i != -1)
-        name = name.substr(0, i);
-      name += ext;
+    if (!name && this.fs) {
+      const f = this.fs.getFileDesc('content');
+      if (f)
+        name = f.name;
     }
 
     return name;
@@ -188,13 +187,9 @@ export class ObjectBase extends OBJIOItem {
     return [];
   }
 
-  sendFile(args: SendFileArgs): Promise<any> {
-    return this.holder.invokeMethod({
-      method: 'sendFile',
-      args: { file: args.file, fileId: args.fileId, other: args.other },
-      onProgress: args.onProgress
-    });
-  }
+  getFS(): FileSystemSimple {
+    return this.fs;
+  };
 
   static getViewDesc(): Partial<ViewDesc> {
     return {
@@ -213,6 +208,7 @@ export class ObjectBase extends OBJIOItem {
     name:     { type: 'string' },
     progress: { type: 'number', const: true },
     status:   { type: 'string', const: true },
-    errors:   { type: 'json', const: true }
+    errors:   { type: 'json', const: true },
+    fs:       { type: 'object', const: true }
   })
 }

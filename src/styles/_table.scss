@@ -27,3 +27,31 @@
     background-color: silver;
   }
 }
+
+.table-grid-card {
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  width: 100%;
+  height: 100%;
+
+  .table-card-header {
+    flex-grow: 0;
+    line-height: 1.1;
+    max-height: 2.2em;
+    margin-bottom: 5px;
+  }
+
+  .table-card-body {
+    flex-grow: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .table-card-footer {
+    flex-grow: 0;
+    line-height: 1.1;
+    max-height: 2.2em;
+    margin-top: 5px;
+  }
+}

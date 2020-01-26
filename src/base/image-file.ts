@@ -1,7 +1,5 @@
-import { SERIALIZER } from 'objio';
-import { FileObjectBase, SendFileArgs, FileArgs } from './file-object';
-
-export { SendFileArgs, FileArgs };
+import { SERIALIZER, FileSystemSimple } from 'objio';
+import { ObjectBase } from './object-base';
 
 export interface ImageFileDesc {
   width: number;
@@ -10,13 +8,18 @@ export interface ImageFileDesc {
   pixelFmt: string;
 }
 
-export abstract class ImageFileBase extends FileObjectBase {
+export abstract class ImageFileBase extends ObjectBase {
   protected desc: ImageFileDesc = {
     width: 0,
     height: 0,
     codec: '',
     pixelFmt: ''
   };
+
+  constructor() {
+    super();
+    this.fs = new FileSystemSimple();
+  }
 
   getDesc(): ImageFileDesc {
     return this.desc;
@@ -26,9 +29,13 @@ export abstract class ImageFileBase extends FileObjectBase {
     this.desc = {...desc};
   }
 
+  getPath(key?: string) {
+    return this.fs.getPath(key);
+  }
+
   static TYPE_ID = 'ImageFileObject';
   static SERIALIZE: SERIALIZER = () => ({
-    ...FileObjectBase.SERIALIZE(),
+    ...ObjectBase.SERIALIZE(),
     desc:     { type: 'json', const: true }
   })
 }

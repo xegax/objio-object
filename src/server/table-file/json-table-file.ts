@@ -3,15 +3,30 @@ import { SERIALIZER } from 'objio';
 import { JSONTableFile as Base } from '../../base/table-file/json-table-file';
 import { ColumnAttr } from '../../base/table-file/table-file-decl';
 import { ReadLinesArgs } from '../../base/table-file/data-reading-decl';
-import { FileObject } from '../file-object';
 import { onFileUpload } from './table-file';
 import { DataReader } from './index';
+import { FileSystemSimple } from 'objio/server';
 
 export class JSONTableFile extends Base {
-  constructor(args) {
-    super(args);
+  protected fs: FileSystemSimple;
 
-    FileObject.initFileObj(this);
+  constructor() {
+    super();
+    this.fs = new FileSystemSimple();
+
+    this.holder.addEventHandler({
+      onLoad: this.onInit,
+      onCreate: this.onInit
+    });
+  }
+
+  private onInit = () => {
+    this.fs.holder.addEventHandler({
+      onUpload: args => {
+        onFileUpload(this, args.userId);
+      }
+    });
+    return Promise.resolve();
   }
 
   getDataReader(): DataReader {

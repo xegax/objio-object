@@ -1,15 +1,22 @@
-import { SERIALIZER } from 'objio';
-import { FileObjectBase, SendFileArgs } from '../file-object';
+import { SERIALIZER, FileSystemSimple } from 'objio';
+import { ObjectBase } from '../object-base';
 import { ColumnAttr } from './table-file-decl';
 import { DataReader } from './data-reading-decl';
 import { StatMap } from 'objio/common/reader/statistics';
 
-export { SendFileArgs };
-
-export abstract class TableFileBase extends FileObjectBase {
+export abstract class TableFileBase extends ObjectBase {
   protected columns = Array<ColumnAttr>();
   protected statMap: StatMap = {};
   protected rows: number = 0;
+
+  constructor() {
+    super();
+    this.fs = new FileSystemSimple();
+  }
+
+  getPath(key?: string) {
+    return this.fs.getPath(key || 'content');
+  }
 
   setRows(rows: number) {
     this.rows = rows;
@@ -63,8 +70,8 @@ export abstract class TableFileBase extends FileObjectBase {
   abstract getDataReader(): DataReader;
 
   static SERIALIZE: SERIALIZER = () => ({
-    ...FileObjectBase.SERIALIZE(),
-    columns: { type: 'json' },
+    ...ObjectBase.SERIALIZE(),
+    columns: { type: 'json', const: true },
     statMap: { type: 'json', const: true },
     rows: { type: 'integer', const: true }
   })

@@ -6,6 +6,7 @@ export function onFileUpload(obj: TableFileBase, userId: string) {
 
   obj.setStatMap({});
   obj.setRows(0);
+  obj.setStatus('in progress');
   obj.holder.save();
 
   const reader = obj.getDataReader();
@@ -32,6 +33,7 @@ export function onFileUpload(obj: TableFileBase, userId: string) {
         );
       })
       .then(() => {
+        obj.setStatus('ok');
         obj.setRows(rows);
         obj.setStatMap(statMap);
         obj.getColumns({ discard: true })

@@ -1,18 +1,33 @@
-import { ImageFileBase, FileArgs } from '../base/image-file';
-import { FileObject } from './file-object';
+import { ImageFileBase } from '../base/image-file';
 import { parseMedia, parseStream } from '../task/ffmpeg';
+import { FileSystemSimple } from 'objio/server';
 
 export { ImageFileBase };
 
 export class ImageFile extends ImageFileBase {
-  constructor(args: FileArgs) {
-    super(args);
+  protected fs: FileSystemSimple;
 
-    FileObject.initFileObj(this);
+  constructor() {
+    super();
+    this.fs = new FileSystemSimple();
+
+    this.holder.addEventHandler({
+      onCreate: this.onInit,
+      onLoad: this.onInit
+    });
   }
 
-  onFileUploaded(userId: string): Promise<void> {
-    parseMedia(this.getPath())
+  private onInit = () => {
+    this.fs.holder.addEventHandler({ onUpload: this.onUpload });
+    return Promise.resolve();
+  }
+
+  getFS() {
+    return this.fs;
+  }
+
+  private onUpload = () => {
+    parseMedia(this.getPath('content'))
     .then(info => {
       const parsed = info.stream.map(parseStream);
       const vi = parsed.findIndex(v => !!v.video);
@@ -28,7 +43,5 @@ export class ImageFile extends ImageFileBase {
     }).catch(err => {
       this.addError(err);
     });
-
-    return Promise.resolve();
   }
 }

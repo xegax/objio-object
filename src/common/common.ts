@@ -7,14 +7,6 @@ export function genUUID() {
   return uuid.join('-');
 }
 
-export function getExt(fileName: string, depth: number = 1): string {
-  let arr = fileName.split('.').slice(1);
-  if (arr.length == 0)
-    return '';
-
-  arr = arr.slice(arr.length - depth);
-  return '.' + arr.join('.');
-}
 
 const KB = 1024;
 const MB = KB * 1024;

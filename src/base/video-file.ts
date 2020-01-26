@@ -1,11 +1,9 @@
 import { Time } from '../common/time';
-import { FileObjectBase, SendFileArgs } from './file-object';
-import { SERIALIZER, OBJIOArray } from 'objio';
+import { SERIALIZER, OBJIOArray, FileSystemSimple } from 'objio';
 import { MediaStream } from '../task/media-desc';
 import { Rect, Size } from '../common/point';
 import { ImageFileBase } from './image-file';
-
-export { SendFileArgs };
+import { ObjectBase, ObjectBaseArgs } from './object-base';
 
 export interface VideoFileExportData {
   cuts: Array<{ name: string, filter: FilterArgs }>;
@@ -58,13 +56,27 @@ export interface RemoveArgs {
   removeContent?: boolean;
 }
 
-export abstract class VideoFileBase extends FileObjectBase {
+export abstract class VideoFileBase extends ObjectBase {
   protected desc: Partial<MediaFileDesc> = {};
   protected files = new OBJIOArray<VideoFileBase>();
-  protected images: OBJIOArray<ImageFileBase>;
+  protected images = new OBJIOArray<ImageFileBase>();
   protected filter: FilterArgs = {};
   protected executeStartTime: number;
   protected executeTime: number;
+
+  constructor(args?: Partial<ObjectBaseArgs>) {
+    super(args);
+    this.fs = new FileSystemSimple();
+  }
+
+  getSize() {
+    const content = this.fs.getFileDesc('content');
+    return content && content.fileSize || 0;
+  }
+
+  getPath(key?: string) {
+    return this.fs.getPath(key);
+  }
 
   getEncodeTime() {
     return this.executeTime;
@@ -129,7 +141,7 @@ export abstract class VideoFileBase extends FileObjectBase {
 
   static TYPE_ID = 'VideoFileObject';
   static SERIALIZE: SERIALIZER = () => ({
-    ...FileObjectBase.SERIALIZE(),
+    ...ObjectBase.SERIALIZE(),
     desc:             { type: 'json',     const: true },
     subfiles:         { type: 'json',     const: true },
     files:            { type: 'object',   const: true },

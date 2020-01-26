@@ -32,7 +32,7 @@ export interface State {
 
 export class VideoFileView extends React.Component<Props, State> {
   state: Partial<State> = {
-    data: { src: this.props.model.getPath() }
+    data: { src: this.props.model.getPath('content') }
   };
 
   ref = React.createRef<Video>();
@@ -46,7 +46,7 @@ export class VideoFileView extends React.Component<Props, State> {
       if (file.holder.getID() != this.state.fileId) {
         state.fileId = file.holder.getID();
         state.data = {
-          src: this.getPath(),
+          src: this.props.model.getPath('content'),
           trim: filter.trim,
           reverse: filter.reverse,
           crop: filter.crop,
@@ -62,7 +62,7 @@ export class VideoFileView extends React.Component<Props, State> {
     } else {
       if (this.state.fileId) {
         state.data = {
-          src: this.getPath()
+          src: this.props.model.getPath('content')
         };
       }
 
@@ -437,13 +437,15 @@ export class VideoFileView extends React.Component<Props, State> {
   }
 
   renderVideo(): JSX.Element {
-    const src = this.getPath();
     const m = this.props.model;
+    const fd = m.getFS().getFileDesc('content');
+    if (!fd || fd.fileSize != fd.uploadSize)
+      return null;
 
     if (this.props.onlyContent) {
       return (
         <Video
-          data={{ src: [src, m.holder.getVersion()].join('?') }}
+          data={{ src: m.getPath('content') }}
           key={'video-' + m.holder.getID()}
         />
       );
@@ -471,10 +473,6 @@ export class VideoFileView extends React.Component<Props, State> {
         toolbar={this.renderToolbar()}
       />
     );
-  }
-
-  getPath(): string {
-    return this.props.model.getPath();
   }
 
   renderContent(): JSX.Element | string {

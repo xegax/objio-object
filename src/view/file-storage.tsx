@@ -158,7 +158,7 @@ export class FileStorageView extends React.Component<Props, State> {
         {sel && sel.type == '.mp4' && <MenuItem
           text='create object'
           onClick={() => {
-            let obj = new VideoFileObject({
+            /*let obj = new VideoFileObject({
               name: sel.name,
               size: sel.size,
               mime: 'video/mp4',
@@ -166,7 +166,7 @@ export class FileStorageView extends React.Component<Props, State> {
             });
             m.holder.createObject(obj)
             .then(() => this.props.append(obj))
-            .then(() => obj.updateDesciption());
+            .then(() => obj.updateDesciption());*/
           }}
         />}
         {selNum == 1 && <MenuItem

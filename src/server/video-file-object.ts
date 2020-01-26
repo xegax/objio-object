@@ -1,32 +1,29 @@
 import { parseMedia, encodeFile, parseStream, EncodeArgs, FileInfo } from '../task/ffmpeg';
-import { lstatSync, existsSync, unlinkSync, readFileSync } from 'fs';
-import { VideoFileBase, FilterArgs, SaveArgs, RemoveArgs, AppendImageArgs, VideoFileExportData } from '../base/video-file';
+import { existsSync, unlinkSync } from 'fs';
+import {
+  VideoFileBase,
+  FilterArgs,
+  SaveArgs,
+  RemoveArgs,
+  AppendImageArgs,
+  VideoFileExportData
+} from '../base/video-file';
 import { getTimeFromSeconds } from '../common/time';
-import { FileObject } from './file-object';
-import { ImageFile, ImageFileBase } from './image-file';
-import { OBJIOArray } from 'objio';
+import { ImageFile } from './image-file';
+import { OBJIOArray, getExt } from 'objio';
+import { FileSystemSimple } from 'objio/server';
+import { ObjectBase } from '../view/config';
 
 export class VideoFileObject extends VideoFileBase {
+  protected fs: FileSystemSimple;
+
   constructor(filter?: FilterArgs) {
     super();
-
-    FileObject.initFileObj(this);
+    this.fs = new FileSystemSimple();
 
     this.holder.addEventHandler({
-      onLoad: () => {
-        this.setStatus('ok');
-        if (this.images)
-          return Promise.resolve();
-
-        let images = new OBJIOArray<ImageFileBase>();
-        return (
-          this.holder.createObject(images)
-          .then(() => {
-            this.images = images;
-            this.holder.save();
-          })
-        );
-      }
+      onCreate: this.onInit,
+      onLoad: this.onInit
     });
 
     this.holder.setMethodsToInvoke({
@@ -64,6 +61,17 @@ export class VideoFileObject extends VideoFileBase {
     this.filter = filter || {};
   }
 
+  private onInit = () => {
+    this.setStatus('ok');
+    this.fs.holder.addEventHandler({
+      onUpload: args => {
+        this.onVideoUploaded(args);
+      }
+    });
+
+    return Promise.resolve();
+  }
+
   export(): Promise<VideoFileExportData> {
     const data: VideoFileExportData = {
       cuts: []
@@ -92,20 +100,22 @@ export class VideoFileObject extends VideoFileBase {
       return (
         this.holder.getObject<VideoFileObject>(args.sourceId)
         .then(source => {
-          return this.updatePreview(source, nextFrom, userId);
+          return this.updatePreview(source, userId);
         })
         .then(() => {})
-      )
-    };
+      );
+    }
 
     return Promise.resolve();
   }
 
-  private updatePreview(source: VideoFileObject, time: number, userId?: string) {
-    return new Promise(resolve => {
-      const outFile = this.getPath('.preview-128.jpg');
+  private updatePreview(source: VideoFileObject, userId?: string) {
+    return new Promise<void>(resolve => {
+      const time = (this.filter.trim || { from: 0 }).from;
+      const outFile = this.fs.getPathForNew('preview-128', '.jpg');
+
       const encArgs: EncodeArgs = {
-        inFile: [ source.getPath() ],
+        inFile: [ source.getPath('content') ],
         outFile,
         overwrite: true
       };
@@ -122,6 +132,7 @@ export class VideoFileObject extends VideoFileBase {
 
       this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId)
       .then(() => {
+        this.fs.updateFiles({ 'preview-128': outFile });
         return this.holder.save(true);
       }).then(resolve);
     });
@@ -129,34 +140,28 @@ export class VideoFileObject extends VideoFileBase {
 
   append(args: FilterArgs, userId?: string) {
     const obj = new VideoFileObject({...args});
-    const from = (args.trim || { from: 0 }).from;
-    return this.holder.createObject(obj)
-    .then(() => {
-      obj.origName = this.origName;
-      obj.mime = this.mime;
-      obj.setName(`cut-${Date.now()}`);
-      this.files.push(obj);
-      this.files.holder.save();
-      this.holder.save(true);
-    })
-    .then(() => {
-      return obj.updatePreview(this, from, userId);
-    })
-    .then(() => {});
+    return (
+      this.holder.createObject(obj)
+      .then(() => {
+        obj.setName(`cut-${Date.now()}`);
+        this.files.push(obj);
+        this.files.holder.save();
+        this.holder.save(true);
+      })
+      .then(() => {
+        return obj.updatePreview(this, userId);
+      })
+    );
   }
 
   appendImage(args: AppendImageArgs, userId?: string) {
-    let obj = new ImageFile({
-      name: this.origName + '.jpg',
-      mime: 'image/jpeg',
-      size: 0
-    });
-
-    return this.holder.createObject(obj)
+    let img = new ImageFile();
+    const fs = img.getFS();
+    return this.holder.createObject(img)
     .then(() => {
-      const outFile = obj.getPath();
+      const outFile = fs.getPathForNew('content', '.jpg');
       const encArgs: EncodeArgs = {
-        inFile: [ this.getPath() ],
+        inFile: [ this.getPath('content') ],
         outFile,
         overwrite: true
       };
@@ -166,12 +171,15 @@ export class VideoFileObject extends VideoFileBase {
       encArgs.crop = args.crop;
       encArgs.vframes = 1;
 
-      return this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId);
+      return (
+        this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId)
+        .then(() => fs.updateFiles({ 'content': outFile }))
+      );
     })
     .then(() => {
-      const outFile = obj.getPath('.preview-128.jpg');
+      const outFile = fs.getPathForNew('preview-128', '.jpg');
       const encArgs: EncodeArgs = {
-        inFile: [ this.getPath() ],
+        inFile: [ this.getPath('content') ],
         outFile,
         overwrite: true
       };
@@ -181,26 +189,29 @@ export class VideoFileObject extends VideoFileBase {
       encArgs.resize = { width: Math.round((128 * frame.width) / frame.height) , height: 128 };
       encArgs.crop = args.crop;
       encArgs.vframes = 1;
-      return this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId);
+      return (
+        this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId)
+        .then(() => fs.updateFiles({ 'preview-128': outFile }))
+      );
     })
-    .then(() => parseMedia(obj.getPath()))
+    .then(() => parseMedia(img.getPath('content')))
     .then(info => {
       const strm = info.stream.map(parseStream);
       const v = strm.find(v => !!v.video);
       if (!v)
         return Promise.reject('parse failed');
 
-      obj.setDesc({
+      img.setDesc({
         width: v.video.width,
         height: v.video.height,
         codec: v.video.codec,
         pixelFmt: v.video.pixelFmt
       });
 
-      obj.setName(`image-${args.time}`);
-      obj.holder.save();
+      img.setName(`image-${args.time}`);
+      img.holder.save();
 
-      this.images.push(obj);
+      this.images.push(img);
       this.images.holder.save();
       this.holder.save();
     }).catch(e => {
@@ -209,7 +220,7 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   updateDesciption(): Promise<void> {
-    return parseMedia(this.getPath())
+    return parseMedia(this.getPath('content'))
     .then(info => {
       this.desc.streamArr = info.stream.map(parseStream);
       this.holder.save();
@@ -217,17 +228,14 @@ export class VideoFileObject extends VideoFileBase {
   }
 
   remove(args: RemoveArgs): Promise<void> {
-    if (![this.files, this.images].some((arr: OBJIOArray<FileObject>) => {
+    if (![this.files, this.images].some((arr: OBJIOArray<ObjectBase>) => {
       const idx = arr.find(item => item.holder.getID() == args.objId);
-      if (idx != -1) {
-        const obj = arr.get(idx);
-        if (args.removeContent)
-          FileObject.removeContent(obj);
+      if (idx == -1)
+        return false;
 
-        arr.remove(idx);
-        arr.holder.save();
-      }
-      return idx != -1;
+      arr.remove(idx);
+      arr.holder.save();
+      return true;
     })) {
       return Promise.reject(`file id=${args.objId} not found`);
     }
@@ -244,7 +252,8 @@ export class VideoFileObject extends VideoFileBase {
     if (file.isStatusInProgess())
       return Promise.reject('execute in progress');
 
-    const outFile = file.getPath();
+    const outfs = (file.getFS() as FileSystemSimple);
+    const outFile = file.getFS().getPathForNew('content', '.mp4');
     existsSync(outFile) && unlinkSync(outFile);
 
     file.setProgress(0);
@@ -254,12 +263,12 @@ export class VideoFileObject extends VideoFileBase {
     file.holder.save();
 
     const encArgs: EncodeArgs = {
-      inFile: [this.getPath()],
+      inFile: [ this.getPath('content') ],
       outFile,
       overwrite: true,
       onProgress: (p: number) => {
         try {
-          file.size = file.loadSize = lstatSync(file.getPath()).size;
+          outfs.updateFiles({ 'content': outFile });
         } catch (e) {
           console.log(e);
         }
@@ -307,7 +316,7 @@ export class VideoFileObject extends VideoFileBase {
     return (
       this.holder.pushTask(() => encodeFile(encArgs), userId)
       .then(() => {
-        file.size = file.loadSize = lstatSync(outFile).size;
+        outfs.updateFiles({ 'content': outFile });
         file.holder.save();
         return parseMedia(outFile);
       }).then(info => {
@@ -330,58 +339,21 @@ export class VideoFileObject extends VideoFileBase {
     );
   }
 
-  onFileUploaded(userId: string, fileId?: string): Promise<void> {
-    if (!fileId)
-      return this.onVideoUploaded(userId);
-
-    if (fileId == '.import') {
-      this.onImportUploaded(userId, fileId);
-
-      return Promise.resolve();
-    }
-
-    return Promise.reject(`invalid fileId = ${fileId}`);
-  }
-
-  private onImportUploaded(userId: string, fileId: string): Promise<void> {
-    const json = readFileSync(this.getPath('.import')).toString();
-    const filter: VideoFileExportData = JSON.parse(json);
-    const cuts = filter.cuts.map(cut => {
-      const video = new VideoFileObject(cut.filter);
-      video.origName = this.origName;
-      video.mime = this.mime;
-      video.setName(cut.name);
-      return video;
-    });
-
-    
-    Promise.all( cuts.map(cut => this.holder.createObject<VideoFileBase>(cut)) )
-    .then(() => {
-      while(this.files.getLength())
-        this.files.remove(0);
-
-      cuts.forEach(v => this.files.push(v));
-      this.files.holder.save();
-      this.holder.save();
-    });
-
-    return Promise.resolve();
-  }
-
-  private onVideoUploaded(userId: string): Promise<void> {
+  private onVideoUploaded = (args: { userId: string }): Promise<void> => {
+    const path = this.fs.getPath('content');
     let p = (
-      parseMedia(this.getPath())
+      parseMedia(path)
       .then(info => {
         this.desc.streamArr = info.stream.map(parseStream);
         this.desc.duration = info.duration;
         this.holder.save();
 
-        if (['.avi', '.mkv'].indexOf(this.getExt().toLocaleLowerCase()) != -1) {
+        if (['.avi', '.mkv'].includes( getExt(path).toLocaleLowerCase() )) {
           const v = this.desc.streamArr.find(s => s.video != null);
           const a = this.desc.streamArr.find(s => s.audio != null);
 
-          let args: EncodeArgs = {
-            inFile: [this.getPath()],
+          let eargs: EncodeArgs = {
+            inFile: [this.getPath('content')],
             outFile: this.getPath('.mp4'),
             overwrite: true,
             codecV: v && v.video.codec.startsWith('h264') ? 'copy' : 'h264',
@@ -394,20 +366,20 @@ export class VideoFileObject extends VideoFileBase {
           this.setProgress(0);
           this.setStatus('in progress');
           return (
-            this.holder.pushTask( () => encodeFile(args), userId )
+            this.holder.pushTask( () => encodeFile(eargs), args.userId )
             .then(() => {
               this.setStatus('ok');
               this.setProgress(1);
-              this.origName = this.getOriginName('.mp4');
+
               this.holder.save();
-              return parseMedia(this.getPath());
+              return parseMedia(this.getPath('content'));
             })
             .then(info => {
               this.desc.streamArr = info.stream.map(parseStream);
               this.desc.duration = info.duration;
               this.holder.save();
 
-              unlinkSync(args.inFile[0]);
+              unlinkSync(eargs.inFile[0]);
             })
           );
         }

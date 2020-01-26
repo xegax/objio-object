@@ -2,11 +2,10 @@ import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { DatabaseHolder, ColumnInfoFull } from './database/database-holder';
 import { CompoundCond, ValueCond } from '../base/database/database-decl';
-import { ServerSendFileArgs } from './file-object';
-import { createWriteStream, mkdirSync, existsSync, unlinkSync, copyFile, createReadStream } from 'fs';
-import { genUUID, getExt } from '../common/common';
+import { createWriteStream, existsSync, unlinkSync, copyFile, createReadStream } from 'fs';
+import { genUUID } from '../common/common';
 import { Stream } from 'stream';
-import { SERIALIZER, OBJIOItem } from 'objio';
+import { SERIALIZER, getExt } from 'objio';
 import {
   EntryData,
   StorageInfo,
@@ -20,7 +19,6 @@ import {
   CopyFileObjArgs,
   UpdateArgs
 } from '../base/file-storage-decl';
-import { FileObjectBase } from '../base/file-object';
 
 const MAX_FOLDER_DEPTH = 3;
 const MAX_SUBFOLDERS = 32;
@@ -116,10 +114,6 @@ export class FileStorage extends FileStorageBase {
         method: (args: IDArgs) => this.setDatabase(args),
         rights: 'write'
       },
-      sendFile: {
-        method: (args: ServerSendFileArgs, userId: string) => this.sendFileImpl(args, userId),
-        rights: 'write'
-      },
       loadData: {
         method: (args: LoadDataArgs) => this.loadData(args),
         rights: 'read'
@@ -175,7 +169,7 @@ export class FileStorage extends FileStorageBase {
     path = path || [];
     let type = getExt(args.name).toLocaleLowerCase();
     if (['.zip', '.rar', '.7z'].indexOf(type) != -1)
-      type = getExt(args.name, 2);
+      type = getExt(args.name);
 
     const entry: SrvEntryData = {
       fileId: genUUID() + type,
@@ -228,7 +222,7 @@ export class FileStorage extends FileStorageBase {
     return p;
   }
 
-  private sendFileImpl = (args: ServerSendFileArgs, userId: string) => {
+  /*private sendFileImpl = (args: ServerSendFileArgs, userId: string) => {
     console.log('other', args.other);
     const folder = this.getPath();
     if (!existsSync(folder))
@@ -244,7 +238,7 @@ export class FileStorage extends FileStorageBase {
       this.createEntry(args, userId, path)
         .then(entry => this.writeToFile(entry, args.data))
     );
-  }
+  }*/
 
   private initTables(args: { fileTable: string, tagsTable: string, tryNum?: number }): Promise<void> {
     const fileTable = args.tryNum ? `${args.fileTable}_${args.tryNum}` : args.fileTable;
@@ -491,7 +485,8 @@ export class FileStorage extends FileStorageBase {
   }
 
   copyFileObject(args: CopyFileObjArgs, userId?: string) {
-    return (
+    return Promise.resolve();
+    /*return (
       this.holder.getObject<FileObjectBase>(args.fileObjId)
         .then(fileObj => {
           if (!fileObj)
@@ -503,14 +498,14 @@ export class FileStorage extends FileStorageBase {
           const strm = createReadStream(fileObj.getPath());
           return (
             this.createEntry({
-              name: fileObj.getName(fileObj.getExt()),
+              name: fileObj.getName(),
               size: fileObj.getLoadSize()
             }, userId, args.path)
               .then(entry => this.writeToFile(entry, strm))
               .then(() => { })
           );
         })
-    );
+    );*/
   }
 
   setDatabase(args: IDArgs) {

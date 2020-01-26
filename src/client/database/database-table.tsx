@@ -7,13 +7,15 @@ import {
   PropsGroup,
   DropDownPropItem,
   PropItem,
-  SwitchPropItem
+  SwitchPropItem,
+  TextPropItem,
+  DropDownPropItem2
 } from 'ts-react-ui/prop-sheet';
 import { DatabaseHolder } from './database-holder';
 import { LoadTableGuidResult } from '../../base/database/database-holder-decl';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
 import { TableDesc, ColOrder, CompoundCond, ColumnInfo } from '../../base/database/database-decl';
-import { TableAppr, TableColumnAppr } from '../../base/database/database-table-appr';
+import { TableAppr, TableColumnAppr, formatRow, TableViewType } from '../../base/database/database-table-appr';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { CSSIcon } from 'ts-react-ui/cssicon';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
@@ -21,11 +23,10 @@ import { ObjLink } from '../../control/obj-link';
 import { ForwardProps } from 'ts-react-ui/forward-props';
 import { ListView, Item } from 'ts-react-ui/list-view';
 import { FitToParent } from 'ts-react-ui/fittoparent';
-import { Popover } from 'ts-react-ui/popover';
+import { Popover, PopoverIcon } from 'ts-react-ui/popover';
 import { FontPanel, FontValue } from '../../control/font-panel';
 import { FontAppr } from '../../base/appr-decl';
 import { ContextMenu, Menu, MenuItem } from 'ts-react-ui/blueprint';
-import { prompt } from 'ts-react-ui/prompt';
 import { FilterPanel, FilterPanelView } from 'ts-react-ui/panel/filter-panel';
 import {
   DBColType,
@@ -38,8 +39,11 @@ import {
 } from 'ts-react-ui/panel/filter-panel-decl';
 import { ValueCond, RangeCond } from '../../base/database/database-decl';
 import { ObjTab } from '../../base/object-base';
-import { KeyValue } from '../../common/interfaces';
-import { selectCategory } from 'ts-react-ui/panel/select-category';
+import { KeyValue, StrMap } from '../../common/interfaces';
+import { genericColumn } from './generic-column';
+import { SelectString } from 'ts-react-ui/drop-down';
+import { showColumnProps } from './column-props';
+import { Tabs, Tab } from 'ts-react-ui/tabs';
 
 function conv2DBColType(type: string): DBColType {
   type = type.toLowerCase();
@@ -197,12 +201,33 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private itemFromColumn = (value: string): Item => {
     const p = this.getColumnProp(value);
-    return { value, render: p.label };
+    return {
+      value,
+      render: () => {
+        return (
+          <div className='horz-panel-2'>
+            <CSSIcon
+              icon='fa fa-trash'
+              showOnHover
+              onClick={() => {
+                this.appr.setProps({
+                  selPanel: {
+                    columns: this.appr.get().selPanel.columns.filter(c => c != value)
+                  }
+                });
+              }}
+            />
+            <span>{p.label || value}</span>
+          </div>
+        );
+      }
+    };
   }
 
   private prevSelCols: string;
   private prevColsToShow = Array<string>();
   private prevSortCols = Array<{ column: string; revers?: boolean }>();
+  private prevGenCols: string;
   private onApprChanged() {
     if (!this.grid)
       return null;
@@ -225,11 +250,16 @@ export class DatabaseTable extends DatabaseTableClientBase {
       });
     }
 
+    const nextGenCols = JSON.stringify(appr.genCols);
     const nextSortCols = appr.sort.order || [];
-    const nextColsToShow = this.getColsToShow();
+    const nextColsToShow = this.getColsToShow({ genCols: true });
     if (JSON.stringify(this.prevColsToShow) != JSON.stringify(nextColsToShow) ||
       JSON.stringify(this.prevSortCols) != JSON.stringify(nextSortCols)) {
+      this.prevGenCols = nextGenCols;
       this.loadTableDataImpl();
+    } else if (nextGenCols != this.prevGenCols) {
+      this.grid.reloadCurrent();
+      this.prevGenCols = nextGenCols;
     }
 
     this.prevColsToShow = nextColsToShow;
@@ -246,11 +276,17 @@ export class DatabaseTable extends DatabaseTableClientBase {
     if (this.grid.setReverse(!!appr.sort.reverse))
       this.prevSelCols = '';
 
+    this.grid.setViewType(appr.viewType == 'cards' ? 'cards' : 'rows');
+    this.grid.setCardWidth(appr.cardsView.cardWidth);
+    this.grid.setCardHeight(appr.cardsView.cardHeight);
+
     const newSelCols = JSON.stringify(appr.selPanel.columns);
     if (this.prevSelCols != newSelCols) {
       this.updateSelPanelData(true);
     }
+
     this.prevSelCols = newSelCols;
+    this.grid.delayedNotify({ type: 'render' });
   }
 
   getGrid(): GridLoadableModel {
@@ -275,19 +311,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   getColumnApprByIdx(col: number): Partial<TableColumnAppr> {
     const appr = this.appr.get();
-    const colsMap = appr.columns;
-    const cols = this.columns.filter(c => {
-      return !colsMap[c.colName] || colsMap[c.colName].show == null || colsMap[c.colName].show;
-    })
-    .map(c => c.colName)
-    .sort((a, b) => {
-      const ac = this.getColumnProp(a);
-      const bc = this.getColumnProp(b);
-      if (ac.order == null || bc.order == null)
-        return 0;
-
-      return ac.order - bc.order;
-    });
+    const cols = this.getColsToShow({ genCols: true });
 
     const colName = cols[col];
     const colAppr = {
@@ -423,10 +447,23 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private loadTableTask: Promise<void>;
 
-  getColsToShow(): Array<string> {
+  getColsToShow(args: { genCols?: boolean, filter?: boolean } = {}): Array<string> {
+    args = { genCols: false, filter: true, ...args};
     const colMap = this.appr.get().columns;
-    const cols = this.columns.filter(c => !colMap[c.colName] || this.getColumnProp(c.colName).show);
-    return cols.map(c => c.colName).sort((a, b) => {
+    const colsNameArr = this.columns.map(c => c.colName);
+    
+    if (args.genCols) {
+      for (const col of Object.keys(this.appr.get().genCols))
+        colsNameArr.push(col);
+    }
+
+    const cols = !args.filter ? (
+      colsNameArr
+    ) : (
+      colsNameArr.filter(name => !colMap[name] || this.getColumnProp(name).show)
+    );
+
+    return cols.sort((a, b) => {
       const ac = this.getColumnProp(a);
       const bc = this.getColumnProp(b);
       if (ac.order == null || bc.order == null)
@@ -466,7 +503,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
     const order = this.getSortOrder();
     this.tableDesc = null;
-    const columns = this.getColsToShow();
+    const columns = this.getColsToShow({ genCols: false });
     console.log('loadTableGuid', this.filterExpr);
     this.loadTableTask = this.loadTableGuid({
       table: this.tableName,
@@ -487,9 +524,10 @@ export class DatabaseTable extends DatabaseTableClientBase {
       this.grid && this.grid.unsubscribe(this.onColResized, 'col-resized');
       this.grid && this.grid.unsubscribe(this.onSelChanged, 'select');
 
+      const cols = this.getColsToShow({ genCols: true });
       this.grid = new GridLoadableModel({
         rowsCount: table.desc.rowsNum,
-        colsCount: table.desc.columns.length,
+        colsCount: cols.length,
         prev: this.grid
       });
       this.prevSelCols = '';  // need to update selection
@@ -500,9 +538,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
       this.grid.setLoader((from, count) => {
         return (
           this.loadTableData({ guid: this.guid, from, count })
-          .then(res => {
-            return res.rows.map(obj => ({ obj }));
-          })
+          .then(res => this.prepareServerRows(from, res.rows))
         );
       });
 
@@ -515,6 +551,25 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
     this.updateSelPanelData(true);
     return this.loadTableTask;
+  }
+
+  private prepareServerRows = (from: number, rows: Array<StrMap>): Array<{ obj: StrMap }> => {
+    const cols = this.getColsToShow({ genCols: true, filter: true });
+    const appr = this.appr.get();
+    return rows.map((row, i) => {
+      const obj: StrMap = {};
+      for (let c = 0; c < cols.length; c++) {
+        const col = cols[c];
+        if (col in row) {
+          obj[col] = row[col];
+        } else if (col in appr.genCols) {
+          obj[col] =  formatRow(row, appr.genCols[col]);
+        } else {
+          obj[col] = '';
+        }
+      }
+      return { obj };
+    });
   }
 
   private onSelChanged = () => {
@@ -599,16 +654,24 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private onColumnProps(column: string) {
     const c = this.appr.get().columns[column] || {};
-    prompt({
-      title: 'Column label',
-      value: c.label || column
+    showColumnProps({
+      column,
+      label: c.label || column,
+      dataType: c.dataType || 'text'
     })
-    .then(label => {
-      label = label.trim();
-      if (label == c.column)
-        return;
+    .then(res => {
+      res.label = res.label.trim();
+      if (res.label == c.column)
+        res.label = null;
 
-      this.appr.setProps({ columns: {[column]: { label }} });
+      this.appr.setProps({
+        columns: {[column]:
+          {
+            label: res.label,
+            dataType: res.dataType
+          }
+        }
+      });
     });
   }
 
@@ -656,12 +719,65 @@ export class DatabaseTable extends DatabaseTableClientBase {
     };
   };
 
+  private getColumnMenu(column: string) {
+    const appr = this.appr.get();
+    let arr = Array<{ label: string; disabled?: boolean; cmd: () => void }>();
+    arr.push({
+      label: 'Reset',
+      disabled: !this.appr.isModified('columns', column, 'font'),
+      cmd: () => {
+        this.appr.resetToDefaultKey('columns', column, 'font');
+        this.onApprChanged();
+      }
+    });
+
+    if (appr.genCols[column]) {
+      arr.push({
+        label: 'Edit',
+        cmd: () => {
+          this.onEditGenericColumn(column);
+        }
+      });
+
+      arr.push({
+        label: 'Delete',
+        cmd: () => {
+          this.appr.resetToDefaultKey('genCols', column);
+          this.onApprChanged();
+        }
+      });
+    }
+
+    return arr;
+  }
+
   private renderColumnItem = (c: Partial<TableColumnAppr>): Item => {
     let mc = {
       font: {},
       ...c,
       ...this.modifiedCols[c.column]
     };
+
+    const ctxMenu = this.getColumnMenu(c.column);
+    let jsxCtx: JSX.Element = null;
+    if (ctxMenu.length) {
+      jsxCtx = (
+        <PopoverIcon icon='fa fa-ellipsis-h' showOnHover>
+          <Menu>
+            {ctxMenu.map((item, i) => {
+              return (
+                <MenuItem
+                  disabled={item.disabled}
+                  key={i}
+                  text={item.label}
+                  onClick={item.cmd}
+                />
+              );
+            })}
+          </Menu>
+        </PopoverIcon>
+      );
+    }
 
     return {
       value: c.column,
@@ -716,17 +832,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
             >
               {c.column + (c.label ? ` (${c.label})` : '') }
             </div>
-            {this.appr.isModified('columns', c.column, 'font') ?
-            <CheckIcon
-              faIcon='fa fa-refresh'
-              title='Reset to default'
-              showOnHover
-              value
-              onClick={() => {
-                this.appr.resetToDefaultKey('columns', c.column, 'font');
-                this.onApprChanged();
-              }}
-            /> : null}
+            {jsxCtx}
           </div>
         );
       }
@@ -767,85 +873,150 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private renderAppr(props: ObjProps) {
     const appr = this.appr.get();
     const selPanelCols = appr.selPanel.columns;
+    const availableCols = [
+      ...this.columns.map(c => c.colName),
+      ...Object.keys(appr.genCols)
+    ].filter(c => !selPanelCols.includes(c)).sort();
+
+    const previewCols = (
+      this.getColsToShow({ genCols: true, filter: true })
+      .map(value => ({ value }))
+      .sort((a, b) => a.value.localeCompare(b.value))
+    );
+
+    const viewType: Array<{ value: TableViewType, render: string }> = [
+      { value: 'table', render: 'Table' },
+      { value: 'cards', render: 'Cards' }
+    ];
+
+    const selViewType = viewType.find(v => v.value == appr.viewType);
     return (
       <PropsGroup
         label='Appearance'
         defaultOpen={false}
+        padding={false}
         key={'appr-' + this.holder.getID()}
       >
-        <PropItem label='Font'>
-          <div className='horz-panel-1'>
-            <Popover>
-              <FontValue
-                {...defaultFont}
-                {...appr.body.font}
-              />
-              <FontPanel
-                font={{...defaultFont, ...appr.body.font}}
-                onChange={font => {
-                  this.appr.setProps({ body: { font } });
-                }}
-              />
-            </Popover>
-            {this.appr.isModified('body', 'font') ?
-            <CheckIcon
-              value
-              faIcon='fa fa-refresh'
-              onClick={() => {
-                this.appr.resetToDefaultKey('body', 'font');
-                this.onApprChanged();
-              }}
-            /> : null}
-          </div>
-        </PropItem>
-        <SwitchPropItem
-          label='Header'
-          value={appr.header.show}
-          onChanged={show => {
-            this.appr.setProps({ header: { show }});
-          }}
-        />
-        <SwitchPropItem
-          label='Border'
-          value={appr.body.border}
-          onChanged={border => {
-            this.appr.setProps({ body: { border }});
-          }}
-        />
-        <SwitchPropItem
-          label='Selection panel'
-          value={appr.selPanel.enable}
-          onChanged={enable => {
-            this.appr.setProps({ selPanel: { enable } });
-          }}
-        >
-          {appr.selPanel.enable && (
-            <CSSIcon
-              title='Select columns'
-              icon='fa fa-plus'
-              onClick={() => {
-                const select = new Set(selPanelCols);
-                const values = this.columns.map(this.itemFromColumnInfo);
-                selectCategory({ select, values, title: 'Select columns' })
-                .then(select => {
-                  this.appr.setProps({ selPanel: { columns: Array.from(select) } });
-                });
+        <Tabs defaultSelect='common' background={false}>
+          <Tab id='common' icon='fa fa-paint-brush'>
+            <PropItem label='Font'>
+              <div className='horz-panel-1'>
+                <Popover>
+                  <FontValue
+                    {...defaultFont}
+                    {...appr.body.font}
+                  />
+                  <FontPanel
+                    font={{...defaultFont, ...appr.body.font}}
+                    onChange={font => {
+                      this.appr.setProps({ body: { font } });
+                    }}
+                  />
+                </Popover>
+                {this.appr.isModified('body', 'font') ?
+                <CheckIcon
+                  value
+                  faIcon='fa fa-refresh'
+                  onClick={() => {
+                    this.appr.resetToDefaultKey('body', 'font');
+                    this.onApprChanged();
+                  }}
+                /> : null}
+              </div>
+            </PropItem>
+            <SwitchPropItem
+              label='Header'
+              value={appr.header.show}
+              onChanged={show => {
+                this.appr.setProps({ header: { show }});
               }}
             />
-          )}
-        </SwitchPropItem>
-        {appr.selPanel.enable && (
-          <div>
-            <ListView
-              border
-              height={100}
-              values={selPanelCols.map(this.itemFromColumn)}
-              onMoveTo={args => {
-                this.appr.setProps({ selPanel: { columns: args.newArr.map(arr => arr.value) } });
+            <SwitchPropItem
+              label='Border'
+              value={appr.body.border}
+              onChanged={border => {
+                this.appr.setProps({ body: { border }});
               }}
             />
-          </div>
-        )}
+            <SwitchPropItem
+              label='Selection panel'
+              value={appr.selPanel.enable}
+              onChanged={enable => {
+                this.appr.setProps({ selPanel: { enable } });
+              }}
+            >
+              {appr.selPanel.enable && (
+                <SelectString
+                  items={availableCols}
+                  icon='fa fa-plus'
+                  onSelect={col => {
+                    this.appr.setProps({ selPanel: { columns: [...appr.selPanel.columns, col] } });
+                  }}
+                />
+              )}
+            </SwitchPropItem>
+            <DropDownPropItem2
+              label='View type'
+              value={selViewType}
+              values={viewType}
+              onSelect={(v: { value: TableViewType }) => {
+                this.appr.setProps({ viewType: v.value });
+              }}
+            />
+            {appr.selPanel.enable && (
+              <div>
+                <ListView
+                  border
+                  height={100}
+                  values={selPanelCols.map(this.itemFromColumn)}
+                  onMoveTo={args => {
+                    this.appr.setProps({ selPanel: { columns: args.newArr.map(arr => arr.value) } });
+                  }}
+                />
+              </div>
+            )}
+          </Tab>
+          <Tab id='card' icon='fa fa-id-card-o' show={appr.viewType == 'cards'}>
+            <DropDownPropItem2
+              label='Header'
+              value={appr.cardsView.header && previewCols.find(c => c.value == appr.cardsView.header.column)}
+              values={previewCols}
+              onSelect={column => {
+                this.appr.setProps({ cardsView: { header: { column: column.value } } });
+              }}
+            />
+            <DropDownPropItem2
+              label='Body'
+              value={appr.cardsView.body && previewCols.find(c => c.value == appr.cardsView.body.column)}
+              values={previewCols}
+              onSelect={column => {
+                this.appr.setProps({ cardsView: { body: { column: column.value } } });
+              }}
+            />
+            <DropDownPropItem2
+              label='Footer'
+              value={appr.cardsView.footer && previewCols.find(c => c.value == appr.cardsView.footer.column)}
+              values={previewCols}
+              onSelect={column => {
+                this.appr.setProps({ cardsView: { footer: { column: column.value } } });
+              }}
+            />
+            <TextPropItem
+              label='Width'
+              value={appr.cardsView.cardWidth}
+              onEnter={w => {
+                this.appr.setProps({ cardsView: { cardWidth: +w } });
+              }}
+            />
+            <TextPropItem
+              label='Height'
+              value={appr.cardsView.cardHeight}
+              onEnter={h => {
+                this.appr.setProps({ cardsView: { cardHeight: +h } });
+              }}
+            />
+          </Tab>
+        </Tabs>
       </PropsGroup>
     );
   }
@@ -868,7 +1039,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   private renderColumnsView(props: ObjProps) {
-    let cols = this.columns;
+    let cols = this.getColsToShow({ genCols: true, filter: false });
     if (!cols.length) {
       return (
         <div>nothing to display</div>
@@ -897,18 +1068,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
       apply = <span className='horz-panel-1' style={{ color: 'silver' }}>{apply}</span>;
     }
 
-    const colProps = cols.map(c => this.getColumnProp(c.colName));
-    colProps.sort((a, b) => {
-      if (a.order != null && b.order == null)
-        return -1;
-      if (a.order == null && b.order != null)
-        return 1;
-      if (a.order == null && b.order == null)
-        return 0;
-
-      return a.order - b.order;
-    });
-
+    const colProps = cols.map(c => this.getColumnProp(c));
     return (
       <>
         <FitToParent wrapToFlex
@@ -935,11 +1095,65 @@ export class DatabaseTable extends DatabaseTableClientBase {
             />
           }
         />
-        <div className='horz-panel-1' style={{ textAlign: 'center', flexGrow: 0 }}>
+        <div className='horz-panel-2' style={{ textAlign: 'center', flexGrow: 0 }}>
+          <span
+            className='horz-panel-1'
+            style={{ cursor: 'pointer' }}
+            onClick={() => this.onEditGenericColumn()}
+          >
+            <CSSIcon
+              icon='fa fa-plus'
+              title='Create generic column'
+            />
+            <span>Column</span>
+          </span>
           {apply}
         </div>
       </>
     );
+  }
+
+  private onEditGenericColumn = (col?: string) => {
+    const appr = this.appr.get();
+    const genCol = col && appr.genCols[col];
+    const args = genCol ? {
+      columnName: col,
+      format: genCol.format,
+      cols: genCol.colArr.slice(),
+      editColumn: false,
+      availableCols: this.columns.map(c => c.colName)
+    } : {
+      columnName: '',
+      format: '',
+      cols: [],
+      editColumn: true,
+      availableCols: this.columns.map(c => c.colName)
+    };
+
+    for (let n = 0; n < 50; n++) {
+      if (!col) {
+        args.columnName = `generic-${n}`;
+        if (this.columns.find(c => c.colName == args.columnName))
+          continue;
+      }
+
+      genericColumn(args)
+      .then(cfg => {
+        if (this.columns.find(c => c.colName == cfg.columnName))
+          return this.onEditGenericColumn();
+
+        this.appr.setProps({
+          genCols: {
+            [cfg.columnName]: {
+              format: cfg.format,
+              colArr: cfg.cols
+            }
+          }
+        });
+      });
+
+      break;
+    }
   }
 
   renderFilter() {
@@ -977,9 +1191,19 @@ export class DatabaseTable extends DatabaseTableClientBase {
     let p = Promise.resolve();
 
     if (!this.selectionGuid) {
+      const genCols = new Set(Object.keys(appr.genCols));
+      const columns = new Set<string>();
+      appr.selPanel.columns.forEach(c => {
+        if (genCols.has(c)) {
+          appr.genCols[c].colArr.forEach(c => columns.add(c));
+        } else {
+          columns.add(c);
+        }
+      });
+      
       p = p.then(() => this.db.loadTableGuid({
         table: this.tableName,
-        columns: this.appr.get().selPanel.columns,
+        columns: Array.from(columns),
         order: this.getSortOrder(),
         cond: this.filterExpr
       }))
@@ -997,10 +1221,22 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
         this.db.loadTableData({ guid: this.selectionGuid, from, count: 1 })
         .then(res => {
-          this.selection = Object.keys(res.rows[0])
+          const appr = this.appr.get();
+          this.selection = appr.selPanel.columns
           .map(key => {
-            return { key, value: res.rows[0][key] };
+            if (key in appr.genCols) {
+              return {
+                key,
+                value: formatRow(res.rows[0], appr.genCols[key])
+              };
+            }
+
+            return {
+              key,
+              value: res.rows[0][key]
+            };
           });
+
           this.pSelection = null;
           this.holder.delayedNotify();
         })

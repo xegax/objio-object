@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ObjProps, SendFileArgs } from '../base/object-base';
+import { ObjProps } from '../base/object-base';
 import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { PropsGroup, DropDownPropItem, PropItem, SwitchPropItem } from 'ts-react-ui/prop-sheet';
@@ -262,9 +262,9 @@ export class FileStorage extends FileStorageBase {
     return this.holder.invokeMethod({ method: 'copyFileObject', args });
   }
 
-  sendFile(args: SendFileArgs): Promise<any> {
+  /*sendFile(args: SendFileArgs): Promise<any> {
     return super.sendFile({...args, other: JSON.stringify(args.dest) });
-  }
+  }*/
 
   setShowFolders(show: boolean) {
     if (this.showDirs == show)

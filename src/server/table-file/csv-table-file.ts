@@ -1,22 +1,36 @@
 import { CSVReader, CSVBunch, CSVReadArgs } from 'objio/common/csv-reader';
-import { SERIALIZER } from 'objio';
+import { SERIALIZER, FileSystemSimple } from 'objio';
 import { CSVTableFile as Base } from '../../base/table-file/csv-table-file';
 import { ReadLinesArgs, DataReader } from '../../base/table-file/data-reading-decl';
 import { ColumnAttr } from '../../base/table-file/table-file-decl';
-import { FileObject } from '../file-object';
 import { onFileUpload } from './table-file';
 
 export class CSVTableFile extends Base {
-  constructor(args) {
-    super(args);
+  protected fs: FileSystemSimple;
 
-    FileObject.initFileObj(this);
+  constructor() {
+    super();
+    this.fs = new FileSystemSimple();
+
+    this.holder.addEventHandler({
+      onLoad: this.onInit,
+      onCreate: this.onInit
+    });
+  }
+
+  private onInit = () => {
+    this.fs.holder.addEventHandler({
+      onUpload: args => {
+        onFileUpload(this, args.userId);
+      }
+    });
+    return Promise.resolve();
   }
 
   getDataReader(): DataReader {
     return {
       readCols: (): Promise< Array<ColumnAttr> > => {
-        const file = this.getPath();
+        const file = this.getPath('content');
         let cols: Array<ColumnAttr> = [];
         return (
           CSVReader.read({
