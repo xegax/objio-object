@@ -131,7 +131,7 @@ export class DatabaseTableView extends React.Component<Props, State> {
   }
 
   renderHeader = (props: HeaderProps) => {
-    const cols = this.props.model.getColsToShow({ genCols: true });
+    const cols = this.props.model.getCols().getColsToShow('order');
 
     const colName = cols[props.col];
     const c = this.props.model.getAppr().columns[colName] || {};

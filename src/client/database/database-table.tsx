@@ -23,7 +23,7 @@ import { ObjLink } from '../../control/obj-link';
 import { ForwardProps } from 'ts-react-ui/forward-props';
 import { ListView, Item } from 'ts-react-ui/list-view';
 import { FitToParent } from 'ts-react-ui/fittoparent';
-import { Popover, PopoverIcon } from 'ts-react-ui/popover';
+import { Popover, PopoverIcon, Classes } from 'ts-react-ui/popover';
 import { FontPanel, FontValue } from '../../control/font-panel';
 import { FontAppr } from '../../base/appr-decl';
 import { ContextMenu, Menu, MenuItem } from 'ts-react-ui/blueprint';
@@ -44,6 +44,11 @@ import { genericColumn } from './generic-column';
 import { SelectString } from 'ts-react-ui/drop-down';
 import { showColumnProps } from './column-props';
 import { Tabs, Tab } from 'ts-react-ui/tabs';
+import {
+  defaultColsAccessor,
+  rowsColsAccessor,
+  cardsColsAccessor
+} from './database-table-helper';
 
 function conv2DBColType(type: string): DBColType {
   type = type.toLowerCase();
@@ -148,6 +153,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private selection: SelectionData;
   private pSelection: Promise<void>;
   private sorting = Array<{ value: string; desc: boolean }>();
+  private cols = defaultColsAccessor();
 
   private dbChangeHandler = {
     onObjChange: () => {
@@ -194,11 +200,6 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.appr.holder.addEventHandler(this.apprHandler);
   }
 
-  private itemFromColumnInfo = (c: ColumnInfo): Item => {
-    const p = this.getColumnProp(c.colName);
-    return { value: c.colName, render: p.label };
-  }
-
   private itemFromColumn = (value: string): Item => {
     const p = this.getColumnProp(value);
     return {
@@ -227,7 +228,9 @@ export class DatabaseTable extends DatabaseTableClientBase {
   private prevSelCols: string;
   private prevColsToShow = Array<string>();
   private prevSortCols = Array<{ column: string; revers?: boolean }>();
+  private prevViewType: string;
   private prevGenCols: string;
+
   private onApprChanged() {
     if (!this.grid)
       return null;
@@ -236,32 +239,33 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.grid.setHeader(appr.header.show);
     this.grid.setBodyBorder(appr.body.border);
 
-    if (this.tableDesc && this.tableDesc.columns) {
-      const sizes = this.tableDesc.columns.map((c, i) => {
-        const col = appr.columns[c.colName];
-        if (col && col.size != null)
-          return { idx: i, size: col.size };
-
-        return null;
-      }).filter(p => p);
-
-      sizes.forEach(sz => {
-        this.grid.setColSize(sz.idx, sz.size);
-      });
+    if (this.tableDesc && this.prevViewType != appr.viewType) {
+      this.prevViewType = appr.viewType;
+      if (appr.viewType == 'table')
+        this.cols = rowsColsAccessor(this);
+      else
+        this.cols = cardsColsAccessor(this);
     }
 
-    const nextGenCols = JSON.stringify(appr.genCols);
+    this.cols.getColsToShow('order')
+    .forEach((c, i) => {
+      if (!appr.columns[c] || !appr.columns[c].size)
+        return this.grid.resetColSize(i);
+
+      this.grid.setColSize(i, appr.columns[c].size);
+    });
+
     const nextSortCols = appr.sort.order || [];
-    const nextColsToShow = this.getColsToShow({ genCols: true });
+    const nextColsToShow = this.cols.getColsToShow('order');
+    const nextGenCols = JSON.stringify(appr.genCols);
     if (JSON.stringify(this.prevColsToShow) != JSON.stringify(nextColsToShow) ||
       JSON.stringify(this.prevSortCols) != JSON.stringify(nextSortCols)) {
-      this.prevGenCols = nextGenCols;
       this.loadTableDataImpl();
     } else if (nextGenCols != this.prevGenCols) {
       this.grid.reloadCurrent();
-      this.prevGenCols = nextGenCols;
     }
 
+    this.prevGenCols = nextGenCols;
     this.prevColsToShow = nextColsToShow;
     this.prevSortCols = nextSortCols;
     this.sorting = nextSortCols.map(col => ({ value: col.column, desc: !!col.reverse }));
@@ -311,7 +315,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   getColumnApprByIdx(col: number): Partial<TableColumnAppr> {
     const appr = this.appr.get();
-    const cols = this.getColsToShow({ genCols: true });
+    const cols = this.cols.getColsToShow('order');
 
     const colName = cols[col];
     const colAppr = {
@@ -447,37 +451,29 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private loadTableTask: Promise<void>;
 
-  getColsToShow(args: { genCols?: boolean, filter?: boolean } = {}): Array<string> {
-    args = { genCols: false, filter: true, ...args};
-    const colMap = this.appr.get().columns;
-    const colsNameArr = this.columns.map(c => c.colName);
-    
-    if (args.genCols) {
-      for (const col of Object.keys(this.appr.get().genCols))
-        colsNameArr.push(col);
-    }
+  isColumnShow = (col: string) => {
+    const appr = this.appr.get();
 
-    const cols = !args.filter ? (
-      colsNameArr
-    ) : (
-      colsNameArr.filter(name => !colMap[name] || this.getColumnProp(name).show)
-    );
+    /*if (appr.viewType == 'cards' && appr.cardsView) {
+      return (
+        appr.cardsView.body && col == appr.cardsView.body.column ||
+        appr.cardsView.header && col == appr.cardsView.header.column ||
+        appr.cardsView.footer && col == appr.cardsView.footer.column
+      );
+    }*/
 
-    return cols.sort((a, b) => {
-      const ac = this.getColumnProp(a);
-      const bc = this.getColumnProp(b);
-      if (ac.order == null || bc.order == null)
-        return 0;
+    return !appr.columns[col] || this.getColumnProp(col).show;
+  }
 
-      return ac.order - bc.order;
-    });
+  getCols() {
+    return this.cols;
   }
 
   private onColResized = () => {
     const colMap = this.appr.get().columns;
 
     let modified: {[name: string]: Partial<TableColumnAppr>} = {};
-    this.getColsToShow().forEach((c, index) => {
+    this.cols.getColsToShow('order').forEach((c, index) => {
       const col = colMap[c] || {};
       const w = this.grid.isColFixed(index) ? this.grid.getColWidth({ index }) : null;
       if (col.size == w)
@@ -503,7 +499,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
     const order = this.getSortOrder();
     this.tableDesc = null;
-    const columns = this.getColsToShow({ genCols: false });
+    const columns = this.cols.getColsToReq('name');
     console.log('loadTableGuid', this.filterExpr);
     this.loadTableTask = this.loadTableGuid({
       table: this.tableName,
@@ -524,7 +520,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
       this.grid && this.grid.unsubscribe(this.onColResized, 'col-resized');
       this.grid && this.grid.unsubscribe(this.onSelChanged, 'select');
 
-      const cols = this.getColsToShow({ genCols: true });
+      const cols = this.cols.getColsToShow('name');
       this.grid = new GridLoadableModel({
         rowsCount: table.desc.rowsNum,
         colsCount: cols.length,
@@ -554,7 +550,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   private prepareServerRows = (from: number, rows: Array<StrMap>): Array<{ obj: StrMap }> => {
-    const cols = this.getColsToShow({ genCols: true, filter: true });
+    const cols = this.cols.getColsToShow('order');
     const appr = this.appr.get();
     return rows.map((row, i) => {
       const obj: StrMap = {};
@@ -870,6 +866,36 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.appr.setProps({ sort: { reverse }});
   }
 
+  private getCardItemRender(type: 'header' | 'footer' | 'body') {
+    return (item: Item) => {
+      const font = this.appr.get().cardsView[type].font;
+      return (
+        <span className='horz-panel-1'>
+          <span>{item.render || item.value}</span>
+          <span
+            className={Classes.POPOVER_DISMISS}
+            onClick={e => e.stopPropagation()}
+          >
+            <Popover>
+              <CheckIcon
+                showOnHover
+                value
+                faIcon='fa fa-font'
+                title='Font'
+              />
+              <FontPanel
+                font={{...defaultFont, ...font}}
+                onChange={font => {
+                  this.appr.setProps({ cardsView: {[type]: { font } } });
+                }}
+              />
+            </Popover>
+          </span>
+        </span>
+      );
+    }
+  }
+
   private renderAppr(props: ObjProps) {
     const appr = this.appr.get();
     const selPanelCols = appr.selPanel.columns;
@@ -879,9 +905,10 @@ export class DatabaseTable extends DatabaseTableClientBase {
     ].filter(c => !selPanelCols.includes(c)).sort();
 
     const previewCols = (
-      this.getColsToShow({ genCols: true, filter: true })
-      .map(value => ({ value }))
-      .sort((a, b) => a.value.localeCompare(b.value))
+      this.cols.getAllColumns('name')
+      .map(value => ({
+        value
+      }))
     );
 
     const viewType: Array<{ value: TableViewType, render: string }> = [
@@ -899,6 +926,14 @@ export class DatabaseTable extends DatabaseTableClientBase {
       >
         <Tabs defaultSelect='common' background={false}>
           <Tab id='common' icon='fa fa-paint-brush'>
+            <DropDownPropItem2
+              label='View type'
+              value={selViewType}
+              values={viewType}
+              onSelect={(v: { value: TableViewType }) => {
+                this.appr.setProps({ viewType: v.value });
+              }}
+            />
             <PropItem label='Font'>
               <div className='horz-panel-1'>
                 <Popover>
@@ -924,13 +959,14 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 /> : null}
               </div>
             </PropItem>
+            {appr.viewType == 'table' &&
             <SwitchPropItem
               label='Header'
               value={appr.header.show}
               onChanged={show => {
                 this.appr.setProps({ header: { show }});
               }}
-            />
+            />}
             <SwitchPropItem
               label='Border'
               value={appr.body.border}
@@ -955,14 +991,6 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 />
               )}
             </SwitchPropItem>
-            <DropDownPropItem2
-              label='View type'
-              value={selViewType}
-              values={viewType}
-              onSelect={(v: { value: TableViewType }) => {
-                this.appr.setProps({ viewType: v.value });
-              }}
-            />
             {appr.selPanel.enable && (
               <div>
                 <ListView
@@ -979,6 +1007,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
           <Tab id='card' icon='fa fa-id-card-o' show={appr.viewType == 'cards'}>
             <DropDownPropItem2
               label='Header'
+              renderSelect={this.getCardItemRender('header')}
               value={appr.cardsView.header && previewCols.find(c => c.value == appr.cardsView.header.column)}
               values={previewCols}
               onSelect={column => {
@@ -987,6 +1016,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
             />
             <DropDownPropItem2
               label='Body'
+              renderSelect={this.getCardItemRender('body')}
               value={appr.cardsView.body && previewCols.find(c => c.value == appr.cardsView.body.column)}
               values={previewCols}
               onSelect={column => {
@@ -995,6 +1025,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
             />
             <DropDownPropItem2
               label='Footer'
+              renderSelect={this.getCardItemRender('footer')}
               value={appr.cardsView.footer && previewCols.find(c => c.value == appr.cardsView.footer.column)}
               values={previewCols}
               onSelect={column => {
@@ -1039,7 +1070,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   private renderColumnsView(props: ObjProps) {
-    let cols = this.getColsToShow({ genCols: true, filter: false });
+    let cols = this.cols.getAllColumns('order');
     if (!cols.length) {
       return (
         <div>nothing to display</div>
