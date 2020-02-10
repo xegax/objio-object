@@ -29,8 +29,8 @@ export abstract class ImageFileBase extends ObjectBase {
     this.desc = {...desc};
   }
 
-  getPath(key?: string) {
-    return this.fs.getPath(key);
+  getIcon() {
+    return 'image-icon';
   }
 
   static TYPE_ID = 'ImageFileObject';

@@ -16,6 +16,10 @@ export abstract class CSVTableFile extends TableFileBase {
     this.holder.delayedNotify();
   }
 
+  getIcon() {
+    return 'csv-icon';
+  }
+
   static TYPE_ID = 'CSVTableFile';
   static SERIALIZE: SERIALIZER = () => ({
     ...TableFileBase.SERIALIZE(),

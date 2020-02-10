@@ -305,6 +305,8 @@ export class VideoFileObject extends VideoFileBase {
     file.filter.hflip && (encArgs.hflip = true);
     file.filter.noaudio && (encArgs.noaudio = true);
     file.filter.stabilize && (encArgs.stabilize = true);
+    if (file.filter.preset)
+      encArgs.preset = file.filter.preset;
 
     const v = this.desc.streamArr.find(s => !!s.video);
     if (v) {

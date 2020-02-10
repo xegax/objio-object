@@ -5,7 +5,7 @@ export type AlignVert = 'top' | 'middle' | 'bottom';
 
 export interface ObjectToCreate {
   name: string;
-  icon?: JSX.Element;
+  icon?: string;
   desc: string;
   create(): ObjectBase;
 }

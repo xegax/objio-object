@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { VideoFileObject } from '../client/video-file-object';
 import { Video, VideoData } from 'ts-react-ui/video';
-import { FilterArgs, VideoFileBase } from '../base/video-file';
+import { FilterArgs, VideoFileBase, getAvailablePreset } from '../base/video-file';
 import { Tag, EditValue } from 'ts-react-ui/timeline';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { Size } from '../common/point';
 import { ImageFile } from '../client/image-file';
+import { DropDownPropItem2 } from 'ts-react-ui/prop-sheet/prop-item';
 
 export { VideoFileObject };
 
@@ -18,6 +19,7 @@ export interface VideoDataExt extends VideoData {
   speed?: number;
   noaudio?: boolean;
   stabilize?: boolean;
+  preset?: string;
 }
 
 export interface Props {
@@ -56,7 +58,8 @@ export class VideoFileView extends React.Component<Props, State> {
           vflip: filter.vflip,
           speed: filter.speed,
           noaudio: filter.noaudio,
-          stabilize: filter.stabilize
+          stabilize: filter.stabilize,
+          preset: filter.preset
         };
       }
     } else {
@@ -96,14 +99,24 @@ export class VideoFileView extends React.Component<Props, State> {
       hflip: data.hflip,
       vflip: data.vflip,
       noaudio: data.noaudio,
-      stabilize: data.stabilize
+      stabilize: data.stabilize,
+      preset: data.preset
     };
 
     return filter;
   }
 
   renderTags() {
+    const allPresets = getAvailablePreset().map(value => ({ value }));
     const data = this.state.data;
+    const preset = allPresets.find(p => p.value == data.preset);
+
+    let frame = {...this.props.model.getFrameSize()};
+    if (data.crop) {
+      frame.width = data.crop.width;
+      frame.height = data.crop.height;
+    }
+
     return [
       data.reverse && (
         <Tag
@@ -129,13 +142,7 @@ export class VideoFileView extends React.Component<Props, State> {
             value
             faIcon='fa fa-refresh'
             onChange={() => {
-              if (data.crop) {
-                data.resize.width = data.crop.width;
-                data.resize.height = data.crop.height;
-              } else {
-                data.resize = this.props.model.getFrameSize();
-              }
-
+              data.resize = frame;
               this.setState({});
             }}
           />
@@ -147,8 +154,7 @@ export class VideoFileView extends React.Component<Props, State> {
               if (neww == data.resize.width)
                 return this.setState({});
 
-              const frame = this.props.model.getFrameSize();
-              let s = neww / frame.width;
+              const s = neww / frame.width;
               data.resize.width = neww;
               data.resize.height = Math.round(frame.height * s);
               if (data.resize.height & 1)
@@ -168,8 +174,7 @@ export class VideoFileView extends React.Component<Props, State> {
               if (newh == this.state.data.resize.height)
                 return this.setState({});
 
-              const frame = this.props.model.getFrameSize();
-              let s = newh / frame.height;
+              const s = newh / frame.height;
               data.resize.width = Math.round(frame.width * s);
               data.resize.height = newh;
 
@@ -259,6 +264,26 @@ export class VideoFileView extends React.Component<Props, State> {
             this.setState({});
           }}
         />
+      ),
+      data.preset && (
+        <Tag
+          icon='fa fa-id-card-o'
+          color='#e9ffdd'
+          onRemove={() => {
+            data.preset = null;
+            this.setState({});
+          }}
+        >
+          <DropDownPropItem2
+            label=''
+            values={allPresets}
+            value={preset}
+            onSelect={item => {
+              data.preset = item.value;
+              this.setState({});
+            }}
+          />
+        </Tag>
       )
     ] as Array<React.ReactElement<Tag>>;
   }
@@ -396,7 +421,7 @@ export class VideoFileView extends React.Component<Props, State> {
         }}
       />,
       <CheckIcon
-        title='stabilize'
+        title='Stabilisation'
         faIcon='fa fa-flask'
         value
         onClick={e => {
@@ -405,6 +430,20 @@ export class VideoFileView extends React.Component<Props, State> {
             data.stabilize = true;
           } else {
             data.stabilize = null;
+          }
+          this.setState({});
+        }}
+      />,
+      <CheckIcon
+        title='Preset'
+        faIcon='fa fa-id-card-o'
+        value
+        onClick={e => {
+          e.stopPropagation();
+          if (!data.preset) {
+            data.preset = 'medium';
+          } else {
+            data.preset = null;
           }
           this.setState({});
         }}

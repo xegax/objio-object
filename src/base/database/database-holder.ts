@@ -36,6 +36,11 @@ export abstract class DatabaseHolderBase extends ObjectBase {
     if (args)
       this.impl = args.impl;
   }
+
+  getIcon() {
+    return 'database-icon';
+  }
+
   abstract setConnection(conn: IDArgs): Promise<boolean>;
   abstract setDatabase(db: string): Promise<boolean>;
   abstract createDatabase(db: string): Promise<void>;

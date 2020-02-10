@@ -3,7 +3,7 @@ import { SERIALIZER, OBJIOArray, FileSystemSimple } from 'objio';
 import { MediaStream } from '../task/media-desc';
 import { Rect, Size } from '../common/point';
 import { ImageFileBase } from './image-file';
-import { ObjectBase, ObjectBaseArgs } from './object-base';
+import { ObjectBase, ObjectBaseArgs, FSSummary } from './object-base';
 
 export interface VideoFileExportData {
   cuts: Array<{ name: string, filter: FilterArgs }>;
@@ -19,6 +19,20 @@ export interface Range {
   to: number;
 }
 
+export function getAvailablePreset(): Array<string> {
+  return [
+    'ultrafast',
+    'superfast',
+    'veryfast',
+    'faster',
+    'fast',
+    'medium',
+    'slow',
+    'slower',
+    'veryslow'
+  ];
+}
+
 export interface FilterArgs {
   trim?: Range;
   crop?: Rect;
@@ -30,6 +44,7 @@ export interface FilterArgs {
   vflip?: boolean;
   noaudio?: boolean;
   stabilize?: boolean;
+  preset?: string;
 }
 
 export interface AppendImageArgs {
@@ -74,8 +89,32 @@ export abstract class VideoFileBase extends ObjectBase {
     return content && content.fileSize || 0;
   }
 
-  getPath(key?: string) {
-    return this.fs.getPath(key);
+  getFSSummary(): FSSummary {
+    let summary: FSSummary = {
+      size: 0,
+      count: 0
+    };
+
+    this.files.getArray().forEach(file => {
+      const fsm = file.getFSSummary();
+      summary.size += fsm.size;
+      summary.count += fsm.count;
+    });
+
+    this.images.getArray().forEach(file => {
+      const fsm = file.getFSSummary();
+      summary.size += fsm.size;
+      summary.count += fsm.count;
+    });
+
+    summary.size += this.fs.getTotalSize();
+    summary.count += this.fs.getTotalFiles();
+
+    return summary;
+  }
+
+  getIcon() {
+    return 'mp4-icon';
   }
 
   getEncodeTime() {

@@ -1,5 +1,5 @@
 import { ObjectBase } from './object-base';
-import { SERIALIZER } from 'objio';
+import { SERIALIZER, FileSystemSimple } from 'objio';
 import { DatabaseHolderBase } from './database/database-holder';
 import { IDArgs } from '../common/interfaces';
 import {
@@ -20,12 +20,22 @@ export abstract class FileStorageBase extends ObjectBase {
   protected fileTable: string;
   protected tagsTable: string;
 
+  constructor() {
+    super();
+    this.fs = new FileSystemSimple();
+  }
+
   getDatabase(): DatabaseHolderBase {
     return this.db;
   }
 
   getPath(file?: string) {
-    return this.holder.getPublicPath(this.holder.getID() + (file ? '/' + file : ''));
+    file = file ? '/' + file : '';
+    return this.holder.getPublicPath(`storage-${this.holder.getID()}${file}`);
+  }
+
+  getIcon() {
+    return 'fs-icon';
   }
 
   // setDatabase will create tables
@@ -44,5 +54,5 @@ export abstract class FileStorageBase extends ObjectBase {
     db:         { type: 'object', const: true },
     fileTable:  { type: 'string', const: true },
     tagsTable:  { type: 'string', const: true }
-  });
+  })
 }

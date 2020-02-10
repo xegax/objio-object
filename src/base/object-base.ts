@@ -1,6 +1,7 @@
 import { OBJIOItem, SERIALIZER, OBJIOItemClass, FileSystemSimple } from 'objio';
 import { Flag, ConfigProps } from '../common/view-factory';
 
+export type IconType = 'tree-icon';
 export type Status = 'ok' | 'error' | 'not configured' | 'in progress';
 export interface ObjProps {
   objects(filter?: Array<OBJIOItemClass>): Array<ObjectBase>;
@@ -17,14 +18,8 @@ export interface ClientView {
   view(props: {model: OBJIOItem}): JSX.Element;
 }
 
-export interface ViewDescIcon {
-  item?: JSX.Element;
-  bigDesc?: JSX.Element;
-}
-
 export interface ViewDesc {
   desc: string;
-  icons?: ViewDescIcon;
   flags: Set<Flag> | Array<Flag>;
   views: Array<ClientView>;
   config(props: ConfigProps): JSX.Element;
@@ -43,6 +38,11 @@ export interface ObjTab {
   title?: string;
   id?: string;
   render(props: ObjProps): JSX.Element;
+}
+
+export interface FSSummary {
+  size: number;
+  count: number;
 }
 
 export class ObjectBase extends OBJIOItem {
@@ -121,6 +121,10 @@ export class ObjectBase extends OBJIOItem {
     this.holder.delayedNotify();
   }
 
+  getIcon(type?: IconType): string {
+    return null;
+  }
+
   getStatus(): Status {
     return this.status;
   }
@@ -183,13 +187,28 @@ export class ObjectBase extends OBJIOItem {
     return null;
   }
 
+  renderSelObjProps(props: ObjProps): JSX.Element {
+    return null;
+  }
+
   getObjTabs(): Array<ObjTab> {
     return [];
   }
 
   getFS(): FileSystemSimple {
     return this.fs;
-  };
+  }
+
+  getFSSummary(): FSSummary {
+    const fs = this.getFS();  // can be overriden
+    if (!fs)
+      return { size: 0, count: 0 };
+
+    return {
+      size: fs.getTotalSize(),
+      count: fs.getTotalFiles()
+    };
+  }
 
   static getViewDesc(): Partial<ViewDesc> {
     return {

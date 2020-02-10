@@ -2,10 +2,10 @@ import { FileStorageBase } from '../base/file-storage';
 import { IDArgs } from '../common/interfaces';
 import { DatabaseHolder, ColumnInfoFull } from './database/database-holder';
 import { CompoundCond, ValueCond } from '../base/database/database-decl';
-import { createWriteStream, existsSync, unlinkSync, copyFile, createReadStream } from 'fs';
+import { createWriteStream, existsSync, unlinkSync, copyFile, createReadStream, mkdirSync } from 'fs';
 import { genUUID } from '../common/common';
 import { Stream } from 'stream';
-import { SERIALIZER, getExt } from 'objio';
+import { SERIALIZER, getExt, UploadArgs } from 'objio';
 import {
   EntryData,
   StorageInfo,
@@ -19,6 +19,7 @@ import {
   CopyFileObjArgs,
   UpdateArgs
 } from '../base/file-storage-decl';
+import { FileSystemSimple, SendFileArgs } from 'objio/server';
 
 const MAX_FOLDER_DEPTH = 3;
 const MAX_SUBFOLDERS = 32;
@@ -105,10 +106,12 @@ export class FileStorage extends FileStorageBase {
     subfolder: []
   };
   private folderIdCounter: number = 0;
+  protected fs: FileSystemSimple;
 
   constructor() {
     super();
 
+    this.fs = new FileSystemSimple();
     this.holder.setMethodsToInvoke({
       setDatabase: {
         method: (args: IDArgs) => this.setDatabase(args),
@@ -144,12 +147,25 @@ export class FileStorage extends FileStorageBase {
       }
     });
 
+    const onInit = () => {
+      const path = this.getPath();
+      if (!existsSync(path))
+        mkdirSync(path);
+
+      this.fs.setHandler(this);
+      this.fs.holder.addEventHandler({
+        onUpload: this.onUpload
+      });
+    };
+
     this.holder.addEventHandler({
       onCreate: () => {
+        onInit();
         this.setStatus('not configured');
         return Promise.resolve();
       },
       onLoad: () => {
+        onInit();
         if (!this.db) {
           this.setStatus('not configured');
           this.addError('database not selected');
@@ -162,17 +178,31 @@ export class FileStorage extends FileStorageBase {
     });
   }
 
+  getUploadFileName(args: SendFileArgs) {
+    const file = genUUID() + getExt(args.name).toLocaleLowerCase();
+    return this.getPath(file);
+  }
+
+  private onUpload = (args: UploadArgs) => {
+    const path = args.path.split('/');
+    this.createEntry({
+      name: args.file.name,
+      size: args.file.fileSize,
+      fileId: path[path.length - 1]
+    }, args.userId);
+  };
+
   private replaceEntry(args: { name: string, size: number, entryId: string }, userId: string) {
   }
 
-  private createEntry(args: { name: string, size: number }, userId: string, path?: Array<string>): Promise<SrvEntryData> {
+  private createEntry(args: { name: string, size: number, fileId: string }, userId: string, path?: Array<string>): Promise<SrvEntryData> {
     path = path || [];
     let type = getExt(args.name).toLocaleLowerCase();
     if (['.zip', '.rar', '.7z'].indexOf(type) != -1)
       type = getExt(args.name);
 
     const entry: SrvEntryData = {
-      fileId: genUUID() + type,
+      fileId: args.fileId,
       userId,
       hash: '-',
       name: args.name,
@@ -189,56 +219,12 @@ export class FileStorage extends FileStorageBase {
       this.db.pushData({
         table: this.fileTable,
         rows: [entry as any]
+      }).then(() => {
+        this.holder.save(true);
+        return entry;
       })
-        .then(() => {
-          this.holder.save(true);
-          return entry;
-        })
     );
   }
-
-  private writeToFile(entry: SrvEntryData, inStrm: Stream) {
-    const ws = createWriteStream(this.getPath(entry.fileId));
-
-    let received = 0;
-    let loadSize = 0;
-    let p = new Promise(resolve => {
-      inStrm.pipe(ws);
-      inStrm.on('data', chunk => {
-        received += chunk.length;
-        if (typeof chunk == 'string')
-          loadSize += chunk.length;
-        else
-          loadSize += chunk.byteLength;
-
-        this.setProgress(loadSize / entry.size);
-      });
-      ws.on('close', () => {
-        this.holder.save();
-        resolve(received);
-      });
-    });
-
-    return p;
-  }
-
-  /*private sendFileImpl = (args: ServerSendFileArgs, userId: string) => {
-    console.log('other', args.other);
-    const folder = this.getPath();
-    if (!existsSync(folder))
-      mkdirSync(folder);
-
-    let path = Array<string>();
-    try {
-      path = JSON.parse(args.other || '[]');
-    } catch (e) {
-    }
-
-    return (
-      this.createEntry(args, userId, path)
-        .then(entry => this.writeToFile(entry, args.data))
-    );
-  }*/
 
   private initTables(args: { fileTable: string, tagsTable: string, tryNum?: number }): Promise<void> {
     const fileTable = args.tryNum ? `${args.fileTable}_${args.tryNum}` : args.fileTable;

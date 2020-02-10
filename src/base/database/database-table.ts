@@ -52,6 +52,10 @@ export abstract class DatabaseTableBase extends ObjectBase {
     return this.db;
   }
 
+  getIcon() {
+    return 'table-icon';
+  }
+
   static TYPE_ID = 'DATABASE-TABLE';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),

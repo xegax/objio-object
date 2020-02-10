@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { OBJIOItemClass } from 'objio';
-import { ObjectBase, ClientView, ViewDescIcon, ViewDesc } from '../base/object-base';
+import { ObjectBase, ClientView, ViewDesc } from '../base/object-base';
 import { FactoryItem, ConfigProps, Flag } from '../common/view-factory';
 
 export {
@@ -9,7 +9,6 @@ export {
   ConfigProps,
   Flag,
   ClientView,
-  ViewDescIcon,
   ViewDesc
 };
 
@@ -30,8 +29,7 @@ export function registerViews(args: RegisterArgs) {
       desc: args.desc || args.classObj.TYPE_ID,
       views: args.views,
       config: args.config,
-      sources: args.sources,
-      icons: args.icons
+      sources: args.sources
     };
   };
 }

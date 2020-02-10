@@ -5,13 +5,6 @@ import { OBJIOItemClassViewable, registerViews } from './config';
 import { DatabaseHolder, DatabaseHolderView } from './database-holder-view';
 import 'ts-react-ui/typings';
 import { Icon } from 'ts-react-ui/icon';
-import * as CSVIcon from '../images/csv-file-type.svg';
-import * as JSONIcon from '../images/json-file-type.svg';
-import * as FSIcon from '../images/file-storage.svg';
-import * as TableIcon from '../images/table.svg';
-import * as DatabaseIcon from '../images/database.svg';
-import * as MP4Icon from '../images/mp4.svg';
-import * as ImageIcon from '../images/image.svg';
 import { Project, ProjectView } from './project';
 import { ServerInstanceView, ServerInstance } from './server-view';
 import { ImageFile } from '../client/image-file';
@@ -23,28 +16,44 @@ import { Youtube, YoutubeView, YTProps }  from '../view/youtube';
 import { IconSVG } from 'ts-react-ui/icon-svg';
 import { ObjectBaseView } from './object-base';
 import { ObjectBase } from '../base/object-base';
+import { DataSourceHolder } from '../client/datasource/data-source-holder';
+import { NumericDataSource } from '../client/datasource/numeric-source';
+import { DatasourceHolderView } from './datasource-holder';
 
 export function getObjectsToCreate(): Array<ObjectToCreate> {
   return [
     {
       name: 'table',
       desc: 'table object',
-      icon: <Icon src={TableIcon}/>,
+      icon: 'table-icon',
       create: () => new DatabaseTable()
     }, {
       name: 'file-storage',
       desc: 'files storage',
-      icon: <IconSVG icon={FSIcon}/>,
+      icon: 'fs-icon',
       create: () => new FileStorage()
     }, {
       name: 'youtube',
       desc: 'youtube',
       create: () => new Youtube()
+    }, {
+      name: 'Numeric Source',
+      desc: 'Numeric Source',
+      create: () => new DataSourceHolder({
+        dataSource: new NumericDataSource()
+      })
     }
   ];
 }
 
 export function getViews(): Array<OBJIOItemClassViewable> {
+  registerViews({
+    classObj: DataSourceHolder,
+    views: [{
+      view: (props: { model: DataSourceHolder }) => <DatasourceHolderView {...props}/>
+    }]
+  });
+
   registerViews({
     classObj: Youtube,
     views: [{
@@ -54,7 +63,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: FileStorage,
-    icons: { item: <IconSVG icon={FSIcon} /> },
     views: [{
       view: (props: FileStorageViewProps) => <FileStorageView {...props}/>
     }]
@@ -62,7 +70,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: ImageFile,
-    icons: { item: <IconSVG icon={ImageIcon}/> },
     views: [{
       view: (props: { model: ObjectBase }) => <ObjectBaseView {...props}/>
     }]
@@ -70,7 +77,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: CSVTableFile,
-    icons: { item: <IconSVG icon={CSVIcon}/> },
     views: [{
       view: () => null
     }]
@@ -78,7 +84,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: JSONTableFile,
-    icons: { item: <IconSVG icon={JSONIcon}/> },
     views: [{
       view: () => null
     }]
@@ -86,7 +91,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: VideoFileObject,
-    icons: { item: <IconSVG icon={MP4Icon}/> },
     views: [{
       view: (props: VideoViewProps) => <VideoFileView {...props}/>
     }]
@@ -108,7 +112,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: DatabaseHolder,
-    icons: { item: <IconSVG icon={DatabaseIcon}/> },
     views: [{
       view: (props: {model: DatabaseHolder}) => <DatabaseHolderView {...props}/>
     }]
@@ -116,7 +119,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   registerViews({
     classObj: DatabaseTable,
-    icons: { item: <IconSVG icon={TableIcon}/> },
     views: [{
       view: (props: {model: DatabaseTable, objects: any}) => <DatabaseTableView {...props}/>
     }]
@@ -131,6 +133,7 @@ export function getViews(): Array<OBJIOItemClassViewable> {
     DatabaseHolder,
     DatabaseTable,
     FileStorage,
-    Youtube
+    Youtube,
+    DataSourceHolder
   ];
 }

@@ -8,6 +8,9 @@ import { DatabaseTable } from './database/database-table';
 import { FileStorage } from './file-storage';
 import { ApprMapServerBase } from '../base/appr-map';
 import { Youtube } from './youtube';
+import { DataSourceHolder } from './datasource/data-source-holder';
+import { NumericDataSource } from './datasource/numeric-source';
+import { JSONDataSource } from './datasource/json-source';
 
 export function getClasses(): Array<OBJIOItemClass> {
   return [
@@ -20,6 +23,9 @@ export function getClasses(): Array<OBJIOItemClass> {
     DatabaseTable,
     FileStorage,
     ApprMapServerBase,
-    Youtube
+    Youtube,
+    DataSourceHolder,
+    NumericDataSource,
+    JSONDataSource
   ];
 }

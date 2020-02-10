@@ -27,7 +27,7 @@ export { Folder };
 
 export class FileStorage extends FileStorageBase {
   private columns: Array<keyof EntryData> = ['rowId', 'name', 'type', 'size'];
-  
+
   private currDirFiles: number = 0;
   private totalFiles: number = 0;
   private dirStat: StatInfo;

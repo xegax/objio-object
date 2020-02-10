@@ -16,21 +16,21 @@ const TB = GB * 1024;
 export function floor(value: number, digitsAfterPoint: number = 2) {
   let s = 1;
   while (digitsAfterPoint--) s *= 10;
-  return Math.floor(value * s) / s; 
+  return Math.floor(value * s) / s;
 }
 
 export function fmtBytes(b: number): string {
   if (b < KB)
-    return b + ' byte';
+    return b + ' Bytes';
 
   if (b < MB)
-    return floor(b / KB) + ' Kb';
+    return floor(b / KB) + ' KB';
 
   if (b < GB)
-    return floor(b / MB) + ' Mb';
+    return floor(b / MB) + ' MB';
 
   if (b < TB)
-    return floor(b / GB) + ' Gb';
+    return floor(b / GB) + ' GB';
 
-  return floor(b / TB) + ' Tb';
+  return floor(b / TB) + ' TB';
 }

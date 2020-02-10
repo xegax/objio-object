@@ -1,6 +1,5 @@
 import { runTask } from './task';
 import { existsSync, unlinkSync } from 'fs';
-import { normalize } from 'path';
 import { Time, parseTime, getString, getSeconds } from '../common/time';
 import { MediaStream } from './media-desc';
 import { Rect } from '../common/point';
@@ -153,7 +152,7 @@ export function parseMedia(file: string): Promise<FileInfo> {
   return (
     runTask({
       cmd: process.env['FFMPEG'] || 'ffmpeg',
-      args: ['-i', `"${normalize(file)}"`],
+      args: ['-i', `"${file}"`],
       handleOutput: args => {
         bufs.push(args.data);
       }
@@ -186,10 +185,12 @@ export interface EncodeArgs {
   codecV?: string;
   noaudio?: boolean;
   stabilize?: boolean;
+  preset?: string;
   onProgress?(t: number): void;
 }
 
 export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
+  const threads = 4;
   if (existsSync(args.outFile)) {
     if (args.overwrite)
       unlinkSync(args.outFile);
@@ -210,7 +211,7 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
       args.inFile.forEach(file => {
         argsArr.push(
           '-i',
-          normalize(file)
+          file
         );
       });
 
@@ -273,7 +274,7 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
         argsArr.push(`-r ${args.fps}`);
 
       let p = Promise.resolve();
-      let stabDataFile = normalize(args.outFile) + '.trf';
+      let stabDataFile = args.outFile + '.trf';
       if (args.stabilize) {
         const filters = [
           ...filterComplexArr,
@@ -285,7 +286,8 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
           args: [
             ...argsArr,
             `-filter_complex ${filters}`,
-            `-f null -`
+            `-f null -`,
+            `-threads ${threads}`
           ],
           handleOutput: out => {
             const s = out.data.toString();
@@ -317,7 +319,11 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
         if (args.noaudio)
           argsArr.push('-an');
 
-        argsArr.push(normalize(args.outFile));
+        if (args.preset)
+          argsArr.push(`-preset ${args.preset}`);
+
+        argsArr.push(`-threads ${threads}`);
+        argsArr.push(args.outFile);
 
         return runTask({
           cmd: process.env['FFMPEG'] || 'ffmpeg',
@@ -332,8 +338,11 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
             }
           }
         })
-        .then(() => infoArr[0]);
-      })
+        .then(() => {
+          unlinkSync(stabDataFile);
+          return infoArr[0];
+        });
+      });
     })
   );
 }
