@@ -339,7 +339,7 @@ export function encodeFile(args: EncodeArgs): Promise<FileInfo> {
           }
         })
         .then(() => {
-          unlinkSync(stabDataFile);
+          existsSync(stabDataFile) && unlinkSync(stabDataFile);
           return infoArr[0];
         });
       });
