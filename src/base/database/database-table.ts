@@ -34,6 +34,7 @@ export abstract class DatabaseTableBase extends ObjectBase {
   protected tableName: string;
   protected appr: ApprMapBase<TableAppr>;
   protected columns = Array<ColumnInfo>();
+  protected tableVersion: string;
 
   abstract loadTableGuid(args: LoadTableGuidArgs): Promise<LoadTableGuidResult>;
   abstract loadTableRowsNum(args: TableGuid): Promise<number>;
@@ -62,7 +63,8 @@ export abstract class DatabaseTableBase extends ObjectBase {
     db:           { type: 'object', const: true },
     tableName:    { type: 'string', const: true },
     appr:         { type: 'object', const: true },
-    columns:      { type: 'json', const: true }
+    columns:      { type: 'json', const: true },
+    tableVersion: { type: 'string', const: true }
   })
 }
 

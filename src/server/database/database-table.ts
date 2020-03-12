@@ -24,10 +24,7 @@ export class DatabaseTable extends DatabaseTableBase {
 
     this.appr = new ApprMapServerBase(makeTableAppr());
     this.holder.addEventHandler({
-      onLoad: () => {
-        this.appr.setSchema(makeTableAppr());
-        return Promise.resolve();
-      }
+      onLoad: this.onInit
     });
 
     this.holder.setMethodsToInvoke({
@@ -56,6 +53,27 @@ export class DatabaseTable extends DatabaseTableBase {
         rights: 'write'
       }
     });
+  }
+
+  private onInit = () => {
+    const tableVersion = this.db.getTableVersion(this.getTableName());
+    let p = Promise.resolve();
+    if (tableVersion != this.tableVersion)
+      p = p.then(() => this.updateColumns());
+
+    // database changed
+    this.db.holder.addEventHandler({
+      onObjChange: () => {
+        const newTableVersion = this.db.getTableVersion(this.getTableName());
+        if (this.tableVersion != newTableVersion) {
+          this.tableVersion = newTableVersion;
+          this.updateColumns();
+        }
+      }
+    });
+
+    this.appr.setSchema(makeTableAppr());
+    return p;
   }
 
   pushData(args: PushDataArgs): Promise<PushDataResult> {
@@ -101,6 +119,21 @@ export class DatabaseTable extends DatabaseTableBase {
       }).then(lst => {
         if (!lst.find(t => t.table == this.tableName))
           this.tableName = '';
+        this.holder.save();
+      })
+    );
+  }
+
+  private updateColumns() {
+    return (
+      this.db.loadTableList()
+      .then(lst => {
+        const tableName = this.tableName;
+        const t = lst.find(t => t.table == tableName);
+        if (!t)
+          return Promise.reject(`Table "${tableName}" not present in database`);
+
+        this.columns = t.columns;
         this.holder.save();
       })
     );

@@ -76,7 +76,7 @@ export function rowsColsAccessor(table: DatabaseTable): ColumnAccessor {
           if (!cols.includes(c))
             cols.push(c);
         });
-      })
+      });
 
       if (sort == 'none')
         return cols;

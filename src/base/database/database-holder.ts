@@ -19,7 +19,8 @@ import {
   LoadTableDataArgs,
   LoadAggrDataArgs,
   LoadAggrDataResult,
-  ImportTableArgs
+  ImportTableArgs,
+  TableStateMap
 } from './database-holder-decl';
 import { DatabaseBase, RemoteDatabaseBase } from './database';
 
@@ -29,6 +30,7 @@ export interface DatabaseHolderArgs {
 
 export abstract class DatabaseHolderBase extends ObjectBase {
   protected impl: DatabaseBase;
+  protected tableStateMap: TableStateMap = {};
 
   constructor(args?: DatabaseHolderArgs) {
     super();
@@ -55,7 +57,7 @@ export abstract class DatabaseHolderBase extends ObjectBase {
 
   abstract loadDatabaseList(): Promise<Array<string>>;
 
-  abstract importTable(arsg: ImportTableArgs): Promise<void>;
+  abstract importTable(args: ImportTableArgs): Promise<void>;
   abstract createTable(args: CreateTableArgs): Promise<TableDesc>;
   abstract deleteTable(args: DeleteTableArgs): Promise<void>;
   abstract pushData(args: PushDataArgs): Promise<PushDataResult>;
@@ -85,10 +87,21 @@ export abstract class DatabaseHolderBase extends ObjectBase {
     return this.getRemote().getConnClasses();
   }
 
+  getTableVersion(table: string) {
+    const s = this.tableStateMap[table];
+    return s ? s.v : '';
+  }
+
+  isTableLocked(table: string) {
+    const s = this.tableStateMap[table];
+    return s ? s.locked : false;
+  }
+
   static TYPE_ID = 'DatabaseHolder';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),
-    impl: { type: 'object', const: true }
+    impl: { type: 'object', const: true },
+    tableStateMap: { type: 'json', const: true }
   })
 }
 

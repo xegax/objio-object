@@ -1,10 +1,8 @@
 import * as React from 'react';
-import { JSONTableFile, CSVTableFile } from '../client/table-file';
 import { VideoFileObject, VideoFileView, Props as VideoViewProps } from './video-file-view';
 import { OBJIOItemClassViewable, registerViews } from './config';
 import { DatabaseHolder, DatabaseHolderView } from './database-holder-view';
 import 'ts-react-ui/typings';
-import { Icon } from 'ts-react-ui/icon';
 import { Project, ProjectView } from './project';
 import { ServerInstanceView, ServerInstance } from './server-view';
 import { ImageFile } from '../client/image-file';
@@ -13,7 +11,6 @@ import { DatabaseTable, DatabaseTableView } from '../view/database-table';
 export { registerViews };
 import { FileStorage, FileStorageView, Props as FileStorageViewProps } from './file-storage';
 import { Youtube, YoutubeView, YTProps }  from '../view/youtube';
-import { IconSVG } from 'ts-react-ui/icon-svg';
 import { ObjectBaseView } from './object-base';
 import { ObjectBase } from '../base/object-base';
 import { DataSourceHolder } from '../client/datasource/data-source-holder';
@@ -23,18 +20,18 @@ import { DatasourceHolderView } from './datasource-holder';
 export function getObjectsToCreate(): Array<ObjectToCreate> {
   return [
     {
-      name: 'table',
-      desc: 'table object',
+      name: 'Table',
+      desc: 'Table object',
       icon: 'table-icon',
       create: () => new DatabaseTable()
     }, {
-      name: 'file-storage',
-      desc: 'files storage',
+      name: 'File storage',
+      desc: 'Files storage',
       icon: 'fs-icon',
       create: () => new FileStorage()
     }, {
-      name: 'youtube',
-      desc: 'youtube',
+      name: 'Youtube',
+      desc: 'Youtube',
       create: () => new Youtube()
     }, {
       name: 'Numeric Source',
@@ -76,20 +73,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
   });
 
   registerViews({
-    classObj: CSVTableFile,
-    views: [{
-      view: () => null
-    }]
-  });
-
-  registerViews({
-    classObj: JSONTableFile,
-    views: [{
-      view: () => null
-    }]
-  });
-
-  registerViews({
     classObj: VideoFileObject,
     views: [{
       view: (props: VideoViewProps) => <VideoFileView {...props}/>
@@ -126,8 +109,6 @@ export function getViews(): Array<OBJIOItemClassViewable> {
 
   return [
     Project,
-    CSVTableFile,
-    JSONTableFile,
     VideoFileObject,
     ImageFile,
     DatabaseHolder,

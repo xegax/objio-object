@@ -9,6 +9,10 @@ import * as DatabaseIcon from '../images/database.svg';
 import * as MP4Icon from '../images/mp4.svg';
 import * as ImageIcon from '../images/image.svg';
 import * as BlankIcon from '../images/blank-type.svg';
+import * as StringType from '../images/string-type.svg';
+import * as TextType from '../images/text-type.svg';
+import * as DoubleType from '../images/double-type.svg';
+import * as IntegerType from '../images/integer-type.svg';
 
 export function registerAll() {
   IconMap.get().append({
@@ -19,6 +23,10 @@ export function registerAll() {
     'database-icon': () => <IconSVG icon={DatabaseIcon}/>,
     'mp4-icon': () => <IconSVG icon={MP4Icon}/>,
     'image-icon': () => <IconSVG icon={ImageIcon}/>,
-    'blank-icon': () => <IconSVG icon={BlankIcon}/>
+    'blank-icon': () => <IconSVG icon={BlankIcon}/>,
+    'string-type': () => <IconSVG icon={StringType}/>,
+    'text-type': () => <IconSVG icon={TextType}/>,
+    'double-type': () => <IconSVG icon={DoubleType}/>,
+    'integer-type': () => <IconSVG icon={IntegerType}/>
   });
 }

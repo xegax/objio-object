@@ -6,6 +6,13 @@ import {
   ColOrder
 } from './database-decl';
 
+export interface TableState {
+  v: string;
+  locked: boolean;
+}
+
+export type TableStateMap = {[table: string]: TableState};
+
 export interface LoadTableGuidArgs {
   table: string;
   distinct?: string;
@@ -16,8 +23,9 @@ export interface LoadTableGuidArgs {
 }
 
 export interface ImportTableArgs {
-  tableFileId: string;
+  dataSourceId: string;
   tableName: string;
+  replaceExists?: boolean;  // replace if tableName exists else throw error
 }
 
 export interface LoadTableGuidResult {

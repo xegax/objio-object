@@ -9,7 +9,7 @@ interface Props {
 export class DatasourceHolderView extends React.Component<Props> {
   private subscriber = () => {
     this.setState({});
-  };
+  }
 
   componentDidMount() {
     this.props.model.holder.subscribe(this.subscriber);
@@ -30,12 +30,15 @@ export class DatasourceHolderView extends React.Component<Props> {
   }
 
   private renderHeader = (header: HeaderProps) => {
-    const table = this.props.model.getDesc();
-    if (!table)
+    const desc = this.props.model.getDesc();
+    if (!desc)
       return null;
 
+    const colName = desc.cols[header.col];
+    const cols = this.props.model.getProfile().get().columns;
+    const col = {...cols[colName]};
     return (
-      <span>{table.cols[header.col]}</span>
+      <span>{col.rename || colName}</span>
     );
   }
 

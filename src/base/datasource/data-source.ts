@@ -34,6 +34,10 @@ export abstract class DataSourceBase extends ObjectBase {
     return this.totalRows;
   }
 
+  getTotalCols() {
+    return this.totalCols;
+  }
+
   static TYPE_ID = 'DataSource';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),

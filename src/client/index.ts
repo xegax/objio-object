@@ -1,4 +1,3 @@
-import { CSVTableFile, JSONTableFile } from './table-file';
 import { VideoFileObject } from './video-file-object';
 import { OBJIOItemClass, FileSystemSimple } from 'objio';
 import { ImageFile } from './image-file';
@@ -24,9 +23,6 @@ export function createFileObject(name: string) {
   if (['.mp4', '.mkv', '.avi', '.mov'].includes(ext))
     obj = new VideoFileObject();
 
-  if (ext == '.csv')
-    obj = new CSVTableFile();
-
   if (ext == '.json')
     obj = new DataSourceHolder({ dataSource: new JSONDataSource() });
 
@@ -41,8 +37,6 @@ export function getClasses(): Array<OBJIOItemClass> {
   return [
     FileSystemSimple,
     DatabaseHolder,
-    CSVTableFile,
-    JSONTableFile,
     VideoFileObject,
     ImageFile,
     DatabaseTable,

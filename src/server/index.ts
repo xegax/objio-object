@@ -1,6 +1,5 @@
 import { OBJIOItemClass } from 'objio';
 import { FileSystemSimple } from 'objio/server';
-import { CSVTableFile, JSONTableFile } from './table-file';
 import { VideoFileObject } from './video-file-object';
 import { ImageFile } from './image-file';
 import { DatabaseHolder } from './database/database-holder';
@@ -15,8 +14,6 @@ import { JSONDataSource } from './datasource/json-source';
 export function getClasses(): Array<OBJIOItemClass> {
   return [
     FileSystemSimple,
-    CSVTableFile,
-    JSONTableFile,
     VideoFileObject,
     ImageFile,
     DatabaseHolder,

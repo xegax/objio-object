@@ -8,7 +8,7 @@ import { JSONDataSourceBase } from '../../base/datasource/json-source';
 import { FileSystemSimple } from 'objio/server';
 import { UploadArgs } from 'objio';
 import { readJSONArray } from 'objio/common/reader/json-array-reader';
-import { createWriteStream, readSync, openSync, closeSync } from 'fs';
+import { createWriteStream, promises} from 'fs';
 
 const ROW_LENGTH = 16 + 16 + 2;
 
@@ -16,7 +16,7 @@ function row(start: number, count: number) {
   return ([start, count].join(', ') + '\n').padStart(ROW_LENGTH, ' ');
 }
 
-let buf = new Buffer(65535);
+let maxBufferSize = 65535;
 export class JSONDataSource extends JSONDataSourceBase {
   protected fs: FileSystemSimple;
 
@@ -56,7 +56,6 @@ export class JSONDataSource extends JSONDataSourceBase {
     const w = createWriteStream(rowsFile);
     this.setProgress(0);
     this.setStatus('in progress');
-    let progress = 0;
     let rows = 0;
     let colsMap: {[name: string]: string} = {};
     readJSONArray({
@@ -68,11 +67,7 @@ export class JSONDataSource extends JSONDataSourceBase {
           Object.keys(item.obj).forEach(k => colsMap[k] = '');
           w.write(row(item.range[0], item.range[1]));
         });
-        let newp = Math.floor(args.progress * 10) / 10;
-        if (newp != progress) {
-          progress = newp;
-          this.setProgress(newp);
-        }
+        this.setProgress(args.progress);
       }
     })
     .then(() => {
@@ -82,9 +77,10 @@ export class JSONDataSource extends JSONDataSourceBase {
       this.setProgress(0);
       this.holder.save(true);
 
-      w.close();
+      w.end();
       this.fs.updateFiles({ 'rows': rowsFile });
       this.fs.holder.save();
+      this.holder.delayedNotify({ type: 'ready' });
     });
   }
 
@@ -95,29 +91,82 @@ export class JSONDataSource extends JSONDataSourceBase {
     });
   }
 
-  getTableRows(args: TableRowsArgs): Promise<TableRowsResult> {
-    let fd = openSync(this.fs.getPath('rows'), 'r');
-    let ranges = Array<{ from: number; count: number }>();
-    for (let n = 0; n < args.rowsCount; n++) {
-      let len = readSync(fd, buf, 0, ROW_LENGTH, ROW_LENGTH * (args.startRow + n));
-      const range = buf.toString(undefined, 0, len).trim().split(',').map(v => +v);
-      ranges.push({ from: range[0], count: range[1] });
-    }
-    closeSync(fd);
+  private loadRowsRange(from: number, count: number): Promise<Array<{ from: number; count: number; }>> {
+    let arr = Array<{ from: number, count: number }>();
+  
+    const tmp = Buffer.alloc(ROW_LENGTH);
+    const nextRead = (fh: promises.FileHandle) => {
+      return (
+        fh.read(tmp, 0, ROW_LENGTH, ROW_LENGTH *  (from + arr.length))
+        .then(res => {
+          if (res.bytesRead != ROW_LENGTH) {
+            return (
+              fh.close()
+              .then(() => Promise.reject(new Error('Size mismatch')))
+            );
+          }
 
-    let res: TableRowsResult = {
-      startRow: args.startRow,
-      rows: []
+          const range = tmp.toString(undefined, 0, res.bytesRead).trim().split(',').map(v => +v);
+          arr.push({ from: range[0], count: range[1] });
+          if (arr.length >= count)
+            return fh.close();
+
+          return nextRead(fh);
+        })
+      );
     };
 
-    fd = openSync(this.fs.getPath('content'), 'r');
-    for (let n = 0; n < args.rowsCount; n++) {
-      const len = readSync(fd, buf, 0, ranges[n].count, ranges[n].from);
-      let json = buf.toString(undefined, 0, len);
-      const obj = JSON.parse(json);
-      res.rows.push( this.totalCols.map(c => obj[c.name]) );
-    }
-    closeSync(fd);
-    return Promise.resolve(res);
+    return (
+      promises.open(this.fs.getPath('rows'), 'r')
+      .then(fh => nextRead(fh))
+      .then(() => arr)
+    );
+  }
+
+  private loadRows = (ranges: Array<{ from: number; count: number }>): Promise<Array< Array<string | number> >> => {
+    const rows = Array< Array<string | number> >(); 
+    let tmp = Buffer.alloc(maxBufferSize);
+    let n = 0;
+    const nextRead = (fh: promises.FileHandle) => {
+      const range = ranges[n++];
+      if (range.count > tmp.byteLength) {
+        maxBufferSize = range.count;
+        tmp = Buffer.alloc(maxBufferSize);
+      }
+
+      return (
+        fh.read(tmp, 0, range.count, range.from)
+        .then(res => {
+          if (res.bytesRead != range.count) {
+            return (
+              fh.close()
+              .then(() => Promise.reject(new Error('Size mismatch')))
+            );
+          }
+
+          let json = tmp.toString(undefined, 0, res.bytesRead);
+          const obj = JSON.parse(json);
+          rows.push( this.totalCols.map(c => obj[c.name]) );
+          if (rows.length >= ranges.length)
+            return fh.close();
+
+          return nextRead(fh);
+        })
+      );
+    };
+
+    return (
+      promises.open(this.fs.getPath('content'), 'r')
+      .then(fh => nextRead(fh))
+      .then(() => rows)
+    );
+  }
+
+  getTableRows(args: TableRowsArgs): Promise<TableRowsResult> {
+    return (
+      this.loadRowsRange(args.startRow, args.rowsCount)
+      .then(this.loadRows)
+      .then(rows => ({ startRow: args.startRow, rows }))
+    );
   }
 }

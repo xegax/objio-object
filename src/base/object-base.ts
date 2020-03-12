@@ -1,11 +1,21 @@
 import { OBJIOItem, SERIALIZER, OBJIOItemClass, FileSystemSimple } from 'objio';
 import { Flag, ConfigProps } from '../common/view-factory';
+import { Timer } from 'objio/common/timer';
 
 export type IconType = 'tree-icon';
 export type Status = 'ok' | 'error' | 'not configured' | 'in progress';
+
+export interface ObjInfo {
+  id: string;
+  name: string;
+  type: string;
+}
+
+export type ObjInfoProv = () => ObjInfo;
+
 export interface ObjProps {
-  objects(filter?: Array<OBJIOItemClass>): Array<ObjectBase>;
-  append(newObj: ObjectBase): Promise<void>; 
+  objects(filter?: Array<OBJIOItemClass>): Array<ObjInfoProv>;
+  append(newObj: ObjectBase): Promise<void>;
 }
 
 export interface ObjectBaseArgs {
@@ -37,7 +47,8 @@ export interface ObjTab {
   icon: string;
   title?: string;
   id?: string;
-  render(props: ObjProps): JSX.Element;
+  command?(props: ObjProps): void;
+  render?(props: ObjProps): JSX.Element;
 }
 
 export interface FSSummary {
@@ -48,6 +59,8 @@ export interface FSSummary {
 export class ObjectBase extends OBJIOItem {
   protected name: string;
   protected progress: number = 0;
+  protected pChange: Timer;
+
   protected status: Status = 'ok';
   protected errors = Array<string>();
   protected fs: FileSystemSimple;
@@ -59,6 +72,11 @@ export class ObjectBase extends OBJIOItem {
       this.status = args.status || this.status;
       this.progress = args.progress || this.progress;
     }
+
+    this.pChange = new Timer(() => {
+      this.holder.save();
+      this.holder.delayedNotify();
+    });
   }
 
   getPath(key?: string) {
@@ -152,8 +170,8 @@ export class ObjectBase extends OBJIOItem {
       return;
 
     this.progress = newValue;
-    this.holder.save();
-    this.holder.delayedNotify();
+    if (!this.pChange.isRunning())
+      this.pChange.run(1000);
   }
 
   getProgress(): number {

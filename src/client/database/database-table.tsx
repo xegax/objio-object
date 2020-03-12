@@ -157,6 +157,9 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private dbChangeHandler = {
     onObjChange: () => {
+      if (this.db.isTableLocked(this.getTableName()))
+        return;
+
       this.updateDatabaseData();
       this.grid && this.grid.reloadCurrent();
     }
@@ -594,6 +597,14 @@ export class DatabaseTable extends DatabaseTableClientBase {
   }
 
   private renderBaseConfig(props: ObjProps) {
+    const dbArr = props.objects([DatabaseHolder]).map(prov => {
+      const obj = prov();
+      return {
+        value: obj.id,
+        render: obj.name
+      };
+    });
+
     return (
       <PropsGroup label='Config' key={'base-' + this.holder.getID()}>
         <DropDownPropItem
@@ -606,12 +617,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
             />
           ]}
           value={this.db ? { value: this.db.getID(), render: this.db.getName() } : null}
-          values={props.objects([DatabaseHolder]).map(db => {
-            return {
-              value: db.getID(),
-              render: db.getName()
-            };
-          })}
+          values={dbArr}
           onSelect={db => {
             this.setDatabase({ id: db.value });
           }}

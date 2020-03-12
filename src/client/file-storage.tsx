@@ -296,6 +296,14 @@ export class FileStorage extends FileStorageBase {
   }
 
   getObjPropGroups(props: ObjProps) {
+    const dbArr = props.objects([DatabaseHolder]).map(prov => {
+      const obj = prov();
+      return {
+        value: obj.id,
+        render: obj.name
+      };
+    });
+
     return (
       <PropsGroup label='config' key={this.holder.getID()}>
         <DropDownPropItem
@@ -308,12 +316,7 @@ export class FileStorage extends FileStorageBase {
             />
           ]}
           value={this.db ? { value: this.db.getID(), render: this.db.getName() } : null}
-          values={props.objects([DatabaseHolder]).map(db => {
-            return {
-              value: db.getID(),
-              render: db.getName()
-            };
-          })}
+          values={dbArr}
           onSelect={db => {
             this.setDatabase({ id: db.value });
           }}

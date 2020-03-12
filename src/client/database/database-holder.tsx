@@ -9,7 +9,6 @@ import { ObjProps } from '../../base/object-base';
 import { prompt, confirm, Intent } from 'ts-react-ui/prompt';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 import { ObjLink } from '../../control/obj-link';
-import { importTable } from './import';
 
 interface TableItem extends DDItem {
 }
@@ -118,6 +117,14 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
 
     const conn = this.getConnection();
     const db = this.getDatabase();
+    const connArr = props.objects(this.getConnClasses()).map(prov => {
+      const obj = prov();
+      return {
+        value: obj.id,
+        render: obj.name
+      };
+    });
+
     return (
       <>
         <div className='horz-panel-1 flexrow' style={{ alignItems: 'center' }}>
@@ -130,12 +137,7 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
           <DropDown
             style={{ flexGrow: 1 }}
             value={conn ? { value: conn.getID() } : DropDown.NOTHING_SELECT}
-            values={props.objects(this.getConnClasses()).map(c => {
-              return {
-                value: c.getID(),
-                render: c.getName()
-              };
-            })}
+            values={connArr}
             onSelect={c => {
               this.setConnection({ id: c.value });
             }}
@@ -282,13 +284,6 @@ export class DatabaseHolder extends DatabaseHolderClientBase {
                     value
                     faIcon='fa fa-plus'
                     onClick={() => {
-                      importTable({ objProps, method: false })
-                      .then(res => {
-                        this.importTable({
-                          tableFileId: res.source.getID(),
-                          tableName: res.tableName
-                        });
-                      });
                     }}
                   />
                   <CheckIcon

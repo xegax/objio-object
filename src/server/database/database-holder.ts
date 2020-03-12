@@ -6,7 +6,8 @@ import {
   LoadTableDataArgs,
   LoadAggrDataResult,
   TableGuid,
-  ImportTableArgs
+  ImportTableArgs,
+  TableState
 } from '../../base/database/database-holder-decl';
 import {
   DeleteTableArgs,
@@ -23,8 +24,8 @@ import {
 } from '../../base/database/database-decl';
 import { DatabaseHolderBase } from '../../base/database/database-holder';
 import { IDArgs, StrMap } from '../../common/interfaces';
-import { TableFileBase } from '../../base/table-file';
-import { OnRowsArgs } from '../../base/table-file/data-reading-decl';
+import { DataSourceHolder } from '../../server/datasource/data-source-holder';
+import { prepareAll, randomId } from '../../common/common';
 
 export {
   ColumnInfo,
@@ -41,10 +42,18 @@ function getArgsKey(args: LoadTableGuidArgs): string {
   ].map(k => JSON.stringify(k)).join('-');
 }
 
+interface PushDataFromDatasourceArgs {
+  datasource: DataSourceHolder;
+  rowsCount: number;
+  tableName: string;
+  columns: Array<string>;
+}
+
 export class DatabaseHolder extends DatabaseHolderBase {
   protected guidMap: {[guid: string]: GuidMapData} = {};
   protected argsToGuid: {[argsKey: string]: string} = {};
   protected tableList: Array<TableDesc> = null;
+  protected tableImportInProgress = new Set();
 
   protected tmpTableCounter = 0;
 
@@ -119,6 +128,24 @@ export class DatabaseHolder extends DatabaseHolderBase {
     });
   }
 
+  private updateTableState(table: string, state: Partial<TableState>) {
+    this.tableStateMap[table] = {
+      ...this.tableStateMap[table],
+      ...state
+    };
+  }
+
+  private updateTableVersion(table: string) {
+    const v = randomId();
+    this.updateTableState(table, { v });
+    console.log(`table (${table}) version`, v);
+  }
+
+  private setTableLocked(table: string, locked: boolean) {
+    this.updateTableState(table, { locked });
+    console.log(`table (${table}) locked`, locked);
+  }
+
   createDatabase(database: string): Promise<void> {
     return (
       this.getRemote().createDatabase(database)
@@ -141,104 +168,126 @@ export class DatabaseHolder extends DatabaseHolderBase {
   }
 
   importTable(args: ImportTableArgs): Promise<void> {
-    let tableFile: TableFileBase;
-    const { tableName, tableFileId } = args;
+    const { dataSourceId, tableName } = args;
+    if (!tableName)
+      return Promise.reject('tableName not defined');
+
+    if (this.tableImportInProgress.has(tableName))
+      return Promise.reject(`table (${tableName}) already in progress`);
+
     return (
-      this.holder.getObject<TableFileBase>(tableFileId)
-      .then(table => {
-        if (!(table instanceof TableFileBase))
-          return Promise.reject(`Object is not valid`);
+      this.holder.getObject<DataSourceHolder>(dataSourceId)
+      .then(datasource => {
+        if (!(datasource instanceof DataSourceHolder))
+          return Promise.reject(`datasource must be instance of DataSourceHolder`);
 
-        tableFile = table;
-        // drop table
-        if (args.tableName) {
-          return (
-            this.deleteTable({ table: tableName })
-            .then(() => tableName)
-          );
-        }
-
-        // generate table name
         return (
-          this.loadTableList()
-          .then(tables => {
-            let objName = table.getName().toLowerCase().replace(/[\?\-\,\.]/g, '_');
-            let tableName = objName;
-            let idx = 0;
-            while (tables.some(t => tableName == t.table)) {
-              tableName = objName + '_' + idx++;
-            }
-
-            return tableName;
+          prepareAll<{ datasource: DataSourceHolder }>({
+            datasource,
+            delete: args.replaceExists ? this.deleteTable({ table: tableName }) : false
           })
         );
       })
-      .then(tableName => {
-        const columns = tableFile.getColumns().map(col => {
+      .then(res => {
+        const columns = res.datasource.getColumns().map(col => {
           let colType = col.type;
-          if (col.type == 'VARCHAR' && col.size != null)
+          if (colType == 'VARCHAR' && col.size != null)
             colType =  `${col.type}(${col.size})`;
 
           return {
-            colName: col.name,
-            colType
+            colName: col.rename || col.name,
+            colType: colType || 'VARCHAR'
           };
         });
 
         // start to push data from file
-        this.createTable({ table: tableName, columns })
-        .then(() => {
-          this.holder.save();
-          return this.pushDataFromFile(tableFile, 20, tableName);
-        });
+        return (
+          prepareAll<{ datasource: DataSourceHolder }>({
+            ...res,
+            create: this.createTable({ table: tableName, columns })
+          })
+        );
+      }).then(res => {
+        const { datasource } = res;
+        const columns = datasource.getColumns().map(c => c.rename || c.name);
+        this.holder.save();
+        this.pushDataFromDatasource({ datasource, tableName, rowsCount: 20, columns });
       })
     );
   }
 
-  private pushDataFromFile(fo: TableFileBase, rowsPerBunch: number, tableName: string): Promise<{ skipRows: number }> {
-    if (!(fo instanceof TableFileBase))
-      return Promise.reject('unknown type of source file');
-
-    const result = { skipRows: 0 };
-    const onRows = (args: OnRowsArgs) => {
-      return (
-        this.pushData({
-          table: tableName,
-          rows: args.rows as Array<StrMap>,
-          updateVersion: false
-        })
-        .then(res => {
-          result.skipRows += args.rows.length - res.pushRows;
-          this.setProgress(args.progress);
-        })
-        .catch(e => {
-          this.setStatus('error');
-          this.addError(e.toString());
-          return Promise.reject(e);
-        })
-      );
-    };
+  private pushDataFromDatasource(args: PushDataFromDatasourceArgs): Promise<{ skipRows: number}> {
+    const { datasource, rowsCount, columns, tableName } = args;
+    if (!(datasource instanceof DataSourceHolder))
+      return Promise.reject('source must be DataSourceHolder instance');
 
     this.setStatus('in progress');
-    return (
-      fo.getDataReader().readRows({
-        onRows,
-        linesPerBunch: rowsPerBunch
+    this.tableImportInProgress.add(tableName);
+    this.setTableLocked(tableName, true);
+
+    const result = { skipRows: 0 };
+    let startRow = 0;
+    let totalRows = datasource.getTotalRows();
+    let rowsCounter = 0;
+    const nextRows = (resolve: () => void, reject: (err: Error) => void) => {
+      datasource.getTableRows({ startRow, rowsCount })
+      .then(res => {
+        startRow += res.rows.length;
+        const rows: Array<StrMap> = res.rows.map(row => {
+          let rowObj = {};
+          columns.forEach((c, i) => {
+            rowObj[c] = row[i] != null ? '' + row[i] : null;
+          });
+          return rowObj;
+        });
+        return rows;
       })
-      .then(() => {
-        // need update version
-        this.holder.save(true);
-        this.invalidateGuids(tableName);
-        this.setStatus('ok');
-        return result;
+      .then(rows => {
+        if (rows.length == 0)
+          return resolve();
+
+        rowsCounter += rows.length;
+        return (
+          this.pushData({
+            table: tableName,
+            rows,
+            updateVersion: false
+          })
+          .then(res => {
+            result.skipRows += rows.length - res.pushRows;
+            this.setProgress(startRow / totalRows);
+            nextRows(resolve, reject);
+          })
+        );
       })
       .catch(e => {
-        this.holder.save(true);
-        this.addError(e.toString());
-        this.setStatus('ok');
-        return result;
-      })
-    );
+        reject(e);
+        return Promise.reject(e);
+      });
+    };
+
+    let p = new Promise<{ skipRows: number }>((resolve, rejects) => nextRows(resolve, rejects));
+    p = p.then(() => {
+      this.tableImportInProgress.delete(tableName);
+      this.setTableLocked(tableName, false);
+      this.updateTableVersion(tableName);
+      // need update version
+      this.holder.save(true);
+      this.invalidateGuids(tableName);
+      this.setStatus('ok');
+      console.log('pushed', rowsCounter);
+      return result;
+    }).catch(e => {
+      this.setTableLocked(tableName, false);
+      this.updateTableVersion(tableName);
+      this.tableImportInProgress.delete(tableName);
+      this.holder.save(true);
+      this.addError(e.toString());
+      this.setStatus('ok');
+      return result;
+    });
+
+    return p;
   }
 
   loadTableList(): Promise<Array<TableDesc>> {
@@ -367,9 +416,10 @@ export class DatabaseHolder extends DatabaseHolderBase {
     return (
       this.pushDataImpl(args)
       .then(res => {
-        this.invalidateGuids(args.table);
-        if (args.updateVersion != false)
+        if (args.updateVersion != false) {
+          this.invalidateGuids(args.table);
           this.holder.save(true);
+        }
         return res;
       })
       .catch(() => {
@@ -382,7 +432,7 @@ export class DatabaseHolder extends DatabaseHolderBase {
           })
           .catch(() => {});
         }
-        
+
         return p.then(() => ({ pushRows }));
       })
     );
