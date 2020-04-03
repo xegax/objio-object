@@ -18,9 +18,7 @@ import { DatabaseHolder } from '../database/database-holder';
 import { prepareAll } from '../../common/common';
 import { IconMap } from 'ts-react-ui/common/icon-map';
 import { columnCfg } from './column-cfg';
-import * as tooltip from 'react-tooltip';
-
-const Tooltip = tooltip['default'];
+import { Tooltip } from 'ts-react-ui/tooltip';
 
 const typeToIcon = {
   VARCHAR: 'string-type',
