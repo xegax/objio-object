@@ -7,6 +7,9 @@ import { ListView, Item } from 'ts-react-ui/list-view';
 import { AppCompLayout, AppComponent, AppContent } from 'ts-react-ui/app-comp-layout';
 import { CheckIcon } from 'ts-react-ui/checkicon';
 import { RequestStat } from 'objio/base/statistics';
+import { PopoverIcon } from 'ts-react-ui/popover';
+import { Menu, MenuItem } from 'ts-react-ui/blueprint';
+import { prompt } from 'ts-react-ui/prompt';
 
 export interface Props {
   model: ServerInstance;
@@ -148,23 +151,34 @@ export class ServerInstanceView extends React.Component<Props, Partial<State>> {
 
   renderUserItem(user: UserObject): JSX.Element {
     return (
-      <div className='horz-panel-1 flex' key={user.holder.getVersion()}>
-        <CheckIcon
-          faIcon='fa fa-plug'
-          value={user.isOnline()}
-          title='disconnect'
-          onChange={() => {
-            this.props.model.kickUser({ id: user.holder.getID() });
-          }} />
-        <div style={{ display: 'flex', flexGrow: 1 }}>{user.getLogin()}</div>
-        <CheckIcon
-          showOnHover
-          faIcon='fa fa-remove'
-          title='remove'
-          value
-          onChange={() => {
-            this.props.model.removeUser({ id: user.holder.getID() });
-          }} />
+      <div className='horz-panel-1 flex' key={user.holder.getID()}>
+        <div style={{ display: 'flex', flexGrow: 1 }}>
+          {user.getLogin()}
+        </div>
+        <PopoverIcon icon='fa fa-ellipsis-h'>
+          <Menu>
+            <MenuItem
+              disabled={user.getType() == 'guest'}
+              text='Password'
+              onClick={() => {
+                prompt({
+                  title: `Change password for "${user.getLogin()}"`,
+                  placeholder: 'Password',
+                  type: 'password'
+                }).then(password => {
+                  user.modify({ password });
+                })
+              }}
+            />
+            <MenuItem
+              disabled={user.getType() != 'regular'}
+              text='Remove'
+              onClick={() => {
+                this.props.model.removeUser({ id: user.holder.getID() });
+              }}
+            />
+          </Menu>
+        </PopoverIcon>
       </div>
     );
   }
@@ -216,49 +230,34 @@ export class ServerInstanceView extends React.Component<Props, Partial<State>> {
   }
 
   renderEditUser(user: UserObject) {
-    if (user) {
-      return (
-        <>
-          <TextPropItem
-            label='login'
-            value={user.getLogin()}
-            onEnter={login => {
-              user.modify({ login });
-            }}
-          />
-          <TextPropItem
-            label='name'
-            value={user.getName()}
-            onEnter={name => {
-              user.modify({ name });
-            }}
-          />
-          <TextPropItem
-            label='email'
-            value={user.getEmail()}
-            onEnter={email => {
-              user.modify({ email });
-            }}
-          />
-          <TextPropItem
-            label='password'
-            onEnter={pwd => {
-              user.modify({ password: pwd });
-              return '';  // clear text field
-            }}
-          />
-        </>
-      );
-    }
+    if (!user)
+      return null;
 
-    return null;
+    return (
+      <>
+        <TextPropItem
+          label='login'
+          value={user.getLogin()}
+          onEnter={login => {
+            user.modify({ login });
+          }}
+        />
+        <TextPropItem
+          label='name'
+          value={user.getName()}
+          onEnter={name => {
+            user.modify({ name });
+          }}
+        />
+      </>
+    );
   }
 
   renderUsers() {
     let users = this.props.model.getUsers();
     return (
       <PropSheet fitToAbs>
-        <PropsGroup label='users'>
+        <PropsGroup label='Users'>
           <ListView
             style={{ maxHeight: 300 }}
             onSelect={this.onSelectUser}
