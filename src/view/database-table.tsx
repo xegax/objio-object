@@ -7,9 +7,13 @@ import { FontAppr } from '../base/appr-decl';
 
 export { DatabaseTable };
 
-function getFontStyle(font: FontAppr, align: boolean): React.CSSProperties {
-  if (!font)
+function getFontStyle(f: Array<FontAppr>, align: boolean): React.CSSProperties {
+  if (!f)
     return {};
+
+  let font: Partial<FontAppr> = f[0] || {};
+  for (let n = 1; n < f.length; n++)
+    font = {...font, ...f[n]};
 
   return {
     color: font.color,
@@ -65,7 +69,10 @@ export class DatabaseTableView extends React.Component<Props, State> {
     if (header && header.column) {
       const c = m.getColumnProp(header.column);
       jsxHeader = (
-        <div className='table-card-header' style={getFontStyle(header.font || c.font || appr.body.font, true)}>
+        <div
+          className='table-card-header'
+          style={getFontStyle([appr.body.font, c.font, header.font], true)}
+        >
           {row.obj[c.column]}
         </div>
       );
@@ -74,7 +81,10 @@ export class DatabaseTableView extends React.Component<Props, State> {
     if (footer && footer.column) {
       const c = m.getColumnProp(footer.column);
       jsxFooter = (
-        <div className='table-card-footer' style={getFontStyle(footer.font || c.font || appr.body.font, true)}>
+        <div
+          className='table-card-footer'
+          style={getFontStyle([appr.body.font, c.font, footer.font], true)}
+        >
           {row.obj[c.column]}
         </div>
       );
@@ -97,7 +107,10 @@ export class DatabaseTableView extends React.Component<Props, State> {
         );
       } else {
         jsxBody = (
-          <div className='table-card-body' style={getFontStyle(body.font || c.font || appr.body.font, true)}>
+          <div
+            className='table-card-body'
+            style={getFontStyle([appr.body.font, c.font, body.font], true)}
+          >
             {row.obj[body.column]}
           </div>
         );
@@ -124,7 +137,7 @@ export class DatabaseTableView extends React.Component<Props, State> {
       props.className = 'cell-align-' + align;
 
     return (
-      <span style={getFontStyle(colAppr.font, false)}>
+      <span style={getFontStyle([colAppr.font], false)}>
         {row.cell[props.col]}
       </span>
     );

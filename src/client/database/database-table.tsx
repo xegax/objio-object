@@ -50,6 +50,20 @@ import {
   cardsColsAccessor
 } from './database-table-helper';
 
+const LinkButton = (props: { children: React.ReactNode, disabled?: boolean, onClick?: () => void }) => {
+  if (props.disabled) {
+    return (
+      <span>{props.children}</span>
+    );
+  }
+
+  return (
+    <a onClick={props.onClick}>
+      {props.children}
+    </a>
+  );
+}
+
 function conv2DBColType(type: string): DBColType {
   type = type.toLowerCase();
   if (type.startsWith('varchar'))
@@ -335,7 +349,7 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   private applyColsTask: Promise<void>;
 
-  private onApplyColumns() {
+  private onApplyColumns = () => {
     if (this.applyColsTask)
       return;
 
@@ -456,15 +470,6 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   isColumnShow = (col: string) => {
     const appr = this.appr.get();
-
-    /*if (appr.viewType == 'cards' && appr.cardsView) {
-      return (
-        appr.cardsView.body && col == appr.cardsView.body.column ||
-        appr.cardsView.header && col == appr.cardsView.header.column ||
-        appr.cardsView.footer && col == appr.cardsView.footer.column
-      );
-    }*/
-
     return !appr.columns[col] || this.getColumnProp(col).show;
   }
 
@@ -594,64 +599,6 @@ export class DatabaseTable extends DatabaseTableClientBase {
 
   isTableValid() {
     return this.tableName && this.tableDesc;
-  }
-
-  private renderBaseConfig(props: ObjProps) {
-    const dbArr = props.objects([DatabaseHolder]).map(prov => {
-      const obj = prov();
-      return {
-        value: obj.id,
-        render: obj.name
-      };
-    });
-
-    return (
-      <PropsGroup label='Config' key={'base-' + this.holder.getID()}>
-        <DropDownPropItem
-          left={[
-            <ObjLink
-              objId={this.db ? this.db.getID() : null}
-              className='fa fa-database'
-              title='database'
-              style={{ width: '1em', textAlign: 'center' }}
-            />
-          ]}
-          value={this.db ? { value: this.db.getID(), render: this.db.getName() } : null}
-          values={dbArr}
-          onSelect={db => {
-            this.setDatabase({ id: db.value });
-          }}
-        />
-        <DropDownPropItem
-          left={[
-            <i className='fa fa-table' title='table' style={{ width: '1em', textAlign: 'center' }} />
-          ]}
-          value={{
-            value: this.tableName,
-            render: () => {
-              if (this.tableName && !this.tableDesc)
-                return <span style={{ color: 'red' }}>{this.tableName}</span>;
-
-              return <span>{this.tableName}</span>;
-            }
-          }}
-          values={
-            [
-              ...[
-                {
-                  value: null,
-                  render: <span style={{ color: 'gray ' }}>not selected</span>
-                }
-              ],
-              ...this.tables.map(value => ({ value }))
-            ]
-          }
-          onSelect={table => {
-            this.setTableName({ tableName: table.value });
-          }}
-        />
-      </PropsGroup>
-    );
   }
 
   private onColumnProps(column: string) {
@@ -872,16 +819,16 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.appr.setProps({ sort: { reverse }});
   }
 
-  private getCardItemRender(type: 'header' | 'footer' | 'body') {
+  private getCardItemOptions(type: 'header' | 'footer' | 'body') {
     return (item: Item) => {
-      const font = this.appr.get().cardsView[type].font;
+      const appr = this.appr.get();
+      const baseFont = appr.body.font;
+      const colFont = (appr.columns[appr.cardsView[type].column] || {}).font;
+      const cardFont = appr.cardsView[type].font;
+
       return (
-        <span className='horz-panel-1'>
-          <span>{item.render || item.value}</span>
-          <span
-            className={Classes.POPOVER_DISMISS}
-            onClick={e => e.stopPropagation()}
-          >
+        <>
+          <span>
             <Popover>
               <CheckIcon
                 showOnHover
@@ -890,263 +837,85 @@ export class DatabaseTable extends DatabaseTableClientBase {
                 title='Font'
               />
               <FontPanel
-                font={{...defaultFont, ...font}}
+                font={{ ...defaultFont, ...baseFont, ...colFont, ...cardFont }}
                 onChange={font => {
-                  this.appr.setProps({ cardsView: {[type]: { font } } });
+                  this.appr.setProps({ cardsView: { [type]: { font } } });
                 }}
               />
             </Popover>
           </span>
+          <CSSIcon
+            disabled={!this.appr.isModified('cardsView', type, 'font')}
+            icon='fa fa-refresh'
+            onClick={() => {
+              this.appr.resetToDefaultKey('cardsView', type, 'font');
+              this.onApprChanged();
+            }}
+          />
+        </>
+      );
+    };
+  }
+
+  private getCardItemRender(type: 'header' | 'footer' | 'body') {
+    return (item: Item) => {
+      const appr = this.appr.get();
+      const baseFont = appr.body.font;
+      const colFont = (appr.columns[appr.cardsView[type].column] || {}).font;
+      const cardFont = appr.cardsView[type].font;
+      return (
+        <span className='horz-panel-1'>
+          <span>{item.render || item.value}</span>
+          
         </span>
       );
     }
   }
 
-  private renderAppr(props: ObjProps) {
-    const appr = this.appr.get();
-    const selPanelCols = appr.selPanel.columns;
-    const availableCols = [
-      ...this.columns.map(c => c.colName),
-      ...Object.keys(appr.genCols)
-    ].filter(c => !selPanelCols.includes(c)).sort();
-
-    const previewCols = (
-      this.cols.getAllColumns('name')
-      .map(value => ({
-        value
-      }))
-    );
-
-    const viewType: Array<{ value: TableViewType, render: string }> = [
-      { value: 'table', render: 'Table' },
-      { value: 'cards', render: 'Cards' }
-    ];
-
-    const selViewType = viewType.find(v => v.value == appr.viewType);
-    return (
-      <PropsGroup
-        label='Appearance'
-        defaultOpen={false}
-        padding={false}
-        key={'appr-' + this.holder.getID()}
-      >
-        <Tabs defaultSelect='common' background={false}>
-          <Tab id='common' icon='fa fa-paint-brush'>
-            <DropDownPropItem2
-              label='View type'
-              value={selViewType}
-              values={viewType}
-              onSelect={(v: { value: TableViewType }) => {
-                this.appr.setProps({ viewType: v.value });
-              }}
-            />
-            <PropItem label='Font'>
-              <div className='horz-panel-1'>
-                <Popover>
-                  <FontValue
-                    {...defaultFont}
-                    {...appr.body.font}
-                  />
-                  <FontPanel
-                    font={{...defaultFont, ...appr.body.font}}
-                    onChange={font => {
-                      this.appr.setProps({ body: { font } });
-                    }}
-                  />
-                </Popover>
-                {this.appr.isModified('body', 'font') ?
-                <CheckIcon
-                  value
-                  faIcon='fa fa-refresh'
-                  onClick={() => {
-                    this.appr.resetToDefaultKey('body', 'font');
-                    this.onApprChanged();
-                  }}
-                /> : null}
-              </div>
-            </PropItem>
-            {appr.viewType == 'table' &&
-            <SwitchPropItem
-              label='Header'
-              value={appr.header.show}
-              onChanged={show => {
-                this.appr.setProps({ header: { show }});
-              }}
-            />}
-            <SwitchPropItem
-              label='Border'
-              value={appr.body.border}
-              onChanged={border => {
-                this.appr.setProps({ body: { border }});
-              }}
-            />
-            <SwitchPropItem
-              label='Selection panel'
-              value={appr.selPanel.enable}
-              onChanged={enable => {
-                this.appr.setProps({ selPanel: { enable } });
-              }}
-            >
-              {appr.selPanel.enable && (
-                <SelectString
-                  items={availableCols}
-                  icon='fa fa-plus'
-                  onSelect={col => {
-                    this.appr.setProps({ selPanel: { columns: [...appr.selPanel.columns, col] } });
-                  }}
-                />
-              )}
-            </SwitchPropItem>
-            {appr.selPanel.enable && (
-              <div>
-                <ListView
-                  border
-                  height={100}
-                  values={selPanelCols.map(this.itemFromColumn)}
-                  onMoveTo={args => {
-                    this.appr.setProps({ selPanel: { columns: args.newArr.map(arr => arr.value) } });
-                  }}
-                />
-              </div>
-            )}
-          </Tab>
-          <Tab id='card' icon='fa fa-id-card-o' show={appr.viewType == 'cards'}>
-            <DropDownPropItem2
-              label='Header'
-              renderSelect={this.getCardItemRender('header')}
-              value={appr.cardsView.header && previewCols.find(c => c.value == appr.cardsView.header.column)}
-              values={previewCols}
-              onSelect={column => {
-                this.appr.setProps({ cardsView: { header: { column: column.value } } });
-              }}
-            />
-            <DropDownPropItem2
-              label='Body'
-              renderSelect={this.getCardItemRender('body')}
-              value={appr.cardsView.body && previewCols.find(c => c.value == appr.cardsView.body.column)}
-              values={previewCols}
-              onSelect={column => {
-                this.appr.setProps({ cardsView: { body: { column: column.value } } });
-              }}
-            />
-            <DropDownPropItem2
-              label='Footer'
-              renderSelect={this.getCardItemRender('footer')}
-              value={appr.cardsView.footer && previewCols.find(c => c.value == appr.cardsView.footer.column)}
-              values={previewCols}
-              onSelect={column => {
-                this.appr.setProps({ cardsView: { footer: { column: column.value } } });
-              }}
-            />
-            <TextPropItem
-              label='Width'
-              value={appr.cardsView.cardWidth}
-              onEnter={w => {
-                this.appr.setProps({ cardsView: { cardWidth: +w } });
-              }}
-            />
-            <TextPropItem
-              label='Height'
-              value={appr.cardsView.cardHeight}
-              onEnter={h => {
-                this.appr.setProps({ cardsView: { cardHeight: +h } });
-              }}
-            />
-          </Tab>
-        </Tabs>
-      </PropsGroup>
-    );
-  }
-
-  private renderColumnsConfig(props: ObjProps) {
-    return (
-      <PropsGroup
-        label='Columns'
-        defaultOpen={false}
-        defaultHeight={200}
-        key={'cols-' + this.holder.getID()}
-      >
-        <ForwardProps render={(p: { height?: number }) =>
-          <div className='vert-panel-1 flexcol flexgrow1' style={{ height: p.height }}>
-            {this.renderColumnsView(props)}
-          </div>
-        }/>
-      </PropsGroup>
-    );
-  }
-
   private renderColumnsView(props: ObjProps) {
-    let cols = this.cols.getAllColumns('order');
-    if (!cols.length) {
-      return (
-        <div>nothing to display</div>
-      );
-    }
-
-    let apply = (
-      <>
-        <CheckIcon
-          title='apply'
-          style={{ color: 'green' }}
-          faIcon='fa fa-check-circle'
-          value
-        />
-        <span>Apply</span>
-      </>
-    );
-
-    if (Object.keys(this.modifiedCols).length) {
-      apply = (
-        <a className='horz-panel-1' onClick={() => this.onApplyColumns()}>
-          {apply}
-        </a>
-      );
-    } else {
-      apply = <span className='horz-panel-1' style={{ color: 'silver' }}>{apply}</span>;
-    }
-
+    const cols = this.cols.getAllColumns('order');
     const colProps = cols.map(c => this.getColumnProp(c));
     return (
-      <>
-        <FitToParent wrapToFlex
-          render={(w, h) =>
-            <ListView
-              height={h}
-              border={false}
-              onSelect={s => {}}
-              onMoveTo={args => {
-                const dragColIdx = colProps.findIndex(c => c.column == args.drag[0].value);
-                const dragCol = colProps.splice(dragColIdx, 1)[0];
+      <Tab id='columns' icon='fa fa-table' title='Columns'>
+        <div className='flexcol1' style={{ position: 'relative' }}>
+          <ListView
+            className='abs-fit'
+            border={false}
+            onSelect={s => {}}
+            onMoveTo={args => {
+              const dragColIdx = colProps.findIndex(c => c.column == args.drag[0].value);
+              const dragCol = colProps.splice(dragColIdx, 1)[0];
 
-                const beforeColIdx = args.before ? colProps.findIndex(c => c.column == args.before.value) : -1;
-                if (beforeColIdx != -1)
-                  colProps.splice(beforeColIdx, 1, dragCol, colProps[beforeColIdx]);
+              const beforeColIdx = args.before ? colProps.findIndex(c => c.column == args.before.value) : -1;
+              if (beforeColIdx != -1)
+                colProps.splice(beforeColIdx, 1, dragCol, colProps[beforeColIdx]);
 
-                colProps.forEach((c, i) => {
-                  const col = this.modifiedCols[c.column] || (this.modifiedCols[c.column] = {});
-                  col.order = i;
-                });
-                this.holder.delayedNotify();
-              }}
-              values={colProps.map(this.renderColumnItem)}
-            />
-          }
-        />
-        <div className='horz-panel-2' style={{ textAlign: 'center', flexGrow: 0 }}>
-          <span
-            className='horz-panel-1'
-            style={{ cursor: 'pointer' }}
-            onClick={() => this.onEditGenericColumn()}
-          >
-            <CSSIcon
-              icon='fa fa-plus'
-              title='Create generic column'
-            />
-            <span>Column</span>
-          </span>
-          {apply}
+              colProps.forEach((c, i) => {
+                const col = this.modifiedCols[c.column] || (this.modifiedCols[c.column] = {});
+                col.order = i;
+              });
+              this.holder.delayedNotify();
+            }}
+            values={colProps.map(this.renderColumnItem)}
+          />
         </div>
-      </>
+        <div
+          className='horz-panel-1'
+          style={{ textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis' }}
+        >
+          <LinkButton
+            disabled={Object.keys(this.modifiedCols).length == 0}
+            onClick={this.onApplyColumns}
+          >
+            Apply
+          </LinkButton>
+          <LinkButton
+            onClick={this.onEditGenericColumn}
+          >
+            +Column
+          </LinkButton>
+        </div>
+      </Tab>
     );
   }
 
@@ -1289,13 +1058,229 @@ export class DatabaseTable extends DatabaseTableClientBase {
     this.holder.delayedNotify();
   }
 
+  private renderBaseTab(props: ObjProps) {
+    const dbArr = props.objects([DatabaseHolder]).map(prov => {
+      const obj = prov();
+      return {
+        value: obj.id,
+        render: obj.name
+      };
+    });
+
+    return (
+      <Tab id='config' icon='fa fa-cog' title='Config'>
+        <DropDownPropItem
+          left={[
+            <ObjLink
+              objId={this.db ? this.db.getID() : null}
+              className='fa fa-database'
+              title='database'
+              style={{ width: '1em', textAlign: 'center' }}
+            />
+          ]}
+          value={this.db ? { value: this.db.getID(), render: this.db.getName() } : null}
+          values={dbArr}
+          onSelect={db => {
+            this.setDatabase({ id: db.value });
+          }}
+        />
+        <DropDownPropItem
+          left={[
+            <i className='fa fa-table' title='table' style={{ width: '1em', textAlign: 'center' }} />
+          ]}
+          value={{
+            value: this.tableName,
+            render: () => {
+              if (this.tableName && !this.tableDesc)
+                return <span style={{ color: 'red' }}>{this.tableName}</span>;
+
+              return <span>{this.tableName}</span>;
+            }
+          }}
+          values={
+            [
+              ...[
+                {
+                  value: null,
+                  render: <span style={{ color: 'gray ' }}>not selected</span>
+                }
+              ],
+              ...this.tables.map(value => ({ value }))
+            ]
+          }
+          onSelect={table => {
+            this.setTableName({ tableName: table.value });
+          }}
+        />
+      </Tab>
+    );
+  }
+
+  private renderApprTab(props: ObjProps) {
+    const appr = this.appr.get();
+    const selPanelCols = appr.selPanel.columns;
+    const availableCols = [
+      ...this.columns.map(c => c.colName),
+      ...Object.keys(appr.genCols)
+    ].filter(c => !selPanelCols.includes(c)).sort();
+
+    const previewCols = (
+      this.cols.getAllColumns('name')
+      .map(value => ({
+        value
+      }))
+    );
+
+    const viewType: Array<{ value: TableViewType, render: string }> = [
+      { value: 'table', render: 'Table' },
+      { value: 'cards', render: 'Cards' }
+    ];
+
+    const selViewType = viewType.find(v => v.value == appr.viewType);
+    return [
+      <Tab
+        id='common'
+        key='common'
+        icon='fa fa-paint-brush'
+        title='Appearance'
+      >
+        <DropDownPropItem2
+          label='View type'
+          value={selViewType}
+          values={viewType}
+          onSelect={(v: { value: TableViewType }) => {
+            this.appr.setProps({ viewType: v.value });
+          }}
+        />
+        <PropItem label='Font'>
+          <div className='horz-panel-1'>
+            <Popover>
+              <FontValue
+                {...defaultFont}
+                {...appr.body.font}
+              />
+              <FontPanel
+                font={{ ...defaultFont, ...appr.body.font }}
+                onChange={font => {
+                  this.appr.setProps({ body: { font } });
+                }}
+              />
+            </Popover>
+            {this.appr.isModified('body', 'font') ?
+              <CheckIcon
+                value
+                faIcon='fa fa-refresh'
+                onClick={() => {
+                  this.appr.resetToDefaultKey('body', 'font');
+                  this.onApprChanged();
+                }}
+              /> : null}
+          </div>
+        </PropItem>
+        {appr.viewType == 'table' &&
+          <SwitchPropItem
+            label='Header'
+            value={appr.header.show}
+            onChanged={show => {
+              this.appr.setProps({ header: { show } });
+            }}
+          />}
+        <SwitchPropItem
+          label='Border'
+          value={appr.body.border}
+          onChanged={border => {
+            this.appr.setProps({ body: { border } });
+          }}
+        />
+        <SwitchPropItem
+          label='Selection panel'
+          value={appr.selPanel.enable}
+          onChanged={enable => {
+            this.appr.setProps({ selPanel: { enable } });
+          }}
+        >
+          {appr.selPanel.enable && (
+            <SelectString
+              items={availableCols}
+              icon='fa fa-plus'
+              onSelect={col => {
+                this.appr.setProps({ selPanel: { columns: [...appr.selPanel.columns, col] } });
+              }}
+            />
+          )}
+        </SwitchPropItem>
+        {appr.selPanel.enable && (
+          <div>
+            <ListView
+              border
+              height={100}
+              values={selPanelCols.map(this.itemFromColumn)}
+              onMoveTo={args => {
+                this.appr.setProps({ selPanel: { columns: args.newArr.map(arr => arr.value) } });
+              }}
+            />
+          </div>
+        )}
+      </Tab>,
+      <Tab
+        id='card'
+        key='card'
+        title='Cards'
+        icon='fa fa-id-card-o'
+        show={appr.viewType == 'cards'}
+      >
+        <DropDownPropItem2
+          label='Header'
+          renderOptions={this.getCardItemOptions('header')}
+          value={appr.cardsView.header && previewCols.find(c => c.value == appr.cardsView.header.column)}
+          values={previewCols}
+          onSelect={column => {
+            this.appr.setProps({ cardsView: { header: { column: column.value } } });
+          }}
+        />
+        <DropDownPropItem2
+          label='Body'
+          renderOptions={this.getCardItemOptions('body')}
+          value={appr.cardsView.body && previewCols.find(c => c.value == appr.cardsView.body.column)}
+          values={previewCols}
+          onSelect={column => {
+            this.appr.setProps({ cardsView: { body: { column: column.value } } });
+          }}
+        />
+        <DropDownPropItem2
+          label='Footer'
+          renderOptions={this.getCardItemOptions('footer')}
+          value={appr.cardsView.footer && previewCols.find(c => c.value == appr.cardsView.footer.column)}
+          values={previewCols}
+          onSelect={column => {
+            this.appr.setProps({ cardsView: { footer: { column: column.value } } });
+          }}
+        />
+        <TextPropItem
+          label='Width'
+          value={appr.cardsView.cardWidth}
+          onEnter={w => {
+            this.appr.setProps({ cardsView: { cardWidth: +w } });
+          }}
+        />
+        <TextPropItem
+          label='Height'
+          value={appr.cardsView.cardHeight}
+          onEnter={h => {
+            this.appr.setProps({ cardsView: { cardHeight: +h } });
+          }}
+        />
+      </Tab>
+    ];
+  }
+
   getObjPropGroups(props: ObjProps) {
     return (
-      <>
-        {this.renderBaseConfig(props)}
-        {this.renderAppr(props)}
-        {this.renderColumnsConfig(props)}
-      </>
+      <Tabs defaultSelect='common' flex>
+        {this.renderBaseTab(props)}
+        {this.renderApprTab(props)}
+        {this.renderColumnsView(props)}
+      </Tabs>
     );
   }
 }
