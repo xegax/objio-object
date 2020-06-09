@@ -1,5 +1,5 @@
-import { SERIALIZER, OBJIOItem } from 'objio';
-import { ObjectBase } from '../object-base';
+import { SERIALIZER } from 'objio';
+import { ObjectBase, ObjProps } from '../object-base';
 
 export interface TableDescArgs {
 }
@@ -36,6 +36,10 @@ export abstract class DataSourceBase extends ObjectBase {
 
   getTotalCols() {
     return this.totalCols;
+  }
+
+  renderTabs(props: ObjProps): Array<JSX.Element> {
+    return [];
   }
 
   static TYPE_ID = 'DataSource';

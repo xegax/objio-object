@@ -19,6 +19,7 @@ import { prepareAll } from '../../common/common';
 import { IconMap } from 'ts-react-ui/common/icon-map';
 import { columnCfg } from './column-cfg';
 import { Tooltip } from 'ts-react-ui/tooltip';
+import { Tabs, Tab } from 'ts-react-ui/tabs';
 
 const typeToIcon = {
   VARCHAR: 'string-type',
@@ -145,10 +146,10 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
       return null;
 
     return (
-      <>
-        {this.dataSource.getObjPropGroups(props)}
+      <Tabs defaultSelect='columns' flex key={this.holder.getID()}>
+        {this.dataSource.renderTabs(props)}
         {this.renderCols(props)}
-      </>
+      </Tabs>
     );
   }
 
@@ -339,24 +340,26 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
     );
 
     return (
-      <PropsGroup
-        label='Columns'
-        defaultOpen={false}
-        height={200}
-        flex
+      <Tab
+        id='columns'
+        icon='fa fa-table'
+        title='Columns'
       >
-        <ListView
-          style={{ flexGrow: 1 }}
-          values={cols}
-          onMoveTo={args => {
-            let columns = {};
-            args.newArr.forEach((c, order) => {
-              columns[c.value] = { order };
-            });
-            this.updateProfile({ columns });
-          }}
-        />
-      </PropsGroup>
+        <div className='flexcol1' style={{ position: 'relative' }}>
+          <ListView
+            className='abs-fit'
+            border={false}
+            values={cols}
+            onMoveTo={args => {
+              let columns = {};
+              args.newArr.forEach((c, order) => {
+                columns[c.value] = { order };
+              });
+              this.updateProfile({ columns });
+            }}
+          />
+        </div>
+      </Tab>
     );
   }
 

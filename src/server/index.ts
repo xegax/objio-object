@@ -1,6 +1,6 @@
 import { OBJIOItemClass } from 'objio';
 import { FileSystemSimple } from 'objio/server';
-import { VideoFileObject } from './video-file-object';
+import { VideoFileObject, VideoFileTask } from './video-file-object';
 import { ImageFile } from './image-file';
 import { DatabaseHolder } from './database/database-holder';
 import { DatabaseTable } from './database/database-table';
@@ -15,6 +15,7 @@ export function getClasses(): Array<OBJIOItemClass> {
   return [
     FileSystemSimple,
     VideoFileObject,
+    VideoFileTask,
     ImageFile,
     DatabaseHolder,
     DatabaseTable,

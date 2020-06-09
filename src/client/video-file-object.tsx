@@ -190,7 +190,7 @@ export class VideoFileObject extends VideoFileBase {
                     this.holder.delayedNotify();
                   }}
                 /> :
-                (file.isStatusInProgess() ? file.getProgress() * 100 + '% ' : '') + file.getName()
+                (file.isStatusInProgess() ? Math.floor(file.getProgress() * 100) + '% ' : '') + file.getName()
             }
           </div>
           <CheckIcon
@@ -280,7 +280,7 @@ export class VideoFileObject extends VideoFileBase {
                     this.holder.delayedNotify();
                   }}
                 /> :
-                (file.isStatusInProgess() ? file.getProgress() * 100 + '% ' : '') + file.getName()
+                (file.isStatusInProgess() ? Math.floor(file.getProgress() * 100) + '% ' : '') + file.getName()
             }
           </div>
           <CheckIcon

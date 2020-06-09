@@ -9,6 +9,8 @@ import {
 } from '../../base/datasource/data-source-holder';
 import { ApprMapBase } from '../../base/appr-map';
 import { DataSourceProfile, DataSourceCol } from '../../base/datasource/data-source-profile';
+import { TaskServerBase } from 'objio/server/task';
+import { DataSourceBase } from '../../base/datasource/data-source';
 
 interface ProfileCache {
   apprVer: string;
@@ -70,82 +72,25 @@ export class DataSourceHolder extends DataSourceHolderBase {
       }
     });
 
-    const onInit = (load: boolean) => {
-      this.dataSource.holder.subscribe(this.updateStatistics, 'ready');
+    const onInit = (load: boolean, userId?: string) => {
+      this.dataSource.holder.subscribe(() => this.updateStatistics(userId), 'ready');
       return Promise.resolve();
     };
 
     this.holder.addEventHandler({
       onLoad: () => onInit(true),
-      onCreate: () => onInit(false)
+      onCreate: (userId: string) => onInit(false, userId)
     });
   }
 
-  private updateColumnTypes = () => {
-    const cols = this.dataSource.getTotalCols();
-    let newProps: Partial<DataSourceProfile> = { columns: {} };
-    cols.forEach(col => {
-      const stat = this.statMap[col.name];
-      const isNum = stat.intCount + stat.doubleCount + stat.empty == stat.count;
-      const isInt = stat.intCount + stat.empty == stat.count;
-      const isStr = !isNum;
-      const size = stat.strMinMax[1];
-      const isText = isStr && size > 65535;
-      if (isNum) {
-        newProps.columns[col.name] = { type: isInt ? 'INTEGER' : 'REAL', size };
-      } else if (isStr) {
-        newProps.columns[col.name] = { type: isText ? 'TEXT' : 'VARCHAR', size };
-      }
+  private updateStatistics = (userId: string) => {
+    const task = new UpdateStatTask(this.dataSource);
+    this.holder.pushTask(task, userId)
+    .then(() => {
+      this.statMap = task.getStat();
+      this.getProfile().setProps(task.getProfile());
+      this.holder.save(true);
     });
-    this.getProfile().setProps(newProps);
-    this.holder.save(true);
-  }
-
-  private updateStatistics = () => {
-    console.log('start to update statistics');
-    const cols = this.dataSource.getTotalCols();
-    cols.forEach(c => {
-      this.statMap[c.name] = {
-        empty: 0,
-        count: 0,
-        numMinMax: [],
-        strMinMax: [],
-        strCount: 0,
-        intCount: 0,
-        doubleCount: 0
-      };
-    });
-
-    const totalRows = this.dataSource.getTotalRows();
-    let startRow = 0;
-    const nextRows = () => {
-      const rowsCount = Math.min(startRow + 50, totalRows) - startRow;
-      if (rowsCount == 0) {
-        this.dataSource.setProgress(1);
-        this.dataSource.setStatus('ok');
-        this.holder.save(true);
-        return;
-      }
-
-      return (
-        this.dataSource.getTableRows({ startRow, rowsCount })
-        .then(res => {
-          res.rows.forEach(row => {
-            row.forEach((v, c) => updateStat(this.statMap[cols[c].name], v));
-          });
-
-          startRow += res.rows.length;
-          this.dataSource.setProgress(startRow / totalRows);
-          return nextRows();
-        })
-      );
-    }
-
-    this.dataSource.setProgress(0);
-    this.dataSource.setStatus('in progress');
-    this.dataSource.holder.save(true);
-    nextRows()
-    .then(this.updateColumnTypes);
   }
 
   private getContext(profileId: string): ProfileCache {
@@ -209,5 +154,110 @@ export class DataSourceHolder extends DataSourceHolderBase {
 
     this.getProfile().setProps({ columns: {[args.column]: { rename: args.newName }} });
     return Promise.resolve();
+  }
+}
+
+class UpdateStatTask extends TaskServerBase {
+  private dataSource: DataSourceBase;
+  private statMap: {[col: string]: ColumnStat} = {};
+  private profile: Partial<DataSourceProfile> = {};
+
+  constructor(src: DataSourceBase) {
+    super();
+    this.dataSource = src;
+    this.name = src.getName();
+  }
+
+  protected runImpl(): Promise<{ task: Promise<void>; }> {
+    const cols = this.dataSource.getTotalCols();
+    cols.forEach(c => {
+      this.statMap[c.name] = {
+        empty: 0,
+        count: 0,
+        numMinMax: [],
+        strMinMax: [],
+        strCount: 0,
+        intCount: 0,
+        doubleCount: 0
+      };
+    });
+
+    const totalRows = this.dataSource.getTotalRows();
+    let startRow = 0;
+    const nextRows = () => {
+      const rowsCount = Math.min(startRow + 50, totalRows) - startRow;
+      if (rowsCount == 0) {
+        this.dataSource.setProgress(1);
+        this.dataSource.setStatus('ok');
+        this.save();
+        return;
+      }
+
+      return (
+        this.dataSource.getTableRows({ startRow, rowsCount })
+        .then(res => {
+          res.rows.forEach(row => {
+            row.forEach((v, c) => updateStat(this.statMap[cols[c].name], v));
+          });
+
+          startRow += res.rows.length;
+          this.dataSource.setProgress(startRow / totalRows);
+          this.setProgress(startRow / totalRows);
+          this.name = `${this.dataSource.getName()}, stat (${startRow})`;
+          this.save();
+          return nextRows();
+        })
+      );
+    }
+
+    this.dataSource.setProgress(0);
+    this.dataSource.setStatus('in progress');
+    this.dataSource.holder.save(true);
+    const task = (
+      nextRows()
+      .then(this.updateColumnTypes)
+    );
+
+    return Promise.resolve({
+      task
+    });
+  }
+
+  private updateColumnTypes = () => {
+    const cols = this.dataSource.getTotalCols();
+    let newProps: Partial<DataSourceProfile> = { columns: {} };
+    cols.forEach(col => {
+      const stat = this.statMap[col.name];
+      const isNum = stat.intCount + stat.doubleCount + stat.empty == stat.count;
+      const isInt = stat.intCount + stat.empty == stat.count;
+      const isStr = !isNum;
+      const size = stat.strMinMax[1];
+      const isText = isStr && size > 65535;
+      if (isNum) {
+        newProps.columns[col.name] = { type: isInt ? 'INTEGER' : 'REAL', size };
+      } else if (isStr) {
+        newProps.columns[col.name] = { type: isText ? 'TEXT' : 'VARCHAR', size };
+      }
+    });
+    this.profile = newProps;
+    this.save();
+  }
+
+  getProfile() {
+    return this.profile;
+  }
+
+  getStat() {
+    return this.statMap;
+  }
+
+  protected stopImpl(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  protected pauseImpl(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  protected resumeImpl(): Promise<void> {
+    throw new Error("Method not implemented.");
   }
 }

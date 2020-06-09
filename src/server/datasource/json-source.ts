@@ -9,6 +9,7 @@ import { FileSystemSimple } from 'objio/server';
 import { UploadArgs } from 'objio';
 import { readJSONArray } from 'objio/common/reader/json-array-reader';
 import { createWriteStream, promises} from 'fs';
+import { TaskServerBase } from 'objio/server/task';
 
 const ROW_LENGTH = 16 + 16 + 2;
 
@@ -52,34 +53,17 @@ export class JSONDataSource extends JSONDataSourceBase {
     this.totalRows = 0;
     this.totalCols = [];
 
-    const rowsFile = this.fs.getPathForNew('rows', '.lst');
-    const w = createWriteStream(rowsFile);
     this.setProgress(0);
     this.setStatus('in progress');
-    let rows = 0;
-    let colsMap: {[name: string]: string} = {};
-    readJSONArray({
-      file: this.fs.getPath('content'),
-      calcRanges: true,
-      onBunch: args => {
-        rows += args.items.length;
-        args.items.forEach(item => {
-          Object.keys(item.obj).forEach(k => colsMap[k] = '');
-          w.write(row(item.range[0], item.range[1]));
-        });
-        this.setProgress(args.progress);
-      }
-    })
+
+    const task = new JSONSourceUploadTask(this);
+    this.holder.pushTask(task, args.userId)
     .then(() => {
-      this.totalCols = Object.keys(colsMap).map(name => ({ name }));
-      this.totalRows = rows;
+      this.totalCols = task.getCols();
+      this.totalRows = task.getRows();
       this.setStatus('ok');
       this.setProgress(0);
       this.holder.save(true);
-
-      w.end();
-      this.fs.updateFiles({ 'rows': rowsFile });
-      this.fs.holder.save();
       this.holder.delayedNotify({ type: 'ready' });
     });
   }
@@ -168,5 +152,70 @@ export class JSONDataSource extends JSONDataSourceBase {
       .then(this.loadRows)
       .then(rows => ({ startRow: args.startRow, rows }))
     );
+  }
+}
+
+
+export class JSONSourceUploadTask extends TaskServerBase {
+  private src: JSONDataSource;
+  private colsMap: {[name: string]: string} = {};
+  private rows = 0;
+
+  constructor(src: JSONDataSource) {
+    super();
+    this.src = src;
+    this.name = src.getName();
+  }
+
+  getRows() {
+    return this.rows;
+  }
+
+  getCols() {
+    return Object.keys(this.colsMap).map(name => ({ name }));
+  }
+
+  protected runImpl(): Promise<{ task: Promise<void>; }> {
+    const fs = this.src.getFS() as FileSystemSimple;
+
+    const rowsFile = fs.getPathForNew('rows', '.lst');
+    const w = createWriteStream(rowsFile);
+
+    const task = readJSONArray({
+      file: fs.getPath('content'),
+      calcRanges: true,
+      onBunch: args => {
+        this.rows += args.items.length;
+        args.items.forEach(item => {
+          Object.keys(item.obj).forEach(k => this.colsMap[k] = '');
+          w.write(row(item.range[0], item.range[1]));
+        });
+        this.name = `${this.src.getName()} (${this.rows})`;
+        this.desc = `Reading rows from ${this.src.getName()}`;
+        this.setProgress(args.progress);
+        this.src.setProgress(args.progress);
+        this.save();
+      }
+    }).then(() => {
+      fs.updateFiles({ 'rows': rowsFile });
+      fs.holder.save();
+      w.end();
+    });
+
+    return Promise.resolve({
+      task
+    });
+  }
+
+  protected stopImpl(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  protected pauseImpl(): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  protected resumeImpl(): Promise<void> {
+    throw new Error("Method not implemented.");
   }
 }

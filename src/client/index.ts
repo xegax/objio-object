@@ -1,12 +1,13 @@
 import { VideoFileObject } from './video-file-object';
-import { OBJIOItemClass, FileSystemSimple } from 'objio';
+import { OBJIOItemClass, FileSystemSimple, getExt } from 'objio';
 import { ImageFile } from './image-file';
 import { DatabaseHolder } from './database/database-holder';
 import { DatabaseTable } from './database/database-table';
 import { FileStorage } from './file-storage';
 import { ApprMapClientBase } from '../base/appr-map';
 import { Youtube } from './youtube';
-import { getExt } from 'objio';
+import { TaskBase } from 'objio/base/task';
+import { TaskManagerBase } from 'objio/common/task-manager';
 import { DataSourceHolder } from './datasource/data-source-holder';
 import { NumericDataSource } from './datasource/numeric-source';
 import { JSONDataSource } from './datasource/json-source';
@@ -45,7 +46,9 @@ export function getClasses(): Array<OBJIOItemClass> {
     Youtube,
     DataSourceHolder,
     NumericDataSource,
-    JSONDataSource
+    JSONDataSource,
+    TaskBase,
+    TaskManagerBase
   ];
 }
 

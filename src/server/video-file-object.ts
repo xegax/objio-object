@@ -13,6 +13,7 @@ import { ImageFile } from './image-file';
 import { OBJIOArray, getExt } from 'objio';
 import { FileSystemSimple } from 'objio/server';
 import { ObjectBase } from '../view/config';
+import { TaskServerBase } from 'objio/server/task';
 
 export class VideoFileObject extends VideoFileBase {
   protected fs: FileSystemSimple;
@@ -130,7 +131,7 @@ export class VideoFileObject extends VideoFileBase {
       encArgs.resize = { width: Math.round((128 * frame.width) / frame.height) , height: 128 };
       encArgs.vframes = 1;
 
-      this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId)
+      this.holder.pushTask(new VideoFileTask(encArgs, 'Preview'), userId)
       .then(() => {
         this.fs.updateFiles({ 'preview-128': outFile });
         return this.holder.save(true);
@@ -172,7 +173,7 @@ export class VideoFileObject extends VideoFileBase {
       encArgs.vframes = 1;
 
       return (
-        this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId)
+        this.holder.pushTask(new VideoFileTask(encArgs, 'Image'), userId)
         .then(() => fs.updateFiles({ 'content': outFile }))
       );
     })
@@ -190,7 +191,7 @@ export class VideoFileObject extends VideoFileBase {
       encArgs.crop = args.crop;
       encArgs.vframes = 1;
       return (
-        this.holder.pushTask<FileInfo>(() => encodeFile(encArgs), userId)
+        this.holder.pushTask(new VideoFileTask(encArgs, 'Preview'), userId)
         .then(() => fs.updateFiles({ 'preview-128': outFile }))
       );
     })
@@ -265,21 +266,7 @@ export class VideoFileObject extends VideoFileBase {
     const encArgs: EncodeArgs = {
       inFile: [ this.getPath('content') ],
       outFile,
-      overwrite: true,
-      onProgress: (p: number) => {
-        try {
-          outfs.updateFiles({ 'content': outFile });
-        } catch (e) {
-          console.log(e);
-        }
-
-        p = Math.floor(p * 10) / 10;
-        if (p == file.progress)
-          return;
-
-        file.progress = p;
-        file.holder.save();
-      }
+      overwrite: true
     };
 
     if (file.filter.trim) {
@@ -315,8 +302,19 @@ export class VideoFileObject extends VideoFileBase {
         encArgs.inputFPS = inputFPS;
     }
 
+    const task = new VideoFileTask(encArgs, `Encode ${this.getName()}`);
+    task.holder.subscribe(() => {
+      try {
+        outfs.updateFiles({ 'content': outFile });
+      } catch (e) {
+        console.log(e);
+      }
+
+      file.progress = task.getProgress();
+      file.holder.save();
+    }, 'save');
     return (
-      this.holder.pushTask(() => encodeFile(encArgs), userId)
+      this.holder.pushTask(task, userId)
       .then(() => {
         outfs.updateFiles({ 'content': outFile });
         file.holder.save();
@@ -368,7 +366,7 @@ export class VideoFileObject extends VideoFileBase {
           this.setProgress(0);
           this.setStatus('in progress');
           return (
-            this.holder.pushTask( () => encodeFile(eargs), args.userId )
+            this.holder.pushTask(new VideoFileTask(eargs, 'Video info'), args.userId)
             .then(() => {
               this.setStatus('ok');
               this.setProgress(1);
@@ -392,5 +390,41 @@ export class VideoFileObject extends VideoFileBase {
     );
 
     return Promise.resolve();
+  }
+}
+
+export class VideoFileTask extends TaskServerBase {
+  private args: EncodeArgs;
+
+  constructor(args: EncodeArgs, name: string) {
+    super();
+
+    this.args = {
+      ...args,
+      onProgress: t => {
+        args.onProgress && args.onProgress(t);
+        this.setProgress(t);
+        this.save();
+      }
+    };
+    this.name = name;
+  }
+
+  protected runImpl() {
+    return Promise.resolve({
+      task: encodeFile(this.args).then(() => {})
+    });
+  }
+
+  protected stopImpl(): Promise<void> {
+    return Promise.reject('Method not implemented.');
+  }
+
+  protected pauseImpl(): Promise<void> {
+    return Promise.reject('Method not implemented.');
+  }
+
+  protected resumeImpl(): Promise<void> {
+    return Promise.reject('Method not implemented.');
   }
 }
