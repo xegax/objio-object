@@ -131,8 +131,11 @@ export class DataSourceHolder extends DataSourceHolderBase {
 
   removeGenericCol(name: string) {
     const idx = this.genericCols.indexOf(name);
-    if (idx != -1)
+    if (idx != -1) {
       this.genericCols.splice(idx, 1);
+      this.updateProfile({ columns: {[name]: null} });
+      this.holder.save();
+    }
 
     return Promise.resolve();
   }
