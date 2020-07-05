@@ -6,6 +6,7 @@ interface Cfg {
   rename: string;
   label: string;
   size?: number;
+  expression?: string;
 }
 
 interface Props {
@@ -35,6 +36,18 @@ class Dialog extends React.Component<Props> {
             value={cfg.label}
             onChange={evt => {
               cfg.label = evt.currentTarget.value;
+              this.setState({});
+            }}
+          />
+        </div>
+        <div className='horz-panel-1 flexrow'>
+          <span style={{ width: '6em' }}>Expr.:</span>
+          <input
+            style={{ flexGrow: 1 }}
+            value={cfg.expression}
+            placeholder={`$col["${cfg.name}"]`}
+            onChange={evt => {
+              cfg.expression = evt.currentTarget.value;
               this.setState({});
             }}
           />

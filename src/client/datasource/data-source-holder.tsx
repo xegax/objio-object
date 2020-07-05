@@ -7,19 +7,16 @@ import {
 import { ObjTab, ObjProps, IconType } from '../../base/object-base';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 import { PropItem } from 'ts-react-ui/prop-sheet/prop-item';
-import { PropsGroup } from 'ts-react-ui/prop-sheet';
 import { ListView, Item } from 'ts-react-ui/list-view2';
 import { CSSIcon } from 'ts-react-ui/cssicon';
 import { PopoverIcon, Popover, Position } from 'ts-react-ui/popover';
 import { Menu, MenuItem } from 'ts-react-ui/blueprint';
 import { DataSourceCol } from '../../base/datasource/data-source-profile';
-import { exportToDatabase } from './export-to-database';
-import { DatabaseHolder } from '../database/database-holder';
-import { prepareAll } from '../../common/common';
 import { IconMap } from 'ts-react-ui/common/icon-map';
 import { columnCfg } from './column-cfg';
 import { Tooltip } from 'ts-react-ui/tooltip';
 import { Tabs, Tab } from 'ts-react-ui/tabs';
+import { prompt } from 'ts-react-ui/prompt';
 
 const typeToIcon = {
   VARCHAR: 'string-type',
@@ -101,19 +98,44 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
     );
   }
 
-  private exportToDatabase = (objProps: ObjProps) => {
-    exportToDatabase({ objProps, src: this })
-    .then(cfg => prepareAll<{ tableName: string; replaceExists: boolean; dataSourceId: string; dest: DatabaseHolder }>({
-      tableName: cfg.tableName,
-      replaceExists: cfg.replaceExists,
-      dataSourceId: this.holder.getID(),
-      dest: this.holder.getObject(cfg.destId)
-    }))
-    .then(res => {
-      const { dest, ...cfg } = res;
-      return dest.importTable(cfg);
-    });
-  }
+  private copyColumn = async (srcCol: string, p: DataSourceCol) => {
+    const cols = new Set(this.getColumns().map(c => c.name));
+    let newCol: string;
+    let tries = 1;
+    while (tries < 100) {
+      newCol = `${srcCol}_copy`;
+      if (tries > 1)
+        newCol += '_' + tries;
+
+      if (!cols.has(newCol))
+        break;
+
+      tries++;
+    }
+
+    while (true) {
+      let res: string;
+      try {
+        res = await prompt({ title: 'Enter new column name', value: newCol });
+        if (cols.has(res))
+          continue;
+      } catch (e) {
+        break;  // cancel
+      }
+
+      try {
+        await this.addGenericCol({
+          column: res,
+          cfg: {
+            type: 'generic',
+            expression: `$col[ "${srcCol}" ]`
+          }
+        });
+        break;
+      } catch(e) {
+      }
+    }
+  };
 
   getDesc(): TableDescResult {
     return this.tableDesc;
@@ -135,10 +157,17 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
       ...this.dataSource.getObjTabs(),
       {
         icon: 'fa fa-database',
-        title: 'Export to database',
-        command: this.exportToDatabase
+        title: 'Update database',
+        command: this.updateDatabase
       }
     ];
+  }
+
+  private updateDatabase = (objProps: ObjProps) => {
+    this.dataSource.execute({
+      columns: this.getProfile().get().columns,
+      genericCols: this.genericCols
+    });
   }
 
   getObjPropGroups(props: ObjProps) {
@@ -153,12 +182,18 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
     );
   }
 
-  private getContextMenuItems(column: string, p: DataSourceCol): Array<ContextMenuItem> {
-    return [
+  private getContextMenuItems(column: string, p: DataSourceCol) {
+    let items = [
       {
         label: 'Properties',
         cmd: () => {
-          columnCfg({ name: column, label: p.label, rename: p.rename, size: p.size })
+          columnCfg({
+            name: column,
+            label: p.label,
+            rename: p.rename,
+            size: p.size,
+            expression: p.expression
+          })
           .then(cfg => {
             let newP: Partial<DataSourceCol> = {};
             if (p.label != cfg.label)
@@ -167,6 +202,9 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
             if (p.size != cfg.size)
               newP.size = cfg.size;
 
+            if (p.expression != cfg.expression)
+              newP.expression = cfg.expression;
+
             if (Object.keys(newP).length)
               this.updateProfile({ columns: {[column]: newP} });
 
@@ -174,8 +212,21 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
               this.renameColumn({ column, newName: cfg.rename });
           });
         }
+      }, {
+        label: 'Copy',
+        cmd: () => {
+          this.copyColumn(column, p);
+        }
+      }, {
+        disabled: p.type != 'generic',
+        label: 'Delete',
+        cmd: () => {
+          this.removeGenericCol(column);
+        }
       }
-    ];
+    ] as Array<ContextMenuItem>;
+
+    return items;
   }
 
   private renderType(name: string, col: DataSourceCol) {
@@ -183,9 +234,9 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
       return (
         <MenuItem
           text={type}
-          active={(col.type || 'VARCHAR') == type}
+          active={(col.dataType || 'VARCHAR') == type}
           onClick={() => {
-            this.updateProfile({ columns: {[name]: { type }} });
+            this.updateProfile({ columns: {[name]: { dataType: type }} });
           }}
         />
       );
@@ -194,7 +245,7 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
     return (
       <Popover>
         <div style={{ display: 'block', cursor: 'pointer' }}>
-          {IconMap.render(typeToIcon[col.type] || 'string-type')}
+          {IconMap.render(typeToIcon[col.dataType] || 'string-type')}
         </div>
         <Menu>
           {menuItems}

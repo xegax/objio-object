@@ -2,7 +2,8 @@ import {
   TableDescArgs,
   TableDescResult,
   TableRowsArgs,
-  TableRowsResult
+  TableRowsResult,
+  ExecuteArgs
 } from '../../base/datasource/data-source';
 import { NumericDataSourceBase } from '../../base/datasource/numeric-source';
 
@@ -21,6 +22,10 @@ export class NumericDataSource extends NumericDataSourceBase {
       },
       setRowsNum: {
         method: (args: { rowsNum: number }) => this.setRowsNum(args.rowsNum),
+        rights: 'write'
+      },
+      execute: {
+        method: (args: ExecuteArgs, userId: string) => this.execute({...args, userId}),
         rights: 'write'
       }
     });
@@ -43,6 +48,10 @@ export class NumericDataSource extends NumericDataSourceBase {
         return [ startRow + i ];
       })
     });
+  }
+
+  execute(args: ExecuteArgs & { userId: string }) {
+    return Promise.resolve();
   }
 
   setRowsNum(num: number) {

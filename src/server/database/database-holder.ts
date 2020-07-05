@@ -190,9 +190,9 @@ export class DatabaseHolder extends DatabaseHolderBase {
       })
       .then(res => {
         const columns = res.datasource.getColumns().map(col => {
-          let colType = col.type;
+          let colType = col.dataType;
           if (colType == 'VARCHAR' && col.size != null)
-            colType =  `${col.type}(${col.size})`;
+            colType =  `${col.dataType}(${col.size})`;
 
           return {
             colName: col.rename || col.name,

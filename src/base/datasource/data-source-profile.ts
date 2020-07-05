@@ -5,12 +5,15 @@ export interface DataSourceCol {
   rename?: string;
   discard?: boolean;
   order?: number;
-  type?: string;
+  dataType?: string;
+  type?: 'generic';
   size?: number;
+  expression?: string;
 }
 
+export type ColumnCfg = {[name: string]: DataSourceCol}
 export interface DataSourceProfile {
-  columns: { [name: string]: DataSourceCol };
+  columns: ColumnCfg;
   name: string;
 }
 

@@ -3,7 +3,8 @@ import {
   TableDescArgs,
   TableDescResult,
   TableRowsArgs,
-  TableRowsResult
+  TableRowsResult,
+  ExecuteArgs
 } from './data-source';
 import { SERIALIZER, FileSystemSimple } from 'objio';
 
@@ -31,5 +32,9 @@ export class JSONDataSourceClientBase extends JSONDataSourceBase {
 
   getTableRows(args: TableRowsArgs): Promise<TableRowsResult> {
     return this.holder.invokeMethod({ method: 'getTableRows', args });
+  }
+
+  execute(args: ExecuteArgs) {
+    return this.holder.invokeMethod({ method: 'execute', args });
   }
 }

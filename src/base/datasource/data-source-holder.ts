@@ -1,18 +1,8 @@
 import { SERIALIZER, OBJIOArray } from 'objio';
-import { DataSourceBase } from './data-source';
+import { DataSourceBase, ColumnStat } from './data-source';
 import { ObjectBase, IconType, ObjProps } from '../object-base';
 import { ApprMapBase, ApprMapClientBase } from '../appr-map';
 import { DataSourceProfile, makeDataSourceProfile, DataSourceCol } from './data-source-profile';
-
-export interface ColumnStat {
-  empty: number;          // size == 0
-  count: number;
-  strMinMax: number[];    // > 0
-  strCount: number;
-  intCount: number;     
-  doubleCount: number;  
-  numMinMax: number[];
-}
 
 export interface TableDescArgs {
   profile?: string;
@@ -38,6 +28,7 @@ export interface TableRowsResult {
 export interface GetColumnsArgs {
   profile?: ApprMapBase<DataSourceProfile>;
   filter?: boolean;
+  sort?: boolean;
 }
 
 export interface RenameColArgs {
@@ -45,8 +36,14 @@ export interface RenameColArgs {
   newName: string;
 }
 
+export interface AddGenericArgs {
+  column: string;
+  cfg?: DataSourceCol;
+}
+
 export abstract class DataSourceHolderBase extends ObjectBase {
   protected dataSource: DataSourceBase;
+  protected genericCols = new Array<string>();
   protected statMap: {[col: string]: ColumnStat} = {};
   protected profiles: OBJIOArray<ApprMapBase<DataSourceProfile>>;
   private currProfileId: string;
@@ -76,25 +73,43 @@ export abstract class DataSourceHolderBase extends ObjectBase {
     return this.profiles.get(idx == -1 ? 0 : idx);
   }
 
+  updateProfile(p: Partial<DataSourceProfile>) {
+    this.getProfile().setProps(p);
+  }
+
   getColumns(args?: GetColumnsArgs): Array<{ name: string } & DataSourceCol> {
     args = {
       profile: this.getProfile(),
       filter: true,
+      sort: true,
       ...args
     };
 
     const appr = args.profile.get();
-    return (
-      this.dataSource.getTotalCols()
+    let cols = [
+      ...this.dataSource.getTotalCols()
       .map(c => {
         return {
           ...appr.columns[c.name],
           name: c.name
         };
+      }),
+      ...this.genericCols
+      .map(name => {
+        return {
+          ...appr.columns[name],
+          name
+        }
       })
-      .filter(c => args.filter ? !c.discard : true)
-      .sort((a, b) => a.order - b.order)
-    );
+    ];
+
+    if (args.filter)
+      cols = cols.filter(c => !c.discard);
+
+    if (args.sort)
+      cols = cols.sort((a, b) => a.order - b.order);
+    
+    return cols;
   }
 
   getTotalRows() {
@@ -108,13 +123,16 @@ export abstract class DataSourceHolderBase extends ObjectBase {
   abstract getTableDesc(args: TableDescArgs): Promise<TableDescResult>;
   abstract getTableRows(args: TableRowsArgs): Promise<TableRowsResult>;
   abstract renameColumn(args: RenameColArgs): Promise<void>;
+  abstract addGenericCol(args: AddGenericArgs): Promise<void>;
+  abstract removeGenericCol(name: string): Promise<void>;
 
   static TYPE_ID = 'DataSourceHolder';
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),
     dataSource: { type: 'object', const: true },
     profiles: { type: 'object', const: true },
-    statMap: { type: 'json', const: true }
+    statMap: { type: 'json', const: true },
+    genericCols: { type: 'json', const: true }
   })
 }
 
@@ -142,10 +160,6 @@ export class DataSourceHolderClientBase extends DataSourceHolderBase {
     return this.dataSource.getFS();
   }
 
-  updateProfile(p: Partial<DataSourceProfile>) {
-    this.getProfile().setProps(p);
-  }
-
   getColumnInfo(name: string): DataSourceCol {
     return {
       ...this.getProfile().get().columns[name]
@@ -162,5 +176,13 @@ export class DataSourceHolderClientBase extends DataSourceHolderBase {
 
   renameColumn(args: RenameColArgs): Promise<void> {
     return this.holder.invokeMethod({ method: 'renameColumn', args });
+  }
+
+  addGenericCol(args: AddGenericArgs): Promise<void> {
+    return this.holder.invokeMethod({ method: 'addGenericCol', args });
+  }
+
+  removeGenericCol(name: string) {
+    return this.holder.invokeMethod({ method: 'removeGenericCol', args: { name }});
   }
 }

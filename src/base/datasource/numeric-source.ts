@@ -3,7 +3,8 @@ import {
   TableDescArgs,
   TableDescResult,
   TableRowsArgs,
-  TableRowsResult
+  TableRowsResult,
+  ExecuteArgs
 } from './data-source';
 import { SERIALIZER } from 'objio';
 
@@ -41,5 +42,9 @@ export class NumericDataSourceClientBase extends NumericDataSourceBase {
 
   setRowsNum(rowsNum: number): Promise<void> {
     return this.holder.invokeMethod({ method: 'setRowsNum', args: { rowsNum }});
+  }
+
+  execute(args: ExecuteArgs) {
+    return this.holder.invokeMethod({ method: 'execute', args });
   }
 }
