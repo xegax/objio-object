@@ -2,7 +2,8 @@ import * as React from 'react';
 import {
   DataSourceHolderClientBase,
   TableDescResult,
-  DataSourceHolderArgs
+  DataSourceHolderArgs,
+  DataSourceHolderBase
 } from '../../base/datasource/data-source-holder';
 import { ObjTab, ObjProps, IconType } from '../../base/object-base';
 import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
@@ -17,6 +18,7 @@ import { columnCfg } from './column-cfg';
 import { Tooltip } from 'ts-react-ui/tooltip';
 import { Tabs, Tab } from 'ts-react-ui/tabs';
 import { prompt } from 'ts-react-ui/prompt';
+import { getTimeIntervalString } from '../../common/time';
 
 const typeToIcon = {
   VARCHAR: 'string-type',
@@ -70,7 +72,7 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
   private onProfileChanged = () => {
     this.updateGrid();
     this.holder.delayedNotify();
-  };
+  }
 
   private updateGrid() {
     this.getTableDesc({})
@@ -132,10 +134,10 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
           }
         });
         break;
-      } catch(e) {
+      } catch (e) {
       }
     }
-  };
+  }
 
   getDesc(): TableDescResult {
     return this.tableDesc;
@@ -156,7 +158,7 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
     return [
       ...this.dataSource.getObjTabs(),
       {
-        icon: 'fa fa-database',
+        icon: this.getStatus() == 'in progress' ? 'fa fa-spinner fa-spin' : 'fa fa-rocket',
         title: 'Update database',
         command: this.updateDatabase
       }
@@ -164,10 +166,7 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
   }
 
   private updateDatabase = (objProps: ObjProps) => {
-    this.dataSource.execute({
-      columns: this.getProfile().get().columns,
-      genericCols: this.genericCols
-    });
+    this.execute();
   }
 
   getObjPropGroups(props: ObjProps) {
@@ -230,17 +229,20 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
   }
 
   private renderType(name: string, col: DataSourceCol) {
-    const menuItems = ['INTEGER', 'VARCHAR', 'REAL', 'TEXT'].map(type => {
-      return (
-        <MenuItem
-          text={type}
-          active={(col.dataType || 'VARCHAR') == type}
-          onClick={() => {
-            this.updateProfile({ columns: {[name]: { dataType: type }} });
-          }}
-        />
-      );
-    });
+    const menuItems = (
+      ['INTEGER', 'VARCHAR', 'REAL', 'TEXT']
+      .map(dataType => {
+        return (
+          <MenuItem
+            text={dataType}
+            active={(col.dataType || 'VARCHAR') == dataType}
+            onClick={() => {
+              this.updateProfile({ columns: {[name]: { dataType }} });
+            }}
+          />
+        );
+      })
+    );
 
     return (
       <Popover>
@@ -380,11 +382,11 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
   private renderCols(props: ObjProps) {
     const cols: Array<ColumnItem> = (
       this.getColumns({ filter: false })
-      .map(c => {
+      .map(col => {
         return {
-          value: c.name,
-          label: c.label,
-          col: c,
+          value: col.name,
+          label: col.label,
+          col,
           render: this.renderCol
         };
       })
@@ -420,6 +422,10 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
         <PropItem
           label='Rows count'
           value={this.dataSource.getTotalRows()}
+        />
+        <PropItem
+          label='Execute time'
+          value={getTimeIntervalString(this.dataSource.getExecTime())}
         />
         {super.renderSelObjProps(props)}
       </>

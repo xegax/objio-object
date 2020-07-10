@@ -32,21 +32,6 @@ export class JSONDataSource extends JSONDataSourceBase {
       onLoad: onInit,
       onCreate: onInit
     });
-
-    this.holder.setMethodsToInvoke({
-      getTableDesc: {
-        method: (args: TableDescArgs) => this.getTableDesc(args),
-        rights: 'read'
-      },
-      getTableRows: {
-        method: (args: TableRowsArgs) => this.getTableRows(args),
-        rights: 'read'
-      },
-      execute: {
-        method: (args: ExecuteArgs, userId: string) => this.execute({...args, userId }),
-        rights: 'write'
-      }
-    });
   }
 
   private onUploaded = (args: UploadArgs) => {
@@ -61,18 +46,19 @@ export class JSONDataSource extends JSONDataSourceBase {
     this.setStatus('in progress');
 
     const task = new JSONSourceExecuteTask(this, args);
-    this.holder.pushTask(task, args.userId)
-    .then(() => {
-      this.colsStat = task.getColsStat();
-      this.totalCols = task.getCols();
-      this.totalRows = task.getRows();
-      this.setStatus('ok');
-      this.setProgress(0);
-      this.holder.save(true);
-      this.holder.delayedNotify({ type: 'ready' });
-    });
-
-    return Promise.resolve();
+    return (
+      this.holder.pushTask(task, args.userId)
+      .then(() => {
+        this.colsStat = task.getColsStat();
+        this.totalCols = task.getCols();
+        this.totalRows = task.getRows();
+        this.executeTime = task.getTime();
+        this.setStatus('ok');
+        this.setProgress(0);
+        this.holder.save(true);
+        this.holder.delayedNotify({ type: 'ready' });
+      })
+    );
   }
 
   getTableDesc(args: TableDescArgs): Promise<TableDescResult> {
@@ -95,6 +81,7 @@ export class JSONSourceExecuteTask extends TaskServerBase {
   private args: ExecuteArgs;
   private src: JSONDataSource;
   private colsStat = new Map<string, ColumnStat>();
+  private time: number;
 
   constructor(src: JSONDataSource, args: ExecuteArgs) {
     super();
@@ -118,12 +105,20 @@ export class JSONSourceExecuteTask extends TaskServerBase {
     return this.colsStat;
   }
 
+  getTime() {
+    return this.time;
+  }
+
   protected runImpl(): Promise<{ task: Promise<void>; }> {
     const fs = this.src.getFS() as FileSystemSimple;
 
     this.desc = `Reading rows from ${this.src.getName()}`;
     const cp = cpHost<CPModules>()
-    .run({ module: 'json-source.js', path: join(__dirname, '../cp/') });
+    .run({
+      module: 'json-source.js',
+      path: join(__dirname, '../cp/'),
+      options: { execArgv: [] }
+    });
 
     cp.watch({
       progress: args => {
@@ -134,6 +129,7 @@ export class JSONSourceExecuteTask extends TaskServerBase {
       }
     });
 
+    let time = Date.now();
     const jsonFile = fs.getPath('content');
     const dbFile = `source-${this.src.holder.getID()}.sqlite3`;
     (
@@ -147,7 +143,7 @@ export class JSONSourceExecuteTask extends TaskServerBase {
         cols.forEach(col => {
           this.colsStat.set(col.name, {
             name: col.name,
-            empty: col.nullCount,
+            empty: this.rows - col.defCount,
             count: this.rows,
             strMinMax: col.strCount ? [col.strMinSize, col.strMaxSize] : [],
             strCount: col.strCount,
@@ -160,13 +156,17 @@ export class JSONSourceExecuteTask extends TaskServerBase {
         return cp.get('copyToDB', {
           jsonFile,
           db: this.holder.getPrivatePath(dbFile),
-          table: 'source',
+          table: this.args.table,
           cols,
           colsCfg: this.args.columns,
           genCols: this.args.genericCols
         });
       })
-      .then(() => {
+      .catch(e => {
+        console.log('error occured', e);
+      })
+      .finally(() => {
+        this.time = Date.now() - time;
         cp.exit();
       })
     );

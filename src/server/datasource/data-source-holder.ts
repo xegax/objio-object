@@ -8,8 +8,8 @@ import {
   AddGenericArgs
 } from '../../base/datasource/data-source-holder';
 import { ApprMapBase } from '../../base/appr-map';
-import { DataSourceProfile, DataSourceCol } from '../../base/datasource/data-source-profile';
-import { SQLite } from 'objio-sqlite-table/server/sqlite';
+import { DataSourceProfile, DataSourceCol, ColumnCfg } from '../../base/datasource/data-source-profile';
+import { SQLite } from '../sqlite';
 import { IEval, compileEval } from '../../base/datasource/eval';
 
 interface ProfileCache {
@@ -48,6 +48,10 @@ export class DataSourceHolder extends DataSourceHolderBase {
       removeGenericCol: {
         method: (args: { name: string }) => this.removeGenericCol(args.name),
         rights: 'write'
+      },
+      execute: {
+        method: () => this.execute(),
+        rights: 'write'
       }
     });
 
@@ -58,21 +62,8 @@ export class DataSourceHolder extends DataSourceHolderBase {
         }
       });
 
-      this.dataSource.holder.subscribe(() => {
-        this.statMap = {};
-        Array.from(this.dataSource.getColsStat().values())
-        .forEach(col => {
-          this.statMap[col.name] = {...col};
-        });
-        this.holder.save(true);
-      }, 'ready');
-
-      this.dataSource.holder.subscribe(() => {
-        this.dataSource.execute({
-          columns: this.getProfile().get().columns,
-          genericCols: this.genericCols
-        });
-      }, 'uploaded');
+      this.dataSource.holder.subscribe(this.onDataSourceUpdated, 'ready');
+      this.dataSource.holder.subscribe(this.onUploaded, 'uploaded');
 
       return (
         SQLite.open(this.holder.getPrivatePath(`source-${this.dataSource.getID()}.sqlite3`))
@@ -86,6 +77,43 @@ export class DataSourceHolder extends DataSourceHolderBase {
       onLoad: () => onInit(true),
       onCreate: (userId: string) => onInit(false, userId)
     });
+  }
+
+  private onDataSourceUpdated = () => {
+    this.statMap = {};
+    let columns: ColumnCfg = {};
+    Array.from(this.dataSource.getColsStat().values())
+    .forEach(col => {
+      this.statMap[col.name] = {...col};
+    });
+
+    this.db.fetchTableInfo({ table: DataSourceHolder.SOURCE_TABLE })
+    .then(cols => {
+      cols.forEach(col => {
+        columns[col.name] = {
+          dataType: col.type.toUpperCase()
+        };
+      });
+      this.updateProfile({ columns });
+      this.holder.save(true);
+    });
+  }
+
+  private onUploaded = () => {
+    this.execute();
+  }
+
+  execute() {
+    if (this.dataSource.getStatus() == 'in progress')
+      throw 'Object in progress';
+
+    this.dataSource.execute({
+      table: DataSourceHolder.SOURCE_TABLE,
+      columns: this.getProfile().get().columns,
+      genericCols: this.genericCols
+    });
+
+    return Promise.resolve();
   }
 
   private getContext(profileId: string): ProfileCache {
@@ -157,7 +185,7 @@ export class DataSourceHolder extends DataSourceHolderBase {
 
     const ctx = this.getContext(args.profile);
     return (
-      this.db.getRows({ table: 'source', from: startRow, count: rowsCount })
+      this.db.getRows({ table: DataSourceHolder.SOURCE_TABLE, from: startRow, count: rowsCount })
       .then(rows => {
         const cols = this.getColumns({ filter: false, sort: false }).map(c => c.name);
         const genCols = new Set(this.genericCols);

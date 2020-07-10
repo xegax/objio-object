@@ -8,8 +8,8 @@ export interface ColumnStat {
   count: number;
   strMinMax: number[];    // > 0
   strCount: number;
-  intCount: number;     
-  doubleCount: number;  
+  intCount: number;
+  doubleCount: number;
   numMinMax: number[];
 }
 
@@ -36,6 +36,7 @@ export interface DataSourceCol {
 }
 
 export interface ExecuteArgs {
+  table: string;
   columns: {[name: string]: Col};
   genericCols: Array<string>;
 }
@@ -44,6 +45,7 @@ export abstract class DataSourceBase extends ObjectBase {
   protected totalRows: number = 0;
   protected totalCols = Array<DataSourceCol>();
   protected colsStat = new Map<string, ColumnStat>();
+  protected executeTime: number = 0;
 
   abstract getTableDesc(args: TableDescArgs): Promise<TableDescResult>;
   abstract getTableRows(args: TableRowsArgs): Promise<TableRowsResult>;
@@ -61,6 +63,10 @@ export abstract class DataSourceBase extends ObjectBase {
     return this.colsStat;
   }
 
+  getExecTime() {
+    return this.executeTime;
+  }
+
   renderTabs(props: ObjProps): Array<JSX.Element> {
     return [];
   }
@@ -69,6 +75,21 @@ export abstract class DataSourceBase extends ObjectBase {
   static SERIALIZE: SERIALIZER = () => ({
     ...ObjectBase.SERIALIZE(),
     totalRows: { type: 'integer', const: true },
-    totalCols: { type: 'json', cons: true }
+    totalCols: { type: 'json', cons: true },
+    executeTime: { type: 'number', const: true }
   })
+}
+
+export class DataSourceClientBase extends DataSourceBase {
+  getTableDesc(args: TableDescArgs): Promise<TableDescResult> {
+    throw 'not allowed to call from client side';
+  }
+
+  getTableRows(args: TableRowsArgs): Promise<TableRowsResult> {
+    throw 'not allowed to call from client side';
+  }
+
+  execute(args: ExecuteArgs): Promise<void> {
+    throw 'not allowed to call from client side';
+  }
 }

@@ -44,6 +44,17 @@ export class SQLite {
     return all(this.db, `select ${cols} from ${args.table} limit ${args.count} offset ${args.from}`);
   }
 
+  fetchTableInfo(args: { table: string }): Promise<Columns> {
+    return (
+      all<ColumnAttr>(this.db, `pragma table_info(${args.table})`)
+      .then(res => res.map(row => ({
+          name: row.name,
+          type: row.type
+        }))
+      )
+    );
+  }
+
   close(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db.close(err => {

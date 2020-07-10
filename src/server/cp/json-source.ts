@@ -30,6 +30,21 @@ export interface JSONWatch {
   progress?(args: { rows: number; p: number }): void;
 }
 
+interface Column {
+  name: string;
+  defCount: number; // count of defined
+
+  strMinSize?: number;
+  strMaxSize?: number;
+  strCount: number;
+
+  numCount: number; // intCount + doubleCount
+  intCount: number;
+  doubleCount: number;
+  numMin?: number;
+  numMax?: number;
+}
+
 let rowsCount = 0;
 let cols = new Map<string, Column>();
 
@@ -53,11 +68,11 @@ const cp = cpChild<JSONWatch, JSONHandler>({
             if (!col) {
               col = {
                 name: key,
-                nullCount: 0,
                 strCount: 0,
                 numCount: 0,
                 intCount: 0,
-                doubleCount: 0
+                doubleCount: 0,
+                defCount: 0
               };
               cols.set(key, col);
             }
@@ -81,7 +96,15 @@ const cp = cpChild<JSONWatch, JSONHandler>({
   copyToDB: async (args) => {
     const db = await SQLite.open(args.db);
     await db.deleteTable(args.table);
-    await db.createTable({ table: args.table, columns: args.cols.map(getSQLType) });
+    await db.createTable({
+      table: args.table,
+      columns: args.cols.map(c => {
+        let cfg = getSQLType(c);
+        cfg.type = args.colsCfg[c.name]?.dataType || cfg.type;
+
+        return cfg;
+      })
+    });
     const colsArr = args.cols.map(col => col.name);
     const itemsPerBunch = Math.floor(999 / colsArr.length);
 
@@ -111,21 +134,6 @@ const cp = cpChild<JSONWatch, JSONHandler>({
   exit: () => process.exit()
 });
 
-interface Column {
-  name: string;
-  nullCount: number;
-
-  strMinSize?: number;
-  strMaxSize?: number;
-  strCount: number;
-
-  numCount: number; // intCount + doubleCount
-  intCount: number;
-  doubleCount: number;
-  numMin?: number;
-  numMax?: number;
-}
-
 function getSQLType(col: Column): { name: string; type: string; } {
   if (col.strCount) {
     return {
@@ -150,6 +158,12 @@ function getSQLType(col: Column): { name: string; type: string; } {
 }
 
 function updateStat(col: Column, value: any) {
+  if (value == '' || value == null)
+    return;
+
+  if (Number.isFinite(+value))
+    value = +value;
+
   if (typeof value == 'number') {
     col.numCount++;
     if (Math.floor(value) == value)
@@ -163,7 +177,6 @@ function updateStat(col: Column, value: any) {
     col.strMinSize = col.strMinSize == null ? len : Math.min(len, col.strMinSize);
     col.strMaxSize = col.strMaxSize == null ? len : Math.max(len, col.strMaxSize);
     col.strCount++;
-  } else if (value == null) {
-    col.nullCount++;
   }
+  col.defCount++;
 }

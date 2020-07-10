@@ -42,6 +42,8 @@ export interface AddGenericArgs {
 }
 
 export abstract class DataSourceHolderBase extends ObjectBase {
+  static SOURCE_TABLE = 'source';
+
   protected dataSource: DataSourceBase;
   protected genericCols = new Array<string>();
   protected statMap: {[col: string]: ColumnStat} = {};
@@ -86,29 +88,32 @@ export abstract class DataSourceHolderBase extends ObjectBase {
     };
 
     const appr = args.profile.get();
-    let cols = [
-      ...this.dataSource.getTotalCols()
+    let cols = (
+      this.dataSource.getTotalCols()
       .map(c => {
         return {
           ...appr.columns[c.name],
           name: c.name
         };
-      }),
+      })
+    );
+
+    cols.push(
       ...this.genericCols
       .map(name => {
         return {
           ...appr.columns[name],
           name
-        }
+        };
       })
-    ];
+    );
 
     if (args.filter)
       cols = cols.filter(c => !c.discard);
 
     if (args.sort)
       cols = cols.sort((a, b) => a.order - b.order);
-    
+
     return cols;
   }
 
@@ -125,6 +130,7 @@ export abstract class DataSourceHolderBase extends ObjectBase {
   abstract renameColumn(args: RenameColArgs): Promise<void>;
   abstract addGenericCol(args: AddGenericArgs): Promise<void>;
   abstract removeGenericCol(name: string): Promise<void>;
+  abstract execute(): Promise<void>;
 
   static TYPE_ID = 'DataSourceHolder';
   static SERIALIZE: SERIALIZER = () => ({
@@ -184,5 +190,9 @@ export class DataSourceHolderClientBase extends DataSourceHolderBase {
 
   removeGenericCol(name: string) {
     return this.holder.invokeMethod({ method: 'removeGenericCol', args: { name }});
+  }
+
+  execute() {
+    return this.holder.invokeMethod({ method: 'execute', args: {} });
   }
 }

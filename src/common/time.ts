@@ -41,12 +41,11 @@ export function getTimeIntervalString(msTime: number) {
 
   let arr = Array<string>();
   if (t.hour)
-    arr.push(`${t.hour}H`);
+    arr.push(`${t.hour} H`);
 
   if (t.hour || t.minute)
     arr.push(`${t.minute} m`);
 
-  if (t.second)
-    arr.push(`${t.second}s`);
+  arr.push(`${t.second} s`);
   return arr.join(' ');
 }
