@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { DataSourceHolder } from '../client/datasource/data-source-holder';
-import { Grid, CellProps, HeaderProps } from 'ts-react-ui/grid/grid';
+import { GridView, RenderIconArgs } from 'ts-react-ui/grid/grid-view';
+import { Popover, Position } from 'ts-react-ui/popover';
+import { CSSIcon } from 'ts-react-ui/cssicon';
+import { FontPanel, FontAppr } from 'ts-react-ui/font-panel';
 
 interface Props {
   model: DataSourceHolder;
@@ -19,28 +22,32 @@ export class DatasourceHolderView extends React.Component<Props> {
     this.props.model.holder.unsubscribe(this.subscriber);
   }
 
-  private renderCell = (p: CellProps) => {
-    const row = this.props.model.getGrid().getRowOrLoad(p.row);
-    if (!row)
-      return null;
-
+  private renderIcon = (args: RenderIconArgs) => {
+    const appr = this.props.model.getGrid().getAppr();
+    const col = appr.columns[args.col];
     return (
-      <span>{row.cell[p.col]}</span>
+      <span
+        onClick={e => {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }>
+        <Popover position={Position.BOTTOM_RIGHT}>
+          <CSSIcon
+            icon='fa fa-font'
+            showOnHover
+            onClick={() => {}}
+          />
+          <FontPanel
+            font={{...appr.body.font, ...col?.font} as FontAppr}
+            onChange={font => {
+              this.props.model.getGrid().setApprChange({ columns: {[args.col]: { font } } });
+            }}
+          />
+        </Popover>
+      </span>
     );
-  }
-
-  private renderHeader = (header: HeaderProps) => {
-    const desc = this.props.model.getDesc();
-    if (!desc)
-      return null;
-
-    const colName = desc.cols[header.col];
-    const cols = this.props.model.getProfile().get().columns;
-    const col = {...cols[colName]};
-    return (
-      <span>{col.rename || colName}</span>
-    );
-  }
+  };
 
   private renderTable() {
     const grid = this.props.model.getGrid();
@@ -50,13 +57,9 @@ export class DatasourceHolderView extends React.Component<Props> {
     return (
       <>
         <div style={{ position: 'relative', flexGrow: 1 }}>
-          <Grid
+          <GridView
             model={grid}
-            renderHeader={this.renderHeader}
-            renderCell={this.renderCell}
-            onScrollToBottom={() => {
-              grid.loadNext();
-            }}
+            renderIcon={this.renderIcon}
           />
         </div>
       </>

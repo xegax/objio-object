@@ -1,4 +1,5 @@
 import { ApprObject } from '../../common/appr-map';
+import { GridViewAppr, GridColumnAppr, getGridViewApprDefault } from 'ts-react-ui/grid/grid-view-appr';
 
 export interface DataSourceCol {
   label?: string;
@@ -11,8 +12,8 @@ export interface DataSourceCol {
   expression?: string;
 }
 
-export type ColumnCfg = {[name: string]: DataSourceCol}
-export interface DataSourceProfile {
+export type ColumnCfg = {[name: string]: Partial<DataSourceCol & GridColumnAppr> };
+export type DataSourceProfile = Omit<GridViewAppr, 'columns'> & {
   columns: ColumnCfg;
   name: string;
 }
@@ -20,6 +21,7 @@ export interface DataSourceProfile {
 export function makeDataSourceProfile(): ApprObject<DataSourceProfile> {
   return {
     obj: {
+      ...getGridViewApprDefault(),
       columns: {},
       name: ''
     },

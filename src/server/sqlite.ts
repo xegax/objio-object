@@ -44,6 +44,14 @@ export class SQLite {
     return all(this.db, `select ${cols} from ${args.table} limit ${args.count} offset ${args.from}`);
   }
 
+  createView(args: { table: string, view: string, cols?: Array<string>, sort?: Array<{ name: string; asc: boolean }> }) {
+    const cols = args.cols ? args.cols.join(', ') : '*';
+    let orderBy = '';
+    if (args.sort && args.sort.length)
+      orderBy = 'order by ' + args.sort.map(c => `${c.name} ${c.asc ? 'asc' : 'desc'}`).join(', ');
+    return exec(this.db, `create temp table "${args.view}" as select ${cols} from ${args.table} ${orderBy}`);
+  }
+
   fetchTableInfo(args: { table: string }): Promise<Columns> {
     return (
       all<ColumnAttr>(this.db, `pragma table_info(${args.table})`)

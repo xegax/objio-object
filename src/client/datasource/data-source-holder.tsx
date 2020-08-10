@@ -2,15 +2,13 @@ import * as React from 'react';
 import {
   DataSourceHolderClientBase,
   TableDescResult,
-  DataSourceHolderArgs,
-  DataSourceHolderBase
+  DataSourceHolderArgs
 } from '../../base/datasource/data-source-holder';
 import { ObjTab, ObjProps, IconType } from '../../base/object-base';
-import { GridLoadableModel } from 'ts-react-ui/grid/grid-loadable-model';
 import { PropItem } from 'ts-react-ui/prop-sheet/prop-item';
 import { ListView, Item } from 'ts-react-ui/list-view2';
 import { CSSIcon } from 'ts-react-ui/cssicon';
-import { PopoverIcon, Popover, Position } from 'ts-react-ui/popover';
+import { PopoverIcon, Popover } from 'ts-react-ui/popover';
 import { Menu, MenuItem } from 'ts-react-ui/blueprint';
 import { DataSourceCol } from '../../base/datasource/data-source-profile';
 import { IconMap } from 'ts-react-ui/common/icon-map';
@@ -19,6 +17,10 @@ import { Tooltip } from 'ts-react-ui/tooltip';
 import { Tabs, Tab } from 'ts-react-ui/tabs';
 import { prompt } from 'ts-react-ui/prompt';
 import { getTimeIntervalString } from '../../common/time';
+import { GridViewModel } from 'ts-react-ui/grid/grid-view-model';
+import { GridApprTab, GridCardsTab } from 'ts-react-ui/grid/grid-tabs-appr';
+import { GridPanelSort } from 'ts-react-ui/grid/grid-panel-sort';
+import { PropsGroup } from 'ts-react-ui/prop-sheet';
 
 const typeToIcon = {
   VARCHAR: 'string-type',
@@ -38,21 +40,21 @@ interface ColumnItem extends Item {
 }
 
 export class DataSourceHolder extends DataSourceHolderClientBase {
-  private grid: GridLoadableModel;
-  private tableDesc: TableDescResult;
+  private grid?: GridViewModel;
 
   constructor(args?: DataSourceHolderArgs) {
     super(args);
 
     const onInit = () => {
-      this.updateGrid();
+      this.createGrid();
 
       this.dataSource.holder.addEventHandler({
         onObjChange: () => {
           if (this.dataSource.isStatusInProgess())
             return;
 
-          this.updateGrid();
+          this.createGrid();
+          this.grid?.reloadCurrent();
         }
       });
 
@@ -69,35 +71,20 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
     });
   }
 
+  private createGrid() {
+    if (this.grid || this.dataSource?.getTotalCols().length == 0)
+      return;
+
+    this.grid = new GridViewModel();
+    this.grid.setRequestor(this);
+    this.grid.setAllColumns(this.getColumns({ filter: false }).map(c => c.name));
+    this.grid.setApprChange(this.getProfile().get());
+  }
+
   private onProfileChanged = () => {
-    this.updateGrid();
+    this.grid?.setApprChange(this.getProfile().get());
+    this.grid?.reloadCurrent({ clearCache: false });
     this.holder.delayedNotify();
-  }
-
-  private updateGrid() {
-    this.getTableDesc({})
-    .then(desc => {
-      this.tableDesc = desc;
-
-      this.grid = new GridLoadableModel({
-        rowsCount: desc.rows,
-        colsCount: desc.cols.length,
-        prev: this.grid
-      });
-      this.grid.setLoader(this.tableLoader);
-      this.holder.delayedNotify();
-    });
-  }
-
-  private tableLoader = (from: number, count: number) => {
-    return (
-      this.getTableRows({ startRow: from, rowsCount: count })
-      .then(res => {
-        return res.rows.map(cell => {
-          return { cell };
-        });
-      })
-    );
   }
 
   private copyColumn = async (srcCol: string, p: DataSourceCol) => {
@@ -139,10 +126,6 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
     }
   }
 
-  getDesc(): TableDescResult {
-    return this.tableDesc;
-  }
-
   getGrid() {
     return this.grid;
   }
@@ -170,14 +153,47 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
   }
 
   getObjPropGroups(props: ObjProps) {
-    if (!this.dataSource)
+    if (!this.dataSource || !this.grid)
       return null;
 
     return (
-      <Tabs defaultSelect='columns' flex key={this.holder.getID()}>
-        {this.dataSource.renderTabs(props)}
-        {this.renderCols(props)}
-      </Tabs>
+      <>
+        <PropsGroup label='Sorting'>
+          <GridPanelSort model={this.grid}/>
+        </PropsGroup>
+        <Tabs defaultSelect='appr' flex key={this.holder.getID()}>
+          <Tab id='appr' title='Appearance' icon='fa fa-paint-brush'>
+            <GridApprTab
+              grid={this.grid}
+            />
+          </Tab>
+          <Tab id='cards' title='Cards' icon='fa fa-id-card-o'>
+            <GridCardsTab
+              grid={this.grid}
+            />
+          </Tab>
+          {this.dataSource.renderTabs(props)}
+          {this.renderCols(props)}
+        </Tabs>
+        <div style={{ textAlign: 'right' }}>
+          <CSSIcon
+            icon='fa fa-save'
+            onClick={() => {
+              const appr = this.grid.getApprRef().getChange();
+              
+              let columns = appr.columns;
+              Object.keys(columns)
+              .forEach(c => {
+                const col = columns[c];
+                if (col.width == null)
+                  col.width = null;
+              });
+
+              this.updateProfile(appr);
+            }}
+          />
+        </div>
+      </>
     );
   }
 

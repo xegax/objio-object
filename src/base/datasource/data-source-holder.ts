@@ -3,18 +3,22 @@ import { DataSourceBase, ColumnStat } from './data-source';
 import { ObjectBase, IconType, ObjProps } from '../object-base';
 import { ApprMapBase, ApprMapClientBase } from '../appr-map';
 import { DataSourceProfile, makeDataSourceProfile, DataSourceCol } from './data-source-profile';
+import { GridRequestor, ViewArgsT, RowsArgs, RowsResult, ViewResult, ArrCell, WrapperArgs } from 'ts-react-ui/grid/grid-requestor-decl';
 
 export interface TableDescArgs {
   profile?: string;
 }
 
 export interface TableDescResult {
+  viewId?: string;
+
   cols: Array<string>;
   rows: number;
 }
 
 export interface TableRowsArgs {
   profile?: string;
+  viewId?: string;
 
   startRow: number;
   rowsCount: number;
@@ -41,7 +45,7 @@ export interface AddGenericArgs {
   cfg?: DataSourceCol;
 }
 
-export abstract class DataSourceHolderBase extends ObjectBase {
+export abstract class DataSourceHolderBase extends ObjectBase implements GridRequestor<WrapperArgs<string, any>, ArrCell> {
   static SOURCE_TABLE = 'source';
 
   protected dataSource: DataSourceBase;
@@ -125,6 +129,10 @@ export abstract class DataSourceHolderBase extends ObjectBase {
     return this.dataSource.getTotalCols();
   }
 
+  abstract createView(args: ViewArgsT): Promise<ViewResult>;
+  abstract getRows(args: RowsArgs): Promise<RowsResult<ArrCell>>;
+  abstract clearCache(): void;
+
   abstract getTableDesc(args: TableDescArgs): Promise<TableDescResult>;
   abstract getTableRows(args: TableRowsArgs): Promise<TableRowsResult>;
   abstract renameColumn(args: RenameColArgs): Promise<void>;
@@ -170,6 +178,18 @@ export class DataSourceHolderClientBase extends DataSourceHolderBase {
     return {
       ...this.getProfile().get().columns[name]
     };
+  }
+
+  createView(args: ViewArgsT): Promise<ViewResult> {
+    return this.holder.invokeMethod({ method: 'createView', args });
+  }
+
+  getRows(args: RowsArgs): Promise<RowsResult<ArrCell>> {
+    return this.holder.invokeMethod({ method: 'getRows', args });
+  }
+
+  clearCache() {
+    this.holder.invokeMethod({ method: 'clearCache', args: {} });
   }
 
   getTableDesc(args: TableDescArgs): Promise<TableDescResult> {
