@@ -1,7 +1,6 @@
 import * as React from 'react';
 import {
   DataSourceHolderClientBase,
-  TableDescResult,
   DataSourceHolderArgs
 } from '../../base/datasource/data-source-holder';
 import { ObjTab, ObjProps, IconType } from '../../base/object-base';
@@ -20,6 +19,7 @@ import { getTimeIntervalString } from '../../common/time';
 import { GridViewModel } from 'ts-react-ui/grid/grid-view-model';
 import { GridApprTab, GridCardsTab } from 'ts-react-ui/grid/grid-tabs-appr';
 import { GridPanelSort } from 'ts-react-ui/grid/grid-panel-sort';
+import { GridPanelFilter } from 'ts-react-ui/grid/grid-panel-filter';
 import { PropsGroup } from 'ts-react-ui/prop-sheet';
 
 const typeToIcon = {
@@ -77,7 +77,14 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
 
     this.grid = new GridViewModel();
     this.grid.setRequestor(this);
-    this.grid.setAllColumns(this.getColumns({ filter: false }).map(c => c.name));
+    this.grid.setAllColumns(
+      this.getColumns({ filter: false }).map(c => {
+        return {
+          name: c.name,
+          type: convertType(c.dataType as any)
+        };
+      })
+    );
     this.grid.setApprChange(this.getProfile().get());
   }
 
@@ -141,6 +148,22 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
     return [
       ...this.dataSource.getObjTabs(),
       {
+        icon: 'fa fa-filter',
+        render: () => (
+          <>
+            <PropsGroup label='Sorting'>
+              <PropItem
+                label='Rows'
+                value={`${this.grid.getGrid().getTotalRowsCount()} (${this.dataSource.getTotalRows()})`}
+              />
+              <GridPanelSort model={this.grid}/>
+            </PropsGroup>
+            <GridPanelFilter
+              model={this.grid}
+            />
+          </>
+        )
+      }, {
         icon: this.getStatus() == 'in progress' ? 'fa fa-spinner fa-spin' : 'fa fa-rocket',
         title: 'Update database',
         command: this.updateDatabase
@@ -158,9 +181,6 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
 
     return (
       <>
-        <PropsGroup label='Sorting'>
-          <GridPanelSort model={this.grid}/>
-        </PropsGroup>
         <Tabs defaultSelect='appr' flex key={this.holder.getID()}>
           <Tab id='appr' title='Appearance' icon='fa fa-paint-brush'>
             <GridApprTab
@@ -447,4 +467,14 @@ export class DataSourceHolder extends DataSourceHolderClientBase {
       </>
     );
   }
+}
+
+function convertType(type: 'VARCHAR' | 'TEXT' | 'INTEGER' | 'REAL') {
+    if (type == 'INTEGER')
+    return 'integer';
+
+  if (type == 'REAL')
+    return 'numeric';
+
+  return 'string';
 }

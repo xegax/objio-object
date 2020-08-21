@@ -3,7 +3,7 @@ import { DataSourceBase, ColumnStat } from './data-source';
 import { ObjectBase, IconType, ObjProps } from '../object-base';
 import { ApprMapBase, ApprMapClientBase } from '../appr-map';
 import { DataSourceProfile, makeDataSourceProfile, DataSourceCol } from './data-source-profile';
-import { GridRequestor, ViewArgsT, RowsArgs, RowsResult, ViewResult, ArrCell, WrapperArgs } from 'ts-react-ui/grid/grid-requestor-decl';
+import { GridRequestor, ViewArgs, RowsArgs, RowsResult, ViewResult, ArrCell } from 'ts-react-ui/grid/grid-requestor-decl';
 
 export interface TableDescArgs {
   profile?: string;
@@ -45,7 +45,7 @@ export interface AddGenericArgs {
   cfg?: DataSourceCol;
 }
 
-export abstract class DataSourceHolderBase extends ObjectBase implements GridRequestor<WrapperArgs<string, any>, ArrCell> {
+export abstract class DataSourceHolderBase extends ObjectBase implements GridRequestor<ArrCell> {
   static SOURCE_TABLE = 'source';
 
   protected dataSource: DataSourceBase;
@@ -129,7 +129,7 @@ export abstract class DataSourceHolderBase extends ObjectBase implements GridReq
     return this.dataSource.getTotalCols();
   }
 
-  abstract createView(args: ViewArgsT): Promise<ViewResult>;
+  abstract createView(args: ViewArgs): Promise<ViewResult>;
   abstract getRows(args: RowsArgs): Promise<RowsResult<ArrCell>>;
   abstract clearCache(): void;
 
@@ -180,7 +180,7 @@ export class DataSourceHolderClientBase extends DataSourceHolderBase {
     };
   }
 
-  createView(args: ViewArgsT): Promise<ViewResult> {
+  createView(args: ViewArgs): Promise<ViewResult> {
     return this.holder.invokeMethod({ method: 'createView', args });
   }
 

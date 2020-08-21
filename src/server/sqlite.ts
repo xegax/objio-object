@@ -1,4 +1,5 @@
 import { Database } from 'sqlite3';
+import { FilterArgs } from 'ts-react-ui/grid/grid-requestor-decl';
 
 export class SQLite {
   private db: Database;
@@ -44,12 +45,44 @@ export class SQLite {
     return all(this.db, `select ${cols} from ${args.table} limit ${args.count} offset ${args.from}`);
   }
 
-  createView(args: { table: string, view: string, cols?: Array<string>, sort?: Array<{ name: string; asc: boolean }> }) {
+  createView(args: {
+    table: string,
+    view: string,
+    cols?: Array<string>,
+    sort?: Array<{ name: string; asc: boolean }>,
+    filter?: FilterArgs
+  }) {
     const cols = args.cols ? args.cols.join(', ') : '*';
     let orderBy = '';
     if (args.sort && args.sort.length)
       orderBy = 'order by ' + args.sort.map(c => `${c.name} ${c.asc ? 'asc' : 'desc'}`).join(', ');
-    return exec(this.db, `create temp table "${args.view}" as select ${cols} from ${args.table} ${orderBy}`);
+    
+    let where = '';
+    if (args.filter)
+      where = `where ${createSQLFilter(args.filter)}`;
+
+    return exec(this.db, `create temp table "${args.view}" as select ${cols} from ${args.table} ${where} ${orderBy}`);
+  }
+
+  createDistinct(args: { table: string; view: string; col: string; sort?: Array<{ name: string; asc: boolean }> }): Promise<number> {
+    const cols = `${args.col} as value, count(${args.col}) as count`;
+    let orderBy = '';
+    if (args.sort && args.sort.length)
+      orderBy = 'order by ' + args.sort.map(c => `${c.name} ${c.asc ? 'asc' : 'desc'}`).join(', ');
+
+    return (
+      exec(this.db, `create temp table "${args.view}" as select ${cols} from "${args.table}" group by ${args.col} ${orderBy}`)
+      .then(() => this.getRows({ table: args.view, from: 0, count: 1, cols: ['count(*) as count'] }))
+      .then(rows => rows[0]['count'])
+    );
+  }
+
+  createAggr(args: { table: string; view: string; cols: Array<string>; }) {
+    let cols = args.cols.map(c => {
+      return `select '${c}' as name, min(${c}) as min, max(${c}) as max, sum(${c}) as sum from ${args.table}`;
+    }).join(' union ');
+
+    return exec(this.db, `create temp table "${args.view}" as ${cols}`);
   }
 
   fetchTableInfo(args: { table: string }): Promise<Columns> {
@@ -244,4 +277,14 @@ export function insert(args: PushRowArgs & { table: string; db: Database }): Pro
   const allCols = colsArr.join(',');
   const sql = `insert into ${args.table}(${allCols}) values ${holderArr.join(',')};`;
   return run(args.db, sql, valuesArr);
+}
+
+function createSQLFilter(f: FilterArgs): string {
+  if ('value' in f)
+    return `${f.column} = "${f.value}"`;
+
+  if ('range' in f)
+    return `${f.column} >= ${f.range[0]} and ${f.column} <= ${f.range[1]}`;
+
+  return `(${f.children.map(child => createSQLFilter(child)).join(` ${f.op} `)})`;
 }

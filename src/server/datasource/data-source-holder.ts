@@ -11,7 +11,7 @@ import { ApprMapBase } from '../../base/appr-map';
 import { DataSourceProfile, DataSourceCol, ColumnCfg } from '../../base/datasource/data-source-profile';
 import { SQLite } from '../sqlite';
 import { IEval, compileEval } from '../../base/datasource/eval';
-import { ViewArgsT, RowsArgs, RowsResult, ViewResult, ArrCell } from 'ts-react-ui/grid/grid-requestor-decl';
+import { ViewArgs, RowsArgs, RowsResult, ViewResult, ArrCell } from 'ts-react-ui/grid/grid-requestor-decl';
 import { clone } from 'ts-react-ui/common/common';
 
 interface ProfileCache {
@@ -23,8 +23,9 @@ interface ProfileCache {
 }
 
 interface ViewData {
-  args: ViewArgsT;
+  args: ViewArgs;
   rows: number;
+  columns: Array<string>;
 }
 
 export class DataSourceHolder extends DataSourceHolderBase {
@@ -63,7 +64,7 @@ export class DataSourceHolder extends DataSourceHolderBase {
         rights: 'write'
       },
       createView: {
-        method: (args: ViewArgsT) => this.createView(args),
+        method: (args: ViewArgs) => this.createView(args),
         rights: 'read'
       },
       getRows: {
@@ -124,7 +125,7 @@ export class DataSourceHolder extends DataSourceHolderBase {
     this.execute();
   }
 
-  protected findViewId(args: ViewArgsT) {
+  protected findViewId(args: ViewArgs) {
     const s1 = JSON.stringify(args);
 
     return Array.from(this.viewIds.keys()).find(view => {
@@ -249,7 +250,7 @@ export class DataSourceHolder extends DataSourceHolderBase {
     return Promise.resolve();
   }
 
-  createView(args: ViewArgsT): Promise<ViewResult> {
+  createView(args: ViewArgs): Promise<ViewResult> {
     args = clone(args);
     delete args.columns;
 
@@ -260,29 +261,89 @@ export class DataSourceHolder extends DataSourceHolderBase {
     let viewData: ViewData | undefined;
     if (!viewId) {
       viewId = 'v_' + this.viewIdCounter++;
-      viewData = { args: clone(args), rows: 0 };
+      viewData = { args: clone(args), rows: 0, columns: [] };
       this.viewIds.set(viewId, viewData);
 
+      if (args.aggregate) {
+        return this.db.createAggr({
+          table: args.viewId || DataSourceHolder.SOURCE_TABLE,
+          view: viewId,
+          cols: args.aggregate.columns
+        }).then(() => {
+          viewData.rows = args.aggregate.columns.length;
+          viewData.columns = ['name', 'min', 'max', 'sum'];
+          return {
+            viewId,
+            desc: {
+              columns: viewData.columns,
+              rows: viewData.rows
+            }
+          };
+        });
+      } else if (args.distinct) {
+        return (
+          this.db.createDistinct({
+            table: args.viewId || DataSourceHolder.SOURCE_TABLE,
+            view: viewId,
+            col: args.distinct.column,
+            sort: args.sorting?.cols
+          }).then(rows => {
+            viewData.rows = rows;
+            viewData.columns = ['value', 'count'];
+            return {
+              viewId,
+              desc: {
+                columns: viewData.columns,
+                rows
+              }
+            };
+          })
+        );
+      }
+
       task = this.db.createView({
-        table: DataSourceHolder.SOURCE_TABLE,
+        table: args.viewId || DataSourceHolder.SOURCE_TABLE,
         view: viewId,
-        sort: args.sorting.cols
+        sort: args.sorting?.cols,
+        filter: args.filter
       })
       .then(() => this.db.getRows({ table: viewId, from: 0, count: 1, cols: ['count(*) as count'] }))
       .then(rows => {
         viewData.rows = rows[0]['count'];
+        viewData.columns = this.getColumns().map(c => c.name);
       });
     } else {
       viewData = this.viewIds.get(viewId);
     }
 
+    const savedCols = viewData.args.distinct != null || viewData.args.aggregate != null;
     return task.then(() => ({
       viewId,
       desc: {
-        columns: this.getColumns().map(c => c.name),
+        columns: savedCols ? viewData.columns : this.getColumns().map(c => c.name),
         rows: viewData.rows
       }
     }));
+  }
+
+  private getCustomColRows(args: RowsArgs, cols: Array<string>): Promise<RowsResult<ArrCell>> {
+    const vargs = this.viewIds.get(args.viewId);
+    const totalRows = vargs.rows;
+    const startRow = Math.max(args.from, 0);
+    const rowsCount = Math.min(startRow + args.count, totalRows) - startRow;
+    if (rowsCount == 0)
+      return Promise.resolve({ rows: [], startRow });
+
+    return (
+      this.db.getRows({ table: args.viewId, from: startRow, count: rowsCount })
+      .then(rows => {
+        return {
+          rows: rows.map(r => {
+            return cols.map(c => r[c]);
+          })
+        };
+      })
+    );
   }
 
   getRows(args: RowsArgs): Promise<RowsResult<ArrCell>> {
@@ -291,6 +352,13 @@ export class DataSourceHolder extends DataSourceHolderBase {
     const rowsCount = Math.min(startRow + args.count, totalRows) - startRow;
     if (rowsCount == 0)
       return Promise.resolve({ rows: [], startRow });
+
+    const vargs = this.viewIds.get(args.viewId);
+    if (vargs.args.distinct)
+      return this.getCustomColRows(args, ['value', 'count']);
+
+    if (vargs.args.aggregate)
+      return this.getCustomColRows(args, ['name', 'min', 'max', 'sum']);
 
     const ctx = this.getContext();
     return (
